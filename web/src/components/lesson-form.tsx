@@ -14,11 +14,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { clientApi, ApiError } from '@/lib/api-client';
+import { Send } from 'lucide-react';
+
+import { SectionView } from './section-view';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input, Textarea } from '@/components/ui/input';
+import { ApiError, clientApi } from '@/lib/api-client';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import type { Lesson, Submission } from '@/lib/types';
-import { SectionView } from './section-view';
 
 interface Props {
   lesson: Lesson;
@@ -93,15 +98,19 @@ export function LessonForm({ lesson, contentLanguage, dictionary, locale, existi
     if (submitted) {
       const previous = existingSubmission?.answers.find((answer) => answer.ref === ref);
       return previous ? (
-        <p className="mt-2 whitespace-pre-wrap rounded-lg border border-line bg-canvas px-3 py-2 text-sm" lang={contentLanguage}>
+        <p
+          className="mt-2 whitespace-pre-wrap rounded-md border border-border bg-background px-3 py-2 text-sm"
+          lang={contentLanguage}
+        >
           {previous.text}
         </p>
       ) : null;
     }
 
     return (
-      <textarea
-        className="field mt-2 min-h-[4.5rem] resize-y"
+      <Textarea
+        className="mt-2"
+        rows={3}
         lang={contentLanguage}
         aria-label={`${t.yourAnswer}: ${label}`}
         placeholder={t.yourAnswer}
@@ -112,7 +121,7 @@ export function LessonForm({ lesson, contentLanguage, dictionary, locale, existi
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {lesson.sections.map((section) => (
         <SectionView
           key={section.id}
@@ -124,35 +133,39 @@ export function LessonForm({ lesson, contentLanguage, dictionary, locale, existi
       ))}
 
       {submitted ? (
-        <div className="card">
-          <p>{t.alreadySubmitted}</p>
-          <Link href={`/${locale}/sessions/${existingSubmission.submissionId}`} className="btn-primary mt-4">
-            {t.viewSessionLog}
-          </Link>
-        </div>
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-sm">{t.alreadySubmitted}</p>
+            <Button asChild className="mt-4">
+              <Link href={`/${locale}/sessions/${existingSubmission.submissionId}`}>{t.viewSessionLog}</Link>
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="card">
-          <label htmlFor="speaking-note" className="block text-sm font-medium">
-            {t.speakingNote}
-          </label>
-          <input
-            id="speaking-note"
-            className="field mt-2"
-            placeholder={t.speakingNotePlaceholder}
-            value={speakingNote}
-            onChange={(event) => setSpeakingNote(event.target.value)}
-          />
+        <Card>
+          <CardContent className="space-y-3 pt-5">
+            <label htmlFor="speaking-note" className="block text-sm font-medium">
+              {t.speakingNote}
+            </label>
+            <Input
+              id="speaking-note"
+              placeholder={t.speakingNotePlaceholder}
+              value={speakingNote}
+              onChange={(event) => setSpeakingNote(event.target.value)}
+            />
 
-          {error ? (
-            <p className="mt-4 text-sm text-bad" role="alert">
-              {error}
-            </p>
-          ) : null}
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
 
-          <button type="button" className="btn-primary mt-4" onClick={() => void submit()} disabled={submitting}>
-            {submitting ? t.submitting : t.submit}
-          </button>
-        </div>
+            <Button onClick={() => void submit()} disabled={submitting}>
+              <Send className="h-4 w-4" />
+              {submitting ? t.submitting : t.submit}
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

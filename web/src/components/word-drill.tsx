@@ -13,10 +13,14 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { DeckProgress, DrillShell, Feedback } from './drill-chrome';
+import { Pill } from '@/components/atoms';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { clientApi, query } from '@/lib/api-client';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { AttemptResult, DeckPage, DueItem, Stage } from '@/lib/types';
-import { DeckProgress, DrillShell, Feedback } from './drill-chrome';
 
 interface Props {
   blockId: string;
@@ -82,7 +86,7 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
     setResult(null);
     setAnswer('');
     setShowHint(false);
-    // Past the end of the batch, ask for a fresh one — items that were not cleared come back.
+    // Past the end of the batch, ask for a fresh one — items not cleared come back.
     if (deck && index + 1 >= deck.items.length) void load();
     else setIndex((value) => value + 1);
   };
@@ -108,37 +112,37 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
       error={error}
       empty={!loading && deck !== null && deck.items.length === 0}
       stage={current?.stage}
-      onSwitchStage={() => {
-        setStage((value) => (value === 2 ? 1 : 2));
-      }}
+      onSwitchStage={() => setStage((value) => (value === 2 ? 1 : 2))}
       onReset={async () => {
         await clientApi('/v1/drills/reset', { method: 'POST', body: { blockId } });
         await load();
       }}
-      blockId={blockId}
     >
       {current && prompt ? (
         <>
-          <p className="text-sm text-muted">
-            {current.stage === 1 ? t.stage1 : t.stage2} · {t.streak} {current.progress.streak}/2
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {t.streak} {current.progress.streak}/2
+            </p>
+            <Pill>{current.stage === 1 ? t.stage1 : t.stage2}</Pill>
+          </div>
 
           <p
-            className="mt-3 text-2xl font-semibold tracking-tight"
+            className="mt-4 text-2xl font-semibold tracking-tight"
             lang={current.stage === 1 ? contentLanguage : translationLanguage}
           >
             {prompt.prompt}
           </p>
 
           {showHint && prompt.hint ? (
-            <p className="mt-2 text-sm text-muted" lang={contentLanguage}>
+            <p className="mt-2 text-sm text-muted-foreground" lang={contentLanguage}>
               {prompt.hint}
             </p>
           ) : null}
 
-          <input
+          <Input
             ref={inputRef}
-            className="field mt-5 text-lg"
+            className="mt-5 text-base"
             lang={answerLanguage}
             autoComplete="off"
             autoCapitalize="off"
@@ -161,13 +165,13 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
             />
           ) : (
             <div className="mt-4 flex flex-wrap gap-2">
-              <button type="button" className="btn-primary" onClick={() => void check()}>
+              <Button onClick={() => void check()} disabled={answer.trim().length === 0}>
                 {dictionary.common.check}
-              </button>
+              </Button>
               {prompt.hint ? (
-                <button type="button" className="btn-secondary" onClick={() => setShowHint(true)}>
+                <Button variant="outline" onClick={() => setShowHint(true)}>
                   {dictionary.common.hint}
-                </button>
+                </Button>
               ) : null}
             </div>
           )}

@@ -6,8 +6,8 @@
  * lesson prose, terms and translations are content and pass through untouched (ADR-0005).
  */
 
-import type { Locale, TitleText, ErrorStatus } from './types';
 import type { Dictionary } from '@/i18n/dictionaries';
+import type { ErrorStatus, Locale, TitleText } from './types';
 
 export function pickTitle(title: TitleText | undefined, locale: Locale): string {
   if (!title) return '';
@@ -37,17 +37,17 @@ export function statusLabel(status: ErrorStatus, dictionary: Dictionary): string
   }
 }
 
-/** Colour by meaning: recurring is a problem, mastered is done, the rest are in between. */
-export function statusTone(status: ErrorStatus): string {
+/** Colour by meaning: recurring is a problem, mastered is done, the rest sit in between. */
+export function statusTone(status: ErrorStatus): 'muted' | 'primary' | 'success' | 'destructive' {
   switch (status) {
     case 'recurring':
-      return 'text-bad border-bad/40';
+      return 'destructive';
     case 'improving':
-      return 'text-warn border-warn/40';
+      return 'primary';
     case 'mastered':
-      return 'text-good border-good/40';
+      return 'success';
     case 'new':
-      return 'text-muted border-line';
+      return 'muted';
   }
 }
 

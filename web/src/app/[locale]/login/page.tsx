@@ -1,14 +1,19 @@
 /**
  * Sign in against identity-service.
  *
- * The form posts to a server action so credentials never touch client-side JavaScript, and the
+ * The form posts to a server action, so credentials never touch client-side JavaScript and the
  * token lands directly in an httpOnly cookie.
  *
- * In dev mode there is nothing to sign in to — the API is running with its stub principal — so the
- * page says so and offers a button that just sets the cookie.
+ * In dev mode there is nothing to sign in to — the API runs with its stub principal — so the page
+ * says so rather than showing a form that cannot work.
  */
 
 import { redirect } from 'next/navigation';
+import { LogIn } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { AUTH_MODE, DEV_TOKEN } from '@/lib/session';
@@ -28,7 +33,7 @@ export default async function LoginPage({
   const dictionary = getDictionary(locale);
   const t = dictionary.login;
 
-  /** Only same-origin paths, so `?next=` cannot be used to bounce someone off-site. */
+  /** Only same-origin paths, so `?next=` cannot bounce someone off-site. */
   const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : `/${locale}`;
 
   async function authenticate(formData: FormData): Promise<void> {
@@ -56,52 +61,53 @@ export default async function LoginPage({
   const message = error === 'unavailable' || error === 'not-configured' ? t.unavailable : error ? t.failed : null;
 
   return (
-    <div className="mx-auto max-w-sm py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
+    <div className="mx-auto w-full max-w-sm px-6 py-16">
+      <h1 className="text-xl font-semibold tracking-tight">{t.title}</h1>
 
       {AUTH_MODE === 'dev' ? (
-        <form action={continueAsDev} className="card mt-6">
-          <p className="text-muted">{t.devMode}</p>
-          <button type="submit" className="btn-primary mt-4 w-full">
-            {t.devContinue}
-          </button>
-        </form>
+        <Card className="mt-5">
+          <CardContent className="pt-5">
+            <form action={continueAsDev}>
+              <p className="text-sm text-muted-foreground">{t.devMode}</p>
+              <Button type="submit" className="mt-4 w-full">
+                {t.devContinue}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       ) : (
-        <form action={authenticate} className="card mt-6 space-y-4">
-          <p className="text-muted">{t.subtitle}</p>
-          <input type="hidden" name="next" value={safeNext} />
+        <Card className="mt-5">
+          <CardContent className="pt-5">
+            <form action={authenticate} className="space-y-4">
+              <p className="text-sm text-muted-foreground">{t.subtitle}</p>
+              <input type="hidden" name="next" value={safeNext} />
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">
-              {t.email}
-            </label>
-            <input id="email" name="email" type="email" autoComplete="username" required className="field mt-1" />
-          </div>
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="block text-sm font-medium">
+                  {t.email}
+                </label>
+                <Input id="email" name="email" type="email" autoComplete="username" required />
+              </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">
-              {t.password}
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              className="field mt-1"
-            />
-          </div>
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="block text-sm font-medium">
+                  {t.password}
+                </label>
+                <Input id="password" name="password" type="password" autoComplete="current-password" required />
+              </div>
 
-          {message ? (
-            <p className="text-sm text-bad" role="alert">
-              {message}
-            </p>
-          ) : null}
+              {message ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {message}
+                </p>
+              ) : null}
 
-          <button type="submit" className="btn-primary w-full">
-            {t.submit}
-          </button>
-        </form>
+              <Button type="submit" className="w-full">
+                <LogIn className="h-4 w-4" /> {t.submit}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

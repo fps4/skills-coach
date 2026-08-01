@@ -8,38 +8,37 @@
  * a Dutch lesson stays Dutch in the English interface (ADR-0005).
  */
 
-import { usePathname, useRouter } from 'next/navigation';
-import { LOCALES, LOCALE_COOKIE, withLocale, type Locale } from '@/i18n/config';
+import { Languages } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
+import { Button } from '@/components/ui/button';
+import { LOCALE_COOKIE, withLocale, type Locale } from '@/i18n/config';
 
 export function LanguageSwitch({ locale, label }: { locale: Locale; label: string }) {
   const pathname = usePathname();
+  const search = useSearchParams();
   const router = useRouter();
 
-  const choose = (next: Locale): void => {
-    if (next === locale) return;
-    // A year is long enough to be "remembered" without being permanent.
+  const swap = (): void => {
+    const next: Locale = locale === 'nl' ? 'en' : 'nl';
+    // A year is long enough to feel remembered without being permanent.
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    router.push(withLocale(pathname, next));
+    const query = search.toString();
+    router.push(withLocale(pathname, next) + (query ? `?${query}` : ''));
     router.refresh();
   };
 
   return (
-    <div className="flex items-center gap-1" role="group" aria-label={label}>
-      {LOCALES.map((option) => (
-        <button
-          key={option}
-          type="button"
-          onClick={() => choose(option)}
-          aria-current={option === locale ? 'true' : undefined}
-          className={
-            option === locale
-              ? 'rounded-md bg-accent px-2 py-1 text-xs font-semibold uppercase text-accent-ink'
-              : 'rounded-md px-2 py-1 text-xs font-semibold uppercase text-muted transition hover:text-ink'
-          }
-        >
-          {option}
-        </button>
-      ))}
-    </div>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={swap}
+      title={label}
+      aria-label={label}
+      className="gap-1.5 text-muted-foreground hover:text-foreground"
+    >
+      <Languages className="h-4 w-4" />
+      <span className="text-xs font-semibold uppercase">{locale}</span>
+    </Button>
   );
 }

@@ -53,9 +53,20 @@ web/src/
   app/[locale]/      all routes live under a locale segment (`nl` | `en`)
   i18n/              typed dictionaries + the locale negotiator
   lib/               api (server) / api-client (browser) / auth (server-only) / session (shared)
-  components/        section renderers, drill surfaces, shared UI primitives
+    theme/palettes   the hue axis — a palette is data, not code
+  components/
+    ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
+    atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
+    app-header.tsx   sticky brand header with the accent wordmark
+    learner-rail.tsx today · lessons · the two drills · progress
   middleware.ts      locale negotiation + auth gate, before render
 ```
+
+**Styling is token-driven (ADR-0007).** Components name roles — `bg-background`, `text-primary`,
+`border-border` — never colours. The tokens are CSS variables in `app/globals.css`; two independent
+attributes compose over them, `data-theme` (dark by default, light opt-in) and `data-palette` (four
+hues, changing only primary/accent/ring). A component that hardcodes a colour breaks the system for
+everything downstream and nothing will warn you, so watch for it in review.
 
 Pages are server components calling `lib/api.ts` (which reaches the api service directly); the drill
 surfaces are client components calling `lib/api-client.ts`, which goes through

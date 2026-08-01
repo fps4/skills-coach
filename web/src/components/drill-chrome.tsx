@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Shared chrome for both drills: the shell, the deck bars, and the feedback panel.
+ * Shared chrome for both drills: the page frame, the deck meters, and the feedback panel.
  *
  * The feedback panel is where the pedagogy lives. Two cases matter more than "right/wrong":
  *
@@ -11,7 +11,12 @@
  *   right. It is recorded as an override rather than hidden.
  */
 
+import { ArrowRight, Check, RotateCcw, X } from 'lucide-react';
 import type { ReactNode } from 'react';
+
+import { Meter, PageShell } from '@/components/atoms';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { AttemptResult, DeckSummary, Stage } from '@/lib/types';
 
@@ -38,79 +43,75 @@ export function DrillShell({
   stage?: Stage;
   onSwitchStage: () => void;
   onReset: () => Promise<void>;
-  blockId: string;
   children: ReactNode;
 }) {
   const t = dictionary.drills;
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-1 text-muted">{intro}</p>
-        </div>
-        <div className="flex gap-2">
-          <button type="button" className="btn-secondary" onClick={onSwitchStage}>
-            ⇄ {stage === 2 ? t.stage1 : t.stage2}
-          </button>
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => {
-              if (window.confirm(t.resetConfirm)) void onReset();
-            }}
-          >
-            {dictionary.common.reset}
-          </button>
-        </div>
-      </header>
+    <PageShell title={title} subtitle={intro}>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={onSwitchStage}>
+          ⇄ {stage === 2 ? t.stage1 : t.stage2}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => {
+            if (window.confirm(t.resetConfirm)) void onReset();
+          }}
+        >
+          <RotateCcw className="h-4 w-4" /> {dictionary.common.reset}
+        </Button>
+      </div>
 
       {error ? (
-        <div className="card border-bad/40" role="alert">
-          <p className="text-bad">{error}</p>
-        </div>
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
       ) : null}
 
       {loading ? (
-        <div className="card text-muted">{dictionary.common.loading}</div>
+        <p className="text-sm text-muted-foreground">{dictionary.common.loading}</p>
       ) : empty ? (
-        <div className="card">
-          <p>{t.deckEmpty}</p>
-          {/* Stage 2 being empty usually means it is not unlocked yet, not that there is nothing. */}
-          <p className="mt-1 text-sm text-muted">
-            {stage === 2 && summary && summary.stage2Unlocked === 0 ? t.locked : t.deckEmptyHint}
-          </p>
-        </div>
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-sm">{t.deckEmpty}</p>
+            {/* An empty stage 2 usually means it is not unlocked yet, not that there is nothing. */}
+            <p className="mt-1 text-sm text-muted-foreground">
+              {stage === 2 && summary && summary.stage2Unlocked === 0 ? t.locked : t.deckEmptyHint}
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="card">{children}</div>
+        <Card>
+          <CardContent className="pt-5">{children}</CardContent>
+        </Card>
       )}
-    </div>
+    </PageShell>
   );
 }
 
 export function DeckProgress({ summary, dictionary }: { summary: DeckSummary; dictionary: Dictionary }) {
   const t = dictionary.progress;
-  const width = (part: number): string => `${summary.total > 0 ? Math.round((part / summary.total) * 100) : 0}%`;
 
   return (
-    <div className="mt-6 border-t border-line pt-4">
-      <div className="flex items-center justify-between text-sm text-muted">
+    <div className="mt-6 border-t border-border pt-4">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          {t.unlocked}: {summary.stage1Cleared}
+          {t.unlocked}: <span className="tabular-nums">{summary.stage1Cleared}</span>
         </span>
         <span>
-          {dictionary.block.mastered}: {summary.mastered}/{summary.total}
+          {dictionary.block.mastered}:{' '}
+          <span className="tabular-nums">
+            {summary.mastered}/{summary.total}
+          </span>
         </span>
       </div>
+      {/* Two meters, as the trainers had: what cleared direction one, and what is fully done. */}
       <div className="mt-2 space-y-1">
-        {/* Two bars, as the trainers had: what has cleared direction one, and what is fully done. */}
-        <div className="h-1.5 overflow-hidden rounded-full bg-line">
-          <div className="h-full bg-warn transition-all" style={{ width: width(summary.stage1Cleared) }} />
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-line">
-          <div className="h-full bg-good transition-all" style={{ width: width(summary.mastered) }} />
-        </div>
+        <Meter value={summary.stage1Cleared} total={summary.total} />
+        <Meter value={summary.mastered} total={summary.total} tone="success" />
       </div>
     </div>
   );
@@ -132,47 +133,53 @@ export function Feedback({
   const t = dictionary.drills;
 
   return (
-    <div className="mt-5 border-t border-line pt-4">
+    <div className="mt-5 space-y-3 border-t border-border pt-4">
       {result.correct ? (
-        <p className="font-medium text-good">
-          ✓ {t.correct}
+        <p className="flex items-center gap-1.5 text-sm font-medium text-success">
+          <Check className="h-4 w-4" />
+          {t.correct}
           {result.overridden ? ` (${t.override})` : ''}
         </p>
       ) : result.otherValidOrder ? (
         // Good Dutch, wrong round — deliberately not phrased as an error.
-        <p className="font-medium text-warn">↔ {t.otherValidOrder}</p>
+        <p className="text-sm font-medium text-primary">↔ {t.otherValidOrder}</p>
       ) : (
-        <p className="font-medium text-bad">✗ {t.incorrect}</p>
+        <p className="flex items-center gap-1.5 text-sm font-medium text-destructive">
+          <X className="h-4 w-4" />
+          {t.incorrect}
+        </p>
       )}
 
-      <p className="mt-3 text-sm text-muted">{t.expected}</p>
-      <p className="text-lg" lang={contentLanguage}>
-        {result.expected}
-      </p>
+      <div>
+        <p className="text-xs text-muted-foreground">{t.expected}</p>
+        <p className="text-base" lang={contentLanguage}>
+          {result.expected}
+        </p>
+      </div>
 
       {result.alternative && result.alternative !== result.expected ? (
-        <>
-          <p className="mt-3 text-sm text-muted">{t.bothOrders}</p>
+        <div>
+          <p className="text-xs text-muted-foreground">{t.bothOrders}</p>
           <p lang={contentLanguage}>{result.alternative}</p>
-        </>
+        </div>
       ) : null}
 
-      {result.tip ? <p className="mt-3 text-sm text-muted">{result.tip}</p> : null}
+      {result.tip ? <p className="text-sm text-muted-foreground">{result.tip}</p> : null}
 
       {!result.correct && result.acceptedAlso?.length ? (
-        <p className="mt-3 text-sm text-muted">
+        <p className="text-sm text-muted-foreground">
           {t.alsoAccepted}: {result.acceptedAlso.join(' · ')}
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" className="btn-primary" onClick={onNext} autoFocus>
-          {dictionary.common.next}
-        </button>
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={onNext} autoFocus>
+          {dictionary.common.next} <ArrowRight className="h-4 w-4" />
+        </Button>
         {!result.correct ? (
-          <button type="button" className="btn-secondary" onClick={onOverride} title={t.overrideHint}>
-            {t.override} ✓
-          </button>
+          <Button variant="ghost" onClick={onOverride} title={t.overrideHint}>
+            {t.override}
+          </Button>
         ) : null}
       </div>
     </div>

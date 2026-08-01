@@ -23,6 +23,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0004](architecture/decisions/0004-pack-contract-and-typed-sections.md) | Skills enter through a pack contract; lessons are typed sections |
 | [0005](architecture/decisions/0005-ui-language-vs-content-language.md) | UI language and content language are separate |
 | [0006](architecture/decisions/0006-content-and-learner-data-stay-out-of-the-repo.md) | Content and learner data never enter the repository |
+| [0007](architecture/decisions/0007-token-driven-theme-with-a-palette-axis.md) | One token theme, two independent axes (theme × palette) |
 
 ## Reference
 

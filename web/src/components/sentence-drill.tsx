@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * The sentence trainer.
+ * The sentence puzzle.
  *
  * Tap a chunk to move it into your sentence, tap it again to send it back — the same interaction
  * the browser trainer used, because it works one-handed on a phone.
@@ -12,10 +12,15 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Eraser, Shuffle } from 'lucide-react';
+
+import { DeckProgress, DrillShell, Feedback } from './drill-chrome';
+import { Pill } from '@/components/atoms';
+import { Button } from '@/components/ui/button';
 import { clientApi, query } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { AttemptResult, DeckPage, DueItem, Stage } from '@/lib/types';
-import { DeckProgress, DrillShell, Feedback } from './drill-chrome';
 
 interface Props {
   blockId: string;
@@ -73,18 +78,18 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
 
   const take = (chunk: Chunk): void => {
     if (result) return;
-    setBank((current) => current.filter((entry) => entry.key !== chunk.key));
-    setBuilt((current) => [...current, chunk]);
+    setBank((chunks) => chunks.filter((entry) => entry.key !== chunk.key));
+    setBuilt((chunks) => [...chunks, chunk]);
   };
 
   const putBack = (chunk: Chunk): void => {
     if (result) return;
-    setBuilt((current) => current.filter((entry) => entry.key !== chunk.key));
-    setBank((current) => [...current, chunk].sort((a, b) => a.key - b.key));
+    setBuilt((chunks) => chunks.filter((entry) => entry.key !== chunk.key));
+    setBank((chunks) => [...chunks, chunk].sort((a, b) => a.key - b.key));
   };
 
   const clear = (): void => {
-    if (result || !current || current.prompt.kind !== 'word-order') return;
+    if (result || current?.prompt.kind !== 'word-order') return;
     setBank(current.prompt.bank.map((text, key) => ({ key, text })));
     setBuilt([]);
   };
@@ -132,49 +137,58 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
       error={error}
       empty={!loading && deck !== null && deck.items.length === 0}
       stage={current?.stage}
-      onSwitchStage={() => {
-        setStage((value) => (value === 2 ? 1 : 2));
-      }}
+      onSwitchStage={() => setStage((value) => (value === 2 ? 1 : 2))}
       onReset={async () => {
         await clientApi('/v1/drills/reset', { method: 'POST', body: { blockId } });
         await load();
       }}
-      blockId={blockId}
     >
       {current && prompt ? (
         <>
-          <p className="text-sm text-muted">
-            {current.stage === 1 ? t.order1 : t.order2}
-            {prompt.leadCue ? ` · ${t.startWith} «${prompt.leadCue}»` : ''} · {t.streak} {current.progress.streak}/2
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {t.streak} {current.progress.streak}/2
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {prompt.leadCue ? (
+                <span className="text-xs text-muted-foreground">
+                  {t.startWith} «<span lang={contentLanguage}>{prompt.leadCue}</span>»
+                </span>
+              ) : null}
+              <Pill>{current.stage === 1 ? t.order1 : t.order2}</Pill>
+            </div>
+          </div>
 
           {/* The prompt is the meaning, in the learner's language — the sentence is the answer. */}
-          <p className="mt-3 text-xl font-medium">{prompt.prompt}</p>
+          <p className="mt-4 text-lg font-medium">{prompt.prompt}</p>
 
-          <div className="mt-5">
-            <p className="text-sm text-muted">{t.yourSentence}</p>
-            <div className="mt-2 flex min-h-[3.25rem] flex-wrap items-start gap-2 rounded-lg border border-dashed border-line p-2">
-              {built.map((chunk, position) => {
+          <p className="mt-5 text-xs text-muted-foreground">{t.yourSentence}</p>
+          <div className="mt-2 flex min-h-14 flex-wrap items-start gap-2 rounded-md border border-dashed border-border p-2">
+            {built.length === 0 ? (
+              <span className="px-1 py-1 text-sm text-muted-foreground">{t.tapParts}</span>
+            ) : (
+              built.map((chunk, position) => {
                 const mark = result?.marks?.[position];
-                const tone =
-                  mark === undefined
-                    ? 'border-line bg-canvas'
-                    : mark
-                      ? 'border-good/50 bg-good/10 text-good'
-                      : 'border-bad/50 bg-bad/10 text-bad';
                 return (
                   <button
                     key={chunk.key}
                     type="button"
                     lang={contentLanguage}
                     onClick={() => putBack(chunk)}
-                    className={`rounded-md border px-3 py-1.5 text-sm transition ${tone}`}
+                    className={cn(
+                      'rounded-md border px-3 py-1.5 text-sm transition-colors',
+                      mark === undefined
+                        ? 'border-border bg-background hover:bg-muted'
+                        : mark
+                          ? 'border-success/50 bg-success/10 text-success'
+                          : 'border-destructive/50 bg-destructive/10 text-destructive',
+                    )}
                   >
                     {chunk.text}
                   </button>
                 );
-              })}
-            </div>
+              })
+            )}
           </div>
 
           {bank.length > 0 ? (
@@ -186,7 +200,7 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
                   lang={contentLanguage}
                   onClick={() => take(chunk)}
                   disabled={result !== null}
-                  className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm transition hover:border-accent disabled:opacity-50"
+                  className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors enabled:hover:bg-muted disabled:opacity-30"
                 >
                   {chunk.text}
                 </button>
@@ -194,7 +208,7 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
             </div>
           ) : null}
 
-          {showTip && prompt.tip ? <p className="mt-4 text-sm text-muted">{prompt.tip}</p> : null}
+          {showTip && prompt.tip ? <p className="mt-4 text-sm text-muted-foreground">{prompt.tip}</p> : null}
 
           {result ? (
             <Feedback
@@ -206,19 +220,19 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
             />
           ) : (
             <div className="mt-5 flex flex-wrap gap-2">
-              <button type="button" className="btn-primary" onClick={() => void check()} disabled={built.length === 0}>
+              <Button onClick={() => void check()} disabled={built.length === 0}>
                 {dictionary.common.check}
-              </button>
-              <button type="button" className="btn-secondary" onClick={shuffle}>
-                🔀 {t.shuffle}
-              </button>
-              <button type="button" className="btn-ghost" onClick={clear}>
-                {t.clear}
-              </button>
+              </Button>
+              <Button variant="outline" onClick={shuffle}>
+                <Shuffle className="h-4 w-4" /> {t.shuffle}
+              </Button>
+              <Button variant="ghost" onClick={clear} disabled={built.length === 0}>
+                <Eraser className="h-4 w-4" /> {t.clear}
+              </Button>
               {prompt.tip ? (
-                <button type="button" className="btn-ghost" onClick={() => setShowTip(true)}>
+                <Button variant="ghost" onClick={() => setShowTip(true)}>
                   {dictionary.common.hint}
-                </button>
+                </Button>
               ) : null}
             </div>
           )}

@@ -3,35 +3,59 @@
 @tailwind utilities;
 
 /*
- * One set of semantic colour variables, redefined for dark mode. Components name the role
- * ("surface", "muted", "accent"), never the colour, so a theme change is a change here only.
+ * Design tokens — the theme template.
+ *
+ * Everything visual is driven by these variables; components use the semantic Tailwind tokens
+ * mapped to them in tailwind.config.ts (`bg-background`, `text-primary`, `border-border`, …).
+ * To re-skin the app, change the values here and nothing else.
+ *
+ * Values are HSL channels with no `hsl()` wrapper, so opacity modifiers work (`bg-primary/90`).
+ *
+ * Two independent axes compose:
+ *   data-theme="light"    swaps the neutral surfaces (default is the dark set below)
+ *   data-palette="<id>"   swaps only the hue tokens — see src/lib/theme/palettes.ts
+ *
+ * The default is the dark, orange trainer look.
  */
 :root {
-  --canvas: 250 250 249;
-  --surface: 255 255 255;
-  --line: 231 229 228;
-  --ink: 28 25 23;
-  --muted: 120 113 108;
-  --accent: 13 110 120;
-  --accent-ink: 255 255 255;
-  --good: 21 128 61;
-  --warn: 180 83 9;
-  --bad: 190 18 60;
+  --background: 220 17% 7%; /* #0f1115 */
+  --foreground: 216 12% 92%; /* #e8eaed */
+  --card: 222 16% 12%; /* #1a1d24 */
+  --card-foreground: 216 12% 92%;
+  --muted: 224 19% 16%; /* #222632 */
+  --muted-foreground: 220 10% 64%; /* #9aa0ac */
+  --border: 220 16% 20%; /* #2c313c */
+  --input: 220 16% 20%;
+  --primary: 33 100% 50%; /* #ff8a00 */
+  --primary-foreground: 30 80% 8%;
+  --accent: 33 100% 66%; /* #ffb454 */
+  --accent-foreground: 30 80% 8%;
+  --ring: 33 100% 50%;
+  --success: 142 57% 49%; /* #36c46b */
+  --success-foreground: 142 60% 10%;
+  --destructive: 0 100% 68%; /* #ff5b5b */
+  --destructive-foreground: 0 60% 12%;
+  --radius: 0.875rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: 12 14 16;
-    --surface: 24 27 30;
-    --line: 48 52 57;
-    --ink: 237 236 234;
-    --muted: 155 152 148;
-    --accent: 45 190 200;
-    --accent-ink: 12 14 16;
-    --good: 74 190 120;
-    --warn: 230 160 60;
-    --bad: 246 110 130;
-  }
+[data-theme='light'] {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --primary: 33 100% 50%;
+  --primary-foreground: 30 80% 8%;
+  --accent: 33 100% 60%;
+  --accent-foreground: 30 80% 8%;
+  --ring: 33 100% 50%;
+  --success: 142 56% 40%;
+  --success-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
 }
 
 @layer base {
@@ -40,52 +64,28 @@
   }
 
   body {
-    @apply bg-canvas text-ink antialiased;
+    @apply bg-background text-foreground;
+    font-family:
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* Reading passages carry the pack's content language, so spellcheck and screen readers
-     pronounce them correctly even when the interface is in the other language (ADR-0005). */
+  /* Pack material carries its own language, so a Dutch passage is announced as Dutch and
+     spellchecked as Dutch even when the interface is English. */
   [lang] {
     hyphens: auto;
   }
-
-  :focus-visible {
-    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-canvas;
-  }
 }
 
-@layer components {
-  .card {
-    @apply rounded-xl border border-line bg-surface p-5;
-  }
-
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition
-           disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .btn-primary {
-    @apply btn bg-accent text-accent-ink hover:opacity-90;
-  }
-
-  .btn-secondary {
-    @apply btn border border-line bg-surface text-ink hover:border-accent;
-  }
-
-  .btn-ghost {
-    @apply btn text-muted hover:text-ink;
-  }
-
-  .field {
-    @apply w-full rounded-lg border border-line bg-canvas px-3 py-2 text-ink
-           placeholder:text-muted focus:border-accent;
-  }
-
-  .chip {
-    @apply inline-flex items-center rounded-md border border-line px-2 py-1 text-xs font-medium;
-  }
-
-  .prose-content {
-    @apply whitespace-pre-wrap text-[1.05rem] leading-relaxed;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
