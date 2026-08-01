@@ -1,0 +1,166 @@
+---
+title: Driving Skills Coach as the external coach
+status: current
+date: 2026-08-01
+---
+
+# The coach loop
+
+Skills Coach generates nothing ([ADR-0001](../architecture/decisions/0001-runtime-not-agent.md)).
+Authoring lessons and correcting free-form writing happen on the other side of `/coach/v1` — today
+by a person driving an LLM, later possibly by a service. This is the operating manual for that side.
+
+The loop is four steps, and it repeats per block:
+
+```
+        ┌──────────────────────────────────────────────────┐
+        │  1. pull the queue      GET  /submissions?pending │
+        │  2. correct             POST /…/correction        │  ← judgement
+        │  3. close the block     POST /…/review            │
+        │  4. author the next     GET  /…/brief  → POST     │  ← generation
+        └──────────────────────────────────────────────────┘
+                    everything else is the runtime's
+```
+
+## Getting a token
+
+The coach surface authenticates with a **client-credentials** token from identity-service, carrying
+`aud=skills-coach` and the `coach` role:
+
+```sh
+TOKEN=$(curl -s -X POST https://auth.fps4.nl/oauth2/token \
+  -H 'content-type: application/json' \
+  -d '{"grant_type":"client_credentials","client_id":"skills-coach-coach","client_secret":"…","scope":["coach"]}' \
+  | jq -r '.access_token // .accessToken')
+
+API=https://coach.example.com
+```
+
+Locally, `AUTH_MODE=dev` accepts any bearer:
+
+```sh
+TOKEN=dev API=http://127.0.0.1:8010
+```
+
+The secret belongs to whoever runs the loop, never to the server — the API only ever *verifies*
+tokens.
+
+## 1. Pull the queue
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" "$API/coach/v1/submissions?status=pending" | jq
+```
+
+Oldest first, so nothing starves. Then fetch one with the lesson it answers, so the prompts sit
+alongside the answers:
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" "$API/coach/v1/submissions/$SUB" | jq
+```
+
+## 2. Correct
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{
+  "items": [{
+    "original": "Ik denk dat het is leuk.",
+    "corrected": "Ik denk dat het leuk is.",
+    "categories": ["woordvolgorde-bijzin"],
+    "explanation": "The verb goes to the end in a subclause."
+  }],
+  "ratings": { "fluency": 4, "accuracy": 3, "courage": 5 }
+}' "$API/coach/v1/submissions/$SUB/correction" | jq '.errorLog'
+```
+
+**Supply judgement, not counters.** Each item names the categories it belongs to; the runtime moves
+the counts, applies the status transitions, and decides what gets re-drilled. The response shows
+what moved.
+
+Three things to get right:
+
+- **Use the pack's declared category ids.** An invented one is rejected — it would accumulate its
+  own history and never join anything.
+- **One item per mistake**, not per sentence. Two mistakes in one sentence are two items, or the
+  counts under-report.
+- **Ratings are advisory.** They are a learning aid, never a persisted score about a person.
+
+Correcting a submission twice is a `409`.
+
+## 3. Close the block
+
+When every lesson has been corrected:
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{
+  "learnerId": "…",
+  "whatWentWell": "Full sentences throughout; no freezing.",
+  "nextBlockBrief": {
+    "redrill": ["woordvolgorde-bijzin"],
+    "retire": ["perfectum-imperfectum"],
+    "themeAndDifficulty": "Step up to B1.2; introduce the passive."
+  }
+}' "$API/coach/v1/blocks/$BLOCK/review"
+```
+
+This is what makes a mistake retire: every category that did *not* appear in the block earns a clean
+block, and two clean blocks means mastered. The response lists which categories changed status.
+
+Skipping the review means nothing ever retires — the error log grows and the re-drill list stops
+being a signal. Clean blocks are derived rather than accumulated, so posting a review twice is safe.
+
+## 4. Author the next block
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" "$API/coach/v1/blocks/$BLOCK/brief" | jq
+```
+
+The brief assembles the three inputs the program named for generating the next block:
+
+| In the payload | Is |
+|---|---|
+| `evidence.errorLog`, `evidence.lessons` | how the learner actually did |
+| `nextBlock.ramp` — level, phase, `dials` | the next rung |
+| `goal` | what the whole program is for |
+| `suggestions` | what the runtime believes should drive it, before your judgement |
+| `evidence.review.nextBlockBrief` | what the last review asked for |
+
+Write the block from that, then publish it:
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+  -d @block-03.json "$API/coach/v1/packs/$PACK/blocks" | jq
+```
+
+Or author it as files and use the importer — see
+[authoring a pack](authoring-a-pack.md).
+
+Check the response: `ignoredAlternatives` counts word orders dropped for not being permutations of
+the same chunks, and `drillItemsRemoved` counts drills the new version dropped, along with the
+learner progress attached to them.
+
+**Only the current block need exist.** Generating whole phases in advance locks in a difficulty
+guess and ignores what actually happened — which is the thing this loop exists to avoid.
+
+## A prompt that works
+
+When driving this with a language model, the shape that holds up:
+
+> You are correcting written Dutch for a learner working toward B2.
+> Here is the lesson they answered: `<lesson JSON>`
+> Here are their answers: `<submission JSON>`
+> Here are the categories this pack declares: `<ids>`
+>
+> Return JSON matching the correction schema. One item per mistake, not per sentence. Use only the
+> category ids listed. Keep explanations to one sentence and in the learner's interface language.
+> Do not invent mistakes: if a sentence is correct, leave it out.
+
+That last instruction matters more than it looks. A model asked to correct will find something to
+correct, and inflated counts distort what gets re-drilled.
+
+## What the coach cannot do
+
+- Set an error-log counter, or a status
+- Practise as a learner, or read a learner's drill progress
+- Administer users or roles — that is identity-service's
+
+These are not gaps. They are what keeps adaptation deterministic even though its input is judgement.

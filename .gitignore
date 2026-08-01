@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+*.tsbuildinfo
+
+# Environment / secrets — only config/ds1/.env.base is committed
+.env
+.env.local
+config/ds1/.env
+
+# Learner content and artifacts are never committed (see ADR-0006).
+# Real packs are imported into MongoDB from a local path; only packs/demo-* ships.
+packs/*
+!packs/demo-*/
+content/
+
+# Tooling caches
+.cache/
+coverage/
+.vitest/
+
+# OS
+.DS_Store

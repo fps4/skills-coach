@@ -1,0 +1,101 @@
+name: deploy-ds1
+
+# Deploys the stack to ds1 after a green `dod` run on main.
+#
+# Runs on the shared self-hosted ds1 runner, which has the Docker socket mounted but no network
+# route to the deployed stack — so health is read through `docker inspect`, not over HTTP.
+
+on:
+  workflow_run:
+    workflows: [dod]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ds1
+  cancel-in-progress: false # queue deploys; never cancel one mid-flight
+
+env:
+  # The ds1 runner predates Node 24; pin the checkout JS action to the node20 it has.
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+  # The networks override joins the api container to identity-service's network, so the in-network
+  # JWKS fetch resolves (see compose.ds1.networks.yml).
+  COMPOSE: docker compose -f infra/docker/compose.yml -f infra/docker/compose.ds1.networks.yml -p skills-coach --env-file config/ds1/.env
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: [self-hosted, ds1]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout the deployed commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Assemble config/ds1/.env (committed base plus secrets, runner-local)
+        env:
+          MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
+        run: |
+          umask 077
+          cp config/ds1/.env.base config/ds1/.env
+          if [ -n "$MONGO_PASSWORD" ]; then
+            {
+              echo "MONGO_PASSWORD=$MONGO_PASSWORD"
+              echo "MONGO_URI=mongodb://coach:$MONGO_PASSWORD@mongo:27017/?authSource=admin"
+            } >> config/ds1/.env
+          else
+            echo "::error::COACH_MONGO_PASSWORD is not set — refusing to deploy with the default password"
+            exit 1
+          fi
+          echo "Assembled config/ds1/.env ($(grep -c . config/ds1/.env) non-empty lines)"
+
+      - name: Build and deploy
+        run: |
+          $COMPOSE build
+          $COMPOSE up -d --remove-orphans
+
+      - name: Wait for api health (via the Docker socket)
+        run: |
+          cid=$($COMPOSE ps -q api)
+          [ -n "$cid" ] || { echo "::error::api container not found"; exit 1; }
+          ok=0
+          for i in $(seq 1 60); do            # up to ~5 minutes
+            s=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cid" 2>/dev/null || echo missing)
+            echo "api: $s"
+            [ "$s" = "healthy" ] && { ok=1; break; }
+            [ "$s" = "missing" ] && { echo "::error::container disappeared"; break; }
+            sleep 5
+          done
+          docker logs --tail 40 "$cid" 2>&1 | tail -40 || true
+          [ "$ok" = 1 ] || { echo "::error::api did not become healthy"; exit 1; }
+
+      - name: Wait for web health
+        run: |
+          cid=$($COMPOSE ps -q web)
+          [ -n "$cid" ] || { echo "::error::web container not found"; exit 1; }
+          ok=0
+          for i in $(seq 1 40); do
+            s=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cid" 2>/dev/null || echo missing)
+            echo "web: $s"
+            [ "$s" = "healthy" ] && { ok=1; break; }
+            sleep 5
+          done
+          docker logs --tail 40 "$cid" 2>&1 | tail -40 || true
+          [ "$ok" = 1 ] || { echo "::error::web did not become healthy"; exit 1; }
+
+      - name: Cleanup the assembled secrets (always)
+        if: always()
+        run: rm -f config/ds1/.env
+
+      - name: Deployed revision
+        if: success()
+        run: echo "ds1 now running ${GITHUB_SHA::12} (from ${GITHUB_REF_NAME})"

@@ -1,0 +1,95 @@
+# The Skills Coach stack — used for local development, for CI, and for the ds1 deploy.
+#
+#   local:  make up            (or: docker compose -f infra/docker/compose.yml -p skills-coach up -d)
+#   ds1:    the deploy-ds1 workflow, which adds compose.ds1.networks.yml and an --env-file
+#
+# Every value comes from ${VAR} interpolation with a local-dev default inline, so the same file
+# serves both without a separate override for the common case.
+
+name: skills-coach
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-coach}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-coach}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-skills-coach}
+    ports:
+      # Loopback-bound. 27018 rather than the default, so it cannot collide with a MongoDB a
+      # developer already runs.
+      - "${MONGO_BIND:-127.0.0.1}:${MONGO_PORT:-27018}:27017"
+    volumes:
+      - coach-mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/api.Dockerfile
+    image: skills-coach-api:${IMAGE_TAG:-dev}
+    container_name: skills-coach-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      COACH_ENV: ${COACH_ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MONGO_URI: ${MONGO_URI:-mongodb://coach:coach@mongo:27017/?authSource=admin}
+      MONGO_DB: ${MONGO_DB:-skills-coach}
+      # `dev` injects a stub principal so the stack runs without an identity provider. The api
+      # refuses this combination when COACH_ENV/NODE_ENV say production (src/config.ts).
+      AUTH_MODE: ${AUTH_MODE:-dev}
+      AUTH_JWKS_URL: ${AUTH_JWKS_URL:-}
+      AUTH_ISSUER: ${AUTH_ISSUER:-}
+      AUTH_AUDIENCE: ${AUTH_AUDIENCE:-}
+      AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-365}
+    ports:
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-8010}:8000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # The learner surface. Loopback-bound; on ds1 the shared reverse proxy fronts the domain and
+  # routes `/` here. It needs no `/api` rule: the Next server proxies `/api/*` to the api service
+  # itself, and that target is baked at build time because Next resolves rewrites during the build.
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${WEB_API_BASE_URL:-/api}
+        NEXT_PUBLIC_AUTH_MODE: ${WEB_AUTH_MODE:-dev}
+        NEXT_PUBLIC_IDENTITY_BASE_URL: ${WEB_IDENTITY_BASE_URL:-}
+        NEXT_PUBLIC_IDENTITY_CLIENT_ID: ${WEB_IDENTITY_CLIENT_ID:-}
+        API_PROXY_TARGET: ${API_PROXY_TARGET:-http://api:8000}
+    image: skills-coach-web:${IMAGE_TAG:-dev}
+    container_name: skills-coach-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_PROXY_TARGET: ${API_PROXY_TARGET:-http://api:8000}
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8011}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/nl',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+
+volumes:
+  coach-mongodata:

@@ -1,0 +1,135 @@
+name: dod
+
+# The Definition-of-Done gate. Every item here is blocking; see CONTRIBUTING.md.
+#
+# Runs on the shared self-hosted ds1 runner, which is itself containerized and talks to the *host*
+# Docker socket. That rules out `container:` jobs and host bind-mounts — paths do not translate
+# across the socket — so every job does its work via `docker build` (the context is STREAMED to the
+# daemon) plus sibling containers on a per-run network.
+#
+# A successful run on main triggers deploy-ds1.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dod-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The ds1 runner predates Node 24; pin the checkout JS action to the node20 it has.
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+
+jobs:
+  secret-scan:
+    # The floor: no credentials committed. The gitleaks binary rather than the Action, which needs
+    # a paid organisation licence; the repository is baked into the image so the scan works here.
+    runs-on: [self-hosted, ds1]
+    steps:
+      - uses: actions/checkout@v4
+      - name: gitleaks
+        run: |
+          TAG=sc-gitleaks:${{ github.run_id }}-${{ github.run_attempt }}
+          docker build -t "$TAG" -f infra/docker/gitleaks.Dockerfile .
+          docker run --rm "$TAG" detect --no-git --source=/repo --config=/repo/.gitleaks.toml --redact --no-banner
+          docker rmi "$TAG" 2>/dev/null || true
+
+  api-build:
+    # Building the api image runs typecheck, lint and the compile (see api.Dockerfile). Any failure
+    # fails the gate, and nothing that did not pass can be shipped.
+    runs-on: [self-hosted, ds1]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t sc-api:${{ github.run_id }}-${{ github.run_attempt }} -f infra/docker/api.Dockerfile .
+
+  web-build:
+    # Same shape for the learner surface: typecheck, lint, tests and the production build.
+    runs-on: [self-hosted, ds1]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t sc-web:${{ github.run_id }}-${{ github.run_attempt }} -f infra/docker/web.Dockerfile .
+
+  test:
+    # The full suite against a real MongoDB. Unit tests pin the domain rules; integration tests
+    # drive the whole coaching loop through HTTP.
+    runs-on: [self-hosted, ds1]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the CI image
+        run: docker build -t sc-ci:${{ github.run_id }}-${{ github.run_attempt }} -f infra/docker/ci.Dockerfile .
+      - name: Test against a sibling MongoDB on a per-run network
+        run: |
+          set -e
+          SUFFIX=${{ github.run_id }}-${{ github.run_attempt }}
+          NET=sc-net-$SUFFIX
+          MONGO=sc-mongo-$SUFFIX
+
+          docker network create "$NET"
+          docker run -d --name "$MONGO" --network "$NET" --network-alias mongo \
+            -e MONGO_INITDB_ROOT_USERNAME=coach -e MONGO_INITDB_ROOT_PASSWORD=coach \
+            --health-cmd "mongosh --quiet --eval \"db.adminCommand('ping').ok\"" \
+            --health-interval 3s --health-timeout 3s --health-retries 20 mongo:7
+
+          for i in $(seq 1 40); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' "$MONGO" 2>/dev/null)" = healthy ] && break
+            sleep 2
+          done
+
+          docker run --rm --network "$NET" \
+            -e MONGO_URI=mongodb://coach:coach@mongo:27017/?authSource=admin \
+            sc-ci:$SUFFIX bash -lc "cd api && npm run lint && npm run typecheck && npm test && cd ../web && npm test"
+      - name: Cleanup
+        if: always()
+        run: |
+          SUFFIX=${{ github.run_id }}-${{ github.run_attempt }}
+          docker rm -f "sc-mongo-$SUFFIX" 2>/dev/null || true
+          docker network rm "sc-net-$SUFFIX" 2>/dev/null || true
+          docker rmi "sc-ci:$SUFFIX" 2>/dev/null || true
+
+  pack-import:
+    # The importer is the only path real content takes into the system, and the repository holds no
+    # real content to test it against (ADR-0006) — so at minimum the bundled demo pack must parse.
+    # This is what would catch the pack format and the importer drifting apart.
+    runs-on: [self-hosted, ds1]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the CI image
+        run: docker build -t sc-ci-import:${{ github.run_id }}-${{ github.run_attempt }} -f infra/docker/ci.Dockerfile .
+      - name: Dry-run import of the demo pack
+        run: |
+          docker run --rm sc-ci-import:${{ github.run_id }}-${{ github.run_attempt }} \
+            bash -lc "cd api && npm run import:pack -- --source ../packs/demo-conversation-nl --dry-run"
+      - name: Cleanup
+        if: always()
+        run: docker rmi "sc-ci-import:${{ github.run_id }}-${{ github.run_attempt }}" 2>/dev/null || true
+
+  dependency-scan:
+    # The advisory-database scan. BLOCKING, and never disabled: a fixable HIGH or CRITICAL in
+    # something we depend on fails the gate. `--ignore-unfixed` keeps unfixable transitive noise
+    # from red-walling a pull request nobody can act on.
+    runs-on: [self-hosted, ds1]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache the Trivy vulnerability database
+        # Warm-started, so a registry blip or rate limit does not flake the gate.
+        uses: actions/cache@v4
+        with:
+          path: .cache/trivy
+          key: trivy-db
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+        env:
+          TRIVY_CACHE_DIR: .cache/trivy

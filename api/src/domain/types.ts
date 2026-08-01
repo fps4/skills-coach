@@ -1,0 +1,371 @@
+/**
+ * Core domain entities (ADR-0004: everything skill-specific arrives through a pack).
+ *
+ * Nothing in this file knows about Dutch, about MongoDB, or about HTTP. A pack declares its own
+ * content language, competency framework and error-category vocabulary; the runtime treats all
+ * three as opaque data.
+ */
+
+/** Interface languages the product ships. Distinct from a pack's content language — ADR-0005. */
+export const LOCALES = ['nl', 'en'] as const;
+export type Locale = (typeof LOCALES)[number];
+export const DEFAULT_LOCALE: Locale = 'nl';
+
+export function isLocale(value: unknown): value is Locale {
+  return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
+}
+
+/** A string authored per interface language. Used for chrome-adjacent pack metadata only. */
+export type LocalizedText = Partial<Record<Locale, string>>;
+
+/** Resolve localized text, falling back to the other locale rather than rendering nothing. */
+export function pickText(text: LocalizedText | string | undefined, locale: Locale): string {
+  if (typeof text === 'string') return text;
+  if (!text) return '';
+  return text[locale] ?? text[locale === 'nl' ? 'en' : 'nl'] ?? '';
+}
+
+// ---------------------------------------------------------------------------
+// Pack
+// ---------------------------------------------------------------------------
+
+/**
+ * How a pack ladders difficulty. `levels` is ordered from easiest; `ramp` optionally says which
+ * levels which blocks sit at, and what the authoring dials should be there. Both feed the brief the
+ * runtime assembles for whoever writes the next block.
+ */
+export interface Framework {
+  id: string;
+  levels: string[];
+  ramp?: RampStep[];
+}
+
+export interface RampStep {
+  /** Inclusive block range this step covers. */
+  fromBlock: number;
+  toBlock: number;
+  level: string;
+  phase?: string;
+  /** Free-form authoring guidance, e.g. { textLength: '~170 words', grammarLoad: '...' }. */
+  dials?: Record<string, string>;
+}
+
+/**
+ * A pack's stable vocabulary for kinds of mistake. These are the join key between correction,
+ * drilling and next-block generation, so once published they must not be renamed.
+ */
+export interface ErrorCategoryDef {
+  id: string;
+  label?: LocalizedText;
+}
+
+/** Maps a source document's headings onto section kinds, so the importer is not language-specific. */
+export interface SectionMapEntry {
+  /** Case-insensitive substring matched against a heading, after the leading "N." is stripped. */
+  match: string;
+  kind: SectionKind;
+}
+
+export interface PackManifest {
+  packId: string;
+  title: LocalizedText;
+  description?: LocalizedText;
+  /** BCP-47 language the pack's material is written in. Never translated — ADR-0005. */
+  contentLanguage: string;
+  /** Language the `translation` side of a term drill is written in. */
+  translationLanguage: string;
+  /** Free label, e.g. 'conversation'. Descriptive only; the runtime never branches on it. */
+  skill: string;
+  goal?: LocalizedText;
+  framework: Framework;
+  errorCategories: ErrorCategoryDef[];
+  sectionMap?: SectionMapEntry[];
+  /** Words stripped from the front of an answer when matching, per language. */
+  matchArticles?: Record<string, string[]>;
+  version: number;
+}
+
+// ---------------------------------------------------------------------------
+// Blocks and lessons
+// ---------------------------------------------------------------------------
+
+export type BlockStatus = 'draft' | 'published' | 'archived';
+
+export interface Block {
+  blockId: string;
+  packId: string;
+  order: number;
+  slug: string;
+  title: LocalizedText | string;
+  level?: string;
+  theme?: string;
+  /** What this block drills, e.g. re-drilled error categories or grammar topics. */
+  focus?: string[];
+  milestone?: string;
+  status: BlockStatus;
+  version: number;
+  lessonCount: number;
+  publishedAt?: Date;
+}
+
+export type SectionKind =
+  'text' | 'rules' | 'vocabulary' | 'questions' | 'speak' | 'write' | 'listening' | 'dictation' | 'exercise';
+
+export interface SectionCommon {
+  /** Stable within a lesson — submissions reference answers by `${sectionId}.${itemRef}`. */
+  id: string;
+  title?: string;
+  instruction?: string;
+}
+
+export interface TextSection extends SectionCommon {
+  kind: 'text';
+  body: string;
+}
+export interface RulesSection extends SectionCommon {
+  kind: 'rules';
+  body: string;
+}
+export interface VocabularyEntry {
+  term: string;
+  translation: string;
+  example?: string;
+}
+export interface VocabularySection extends SectionCommon {
+  kind: 'vocabulary';
+  items: VocabularyEntry[];
+}
+export interface PromptItem {
+  ref: string;
+  prompt: string;
+}
+export interface QuestionsSection extends SectionCommon {
+  kind: 'questions';
+  items: PromptItem[];
+}
+export interface SpeakSection extends SectionCommon {
+  kind: 'speak';
+  prompt: string;
+  minSentences?: number;
+  requirements?: string[];
+}
+export interface WriteSection extends SectionCommon {
+  kind: 'write';
+  prompt: string;
+  minSentences?: number;
+  requirements?: string[];
+}
+export interface ListeningSource {
+  title: string;
+  note?: string;
+}
+export interface ListeningSection extends SectionCommon {
+  kind: 'listening';
+  prompt: string;
+  sources?: ListeningSource[];
+}
+/** `sentences` is an answer key — the surface keeps it behind a reveal. */
+export interface DictationSection extends SectionCommon {
+  kind: 'dictation';
+  prompt?: string;
+  sentences: string[];
+}
+/** `answers` is an answer key — the surface keeps it behind a reveal. */
+export interface ExerciseSection extends SectionCommon {
+  kind: 'exercise';
+  prompt?: string;
+  items: PromptItem[];
+  answers?: { ref: string; answer: string }[];
+}
+
+export type Section =
+  | TextSection
+  | RulesSection
+  | VocabularySection
+  | QuestionsSection
+  | SpeakSection
+  | WriteSection
+  | ListeningSection
+  | DictationSection
+  | ExerciseSection;
+
+export interface Lesson {
+  lessonId: string;
+  blockId: string;
+  packId: string;
+  order: number;
+  title: LocalizedText | string;
+  level?: string;
+  estimatedMinutes?: number;
+  focus?: string;
+  sections: Section[];
+}
+
+// ---------------------------------------------------------------------------
+// Drill deck
+// ---------------------------------------------------------------------------
+
+export type DrillKind = 'term' | 'word-order';
+
+export interface TermPayload {
+  kind: 'term';
+  term: string;
+  translation: string;
+  example?: string;
+}
+
+export interface WordOrderPayload {
+  kind: 'word-order';
+  /** The full, punctuated sentence — shown as the answer after checking. */
+  sentence: string;
+  /** The primary correct order, as unbreakable chunks. */
+  parts: string[];
+  translation: string;
+  tip?: string;
+  /** A second valid order of the *same* chunks. Ignored unless it is a permutation. */
+  partsAlt?: string[];
+}
+
+export type DrillPayload = TermPayload | WordOrderPayload;
+
+export interface DrillItem {
+  drillItemId: string;
+  packId: string;
+  blockId: string;
+  /** Which lesson introduced it, when the source says. Powers the per-lesson filter. */
+  lessonOrder?: number;
+  payload: DrillPayload;
+}
+
+// ---------------------------------------------------------------------------
+// Learner state
+// ---------------------------------------------------------------------------
+
+export interface Learner {
+  learnerId: string;
+  /** The `sub` claim of the identity-service token. The only identity we keep. */
+  subject: string;
+  email?: string;
+  displayName?: string;
+  uiLanguage: Locale;
+  createdAt: Date;
+}
+
+export interface Enrollment {
+  learnerId: string;
+  packId: string;
+  currentBlockId?: string;
+  currentLessonOrder: number;
+  startedAt: Date;
+}
+
+export interface Attempt {
+  learnerId: string;
+  drillItemId: string;
+  stage: Stage;
+  given: string;
+  correct: boolean;
+  /** The learner rejected the grading and asserted they were right. Recorded, never hidden. */
+  acceptedOverride: boolean;
+  at: Date;
+}
+
+export type Stage = 1 | 2;
+
+// ---------------------------------------------------------------------------
+// The coaching loop
+// ---------------------------------------------------------------------------
+
+export type SubmissionStatus = 'pending' | 'corrected';
+
+export interface SubmissionAnswer {
+  /** `${sectionId}.${itemRef}` for question/exercise items, or just `${sectionId}` for a write task. */
+  ref: string;
+  text: string;
+}
+
+export interface Submission {
+  submissionId: string;
+  learnerId: string;
+  packId: string;
+  blockId: string;
+  lessonId: string;
+  answers: SubmissionAnswer[];
+  /** The learner's own note about how the spoken part went. Self-reported; nothing listens. */
+  speakingNote?: string;
+  status: SubmissionStatus;
+  createdAt: Date;
+  correctedAt?: Date;
+}
+
+export interface CorrectionItem {
+  /** The learner's original wording. */
+  original: string;
+  corrected: string;
+  /** Pack-declared category ids. Unknown ids are rejected at the API edge. */
+  categories: string[];
+  explanation?: string;
+}
+
+export interface Ratings {
+  fluency?: number;
+  accuracy?: number;
+  courage?: number;
+}
+
+export interface Correction {
+  correctionId: string;
+  submissionId: string;
+  learnerId: string;
+  items: CorrectionItem[];
+  categoryTally: Record<string, number>;
+  /** Advisory only — never a persisted consequential score. See AGENTS.md. */
+  ratings?: Ratings;
+  note?: string;
+  correctedBy: 'external-coach';
+  model?: string;
+  at: Date;
+}
+
+export type ErrorStatus = 'new' | 'recurring' | 'improving' | 'mastered';
+
+export interface ErrorExample {
+  wrong: string;
+  right: string;
+  lessonRef?: string;
+  at: Date;
+}
+
+export interface ErrorLogEntry {
+  learnerId: string;
+  packId: string;
+  category: string;
+  examples: ErrorExample[];
+  count: number;
+  firstSeen: Date;
+  lastSeen: Date;
+  /** Order of the block this category last occurred in — drives the clean-block count. */
+  lastBlockOrder: number;
+  /** Highest block order closed so far. With `lastBlockOrder`, makes `cleanBlocks` derivable. */
+  closedThrough: number;
+  /** Completed blocks since the last occurrence. Two means mastered. Derived, never accumulated. */
+  cleanBlocks: number;
+  status: ErrorStatus;
+}
+
+export interface NextBlockBrief {
+  redrill: string[];
+  retire: string[];
+  themeAndDifficulty?: string;
+}
+
+export interface BlockReview {
+  blockId: string;
+  learnerId: string;
+  whatWentWell?: string;
+  topErrors?: string[];
+  wordsToRevise?: string[];
+  skillRatings?: Record<string, number>;
+  nextBlockBrief: NextBlockBrief;
+  at: Date;
+}

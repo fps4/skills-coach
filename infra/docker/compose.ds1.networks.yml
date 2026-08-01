@@ -1,0 +1,24 @@
+# ds1 override: join the api container to identity-service's Docker network.
+#
+# Token verification fetches the JWKS from identity-service. On ds1 that has to resolve *in network*
+# as `http://identity-service:7305/.well-known/jwks.json` — the public host is Cloudflare-fronted
+# and not reachable from inside the api container.
+#
+# Wired into the deploy workflow's COMPOSE variable, so every ds1 deploy applies it. Kept out of the
+# base compose file so local development and CI, which have no such network, stay portable.
+#
+# The network name comes from `docker network ls` on ds1 (IDENTITY_NETWORK in config/ds1/.env).
+# Verify reachability from the api container after a deploy:
+#
+#   $COMPOSE exec api node -e "fetch(process.env.AUTH_JWKS_URL).then(r=>console.log(r.status))"
+
+services:
+  api:
+    networks:
+      - default
+      - identity
+
+networks:
+  identity:
+    external: true
+    name: ${IDENTITY_NETWORK:-identity-service_default}

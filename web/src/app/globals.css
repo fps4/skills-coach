@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * One set of semantic colour variables, redefined for dark mode. Components name the role
+ * ("surface", "muted", "accent"), never the colour, so a theme change is a change here only.
+ */
+:root {
+  --canvas: 250 250 249;
+  --surface: 255 255 255;
+  --line: 231 229 228;
+  --ink: 28 25 23;
+  --muted: 120 113 108;
+  --accent: 13 110 120;
+  --accent-ink: 255 255 255;
+  --good: 21 128 61;
+  --warn: 180 83 9;
+  --bad: 190 18 60;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: 12 14 16;
+    --surface: 24 27 30;
+    --line: 48 52 57;
+    --ink: 237 236 234;
+    --muted: 155 152 148;
+    --accent: 45 190 200;
+    --accent-ink: 12 14 16;
+    --good: 74 190 120;
+    --warn: 230 160 60;
+    --bad: 246 110 130;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+
+  /* Reading passages carry the pack's content language, so spellcheck and screen readers
+     pronounce them correctly even when the interface is in the other language (ADR-0005). */
+  [lang] {
+    hyphens: auto;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-canvas;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-surface p-5;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent text-accent-ink hover:opacity-90;
+  }
+
+  .btn-secondary {
+    @apply btn border border-line bg-surface text-ink hover:border-accent;
+  }
+
+  .btn-ghost {
+    @apply btn text-muted hover:text-ink;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-line bg-canvas px-3 py-2 text-ink
+           placeholder:text-muted focus:border-accent;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-md border border-line px-2 py-1 text-xs font-medium;
+  }
+
+  .prose-content {
+    @apply whitespace-pre-wrap text-[1.05rem] leading-relaxed;
+  }
+}

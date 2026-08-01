@@ -1,0 +1,78 @@
+# The demo pack — synthetic content, invented for this repository (ADR-0006).
+#
+# It exists so `make up && make seed` gives a working application, and so the pack format has a
+# worked example that CI actually imports. Real packs live outside the repository and are imported
+# from a local path.
+#
+# The characters and situations here are made up. Nothing in this file describes a real person.
+
+packId: demo-conversation-nl
+
+title:
+  nl: Demo — Nederlands in gesprek
+  en: Demo — Dutch in conversation
+
+description:
+  nl: Een klein voorbeeldpakket dat elke soort lesonderdeel laat zien.
+  en: A small example pack that demonstrates every kind of lesson section.
+
+# The language the material is written in. Never translated — the interface language is separate
+# and independent (ADR-0005).
+contentLanguage: nl
+# The language a term's translation is written in.
+translationLanguage: en
+
+skill: conversation
+
+goal:
+  nl: Een gesprek van vijf minuten voeren zonder vast te lopen.
+  en: Hold a five-minute conversation without freezing.
+
+framework:
+  id: cefr
+  levels: [A2, B1.1, B1.2, B2.1, B2.2]
+  # Which blocks sit at which level, and the authoring dials for that stretch. The runtime never
+  # interprets a dial — it carries them into the brief for whoever writes the next block.
+  ramp:
+    - fromBlock: 1
+      toBlock: 2
+      level: B1.1
+      phase: Consolidate
+      dials:
+        textLength: ~150 words
+        sentences: main clauses plus simple subclauses
+        vocabulary: concrete, everyday
+        output: 8–10 sentences
+    - fromBlock: 3
+      toBlock: 4
+      level: B1.2
+      phase: Nuance
+      dials:
+        textLength: ~250 words
+        sentences: relative and conditional clauses
+        vocabulary: abstract and professional
+        output: a 2-minute argued monologue
+
+# The stable vocabulary for kinds of mistake. These are the join key between correction, drilling
+# and next-block generation — once published, they must not be renamed.
+errorCategories:
+  - id: word-order-main
+    label: { nl: Woordvolgorde hoofdzin, en: Main-clause word order }
+  - id: word-order-sub
+    label: { nl: Woordvolgorde bijzin, en: Subclause word order }
+  - id: verb-tense
+    label: { nl: Werkwoordstijd, en: Verb tense }
+  - id: article
+    label: { nl: Lidwoord (de/het), en: Article }
+  - id: preposition
+    label: { nl: Voorzetsel, en: Preposition }
+  - id: word-choice
+    label: { nl: Woordkeuze, en: Word choice }
+  - id: spelling
+    label: { nl: Spelling, en: Spelling }
+
+# Leading words ignored when matching an answer, per language. Defaults cover Dutch and English;
+# a pack in another language overrides them here.
+matchArticles:
+  nl: [de, het, een, "'t"]
+  en: [the, a, an]
