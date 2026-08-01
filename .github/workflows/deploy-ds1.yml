@@ -10,7 +10,12 @@ on:
     workflows: [dod]
     types: [completed]
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      reset_mongo_volume:
+        description: "DESTRUCTIVE — delete the MongoDB volume so its root user is recreated from the current secret. Everything in the database is lost."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -47,11 +52,36 @@ jobs:
           cp config/ds1/.env.base config/ds1/.env
           echo "Assembled config/ds1/.env ($(grep -c . config/ds1/.env) non-empty lines)"
 
+      # Where did the password come from? A registered secret is masked as *** in the log, so
+      # seeing the literal default here means compose did NOT pick up the process environment —
+      # a different fault from a stale volume, and one this would otherwise hide.
+      - name: Check the password reaches compose
+        env:
+          MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
+        run: |
+          echo "secret length as this job sees it: ${#MONGO_PASSWORD}"
+          echo -n "value compose resolves for the api: "
+          $COMPOSE config 2>/dev/null | grep -m1 'MONGO_PASSWORD:' | sed 's/.*MONGO_PASSWORD: *//' || echo "(not found)"
+          echo "If that line reads 'coach', the secret is not reaching compose."
+          echo "If it reads '***', the secret IS reaching compose and a mismatch means a stale volume."
+
       # The password reaches compose through the *process* environment, which it interpolates
       # from just as it does the --env-file. Keeping it out of that file matters: compose parses
       # the file with dotenv rules, where `#` starts a comment and quotes are stripped — so a
       # password written there could reach MongoDB as a different string than the one the api
       # was given, which presents as "Authentication failed" rather than as a config error.
+      # MONGO_INITDB_ROOT_PASSWORD only applies to an EMPTY data directory. Once the volume
+      # exists, MongoDB keeps whatever credential it was first initialised with, so a password
+      # that was mangled on the way in stays wrong forever. Deleting the volume is the only way
+      # to re-run initialisation — hence opt-in, never automatic.
+      - name: Reset the MongoDB volume (opt-in, destroys its data)
+        if: inputs.reset_mongo_volume
+        env:
+          MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
+        run: |
+          echo "::warning::Deleting the MongoDB volume — every document in it is lost."
+          $COMPOSE down -v --remove-orphans
+
       - name: Build and deploy
         env:
           MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
