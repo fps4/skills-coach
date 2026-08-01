@@ -12,6 +12,17 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
+    networks:
+      default:
+        # A UNIQUE hostname, deliberately not the service name.
+        #
+        # On ds1 the api also joins identity-service's network so the JWKS fetch resolves, and a
+        # container there is aliased `mongo` too. Docker's DNS answers across every attached
+        # network, so plain `mongo` can resolve to *their* database — which presents as
+        # "Authentication failed" and looks like a wrong password rather than a wrong server.
+        # Any product sharing that network and using a generic service name has this hazard.
+        aliases:
+          - skills-coach-mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-coach}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-coach}
@@ -44,7 +55,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       # The URI carries no credentials; the driver receives them separately, so nothing needs
       # percent-encoding and a password containing @ or # cannot corrupt the connection string.
-      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017}
+      MONGO_URI: ${MONGO_URI:-mongodb://skills-coach-mongo:27017}
       MONGO_DB: ${MONGO_DB:-skills-coach}
       MONGO_USER: ${MONGO_USER:-coach}
       MONGO_PASSWORD: ${MONGO_PASSWORD:-coach}
