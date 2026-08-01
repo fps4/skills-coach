@@ -42,8 +42,13 @@ services:
     environment:
       COACH_ENV: ${COACH_ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      MONGO_URI: ${MONGO_URI:-mongodb://coach:coach@mongo:27017/?authSource=admin}
+      # The URI carries no credentials; the driver receives them separately, so nothing needs
+      # percent-encoding and a password containing @ or # cannot corrupt the connection string.
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017}
       MONGO_DB: ${MONGO_DB:-skills-coach}
+      MONGO_USER: ${MONGO_USER:-coach}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-coach}
+      MONGO_AUTH_SOURCE: ${MONGO_AUTH_SOURCE:-admin}
       # `dev` injects a stub principal so the stack runs without an identity provider. The api
       # refuses this combination when COACH_ENV/NODE_ENV say production (src/config.ts).
       AUTH_MODE: ${AUTH_MODE:-dev}

@@ -16,6 +16,17 @@ const envSchema = z.object({
 
   MONGO_URI: z.string().default('mongodb://localhost:27018'),
   MONGO_DB: z.string().default('skills-coach'),
+  /**
+   * Credentials are supplied separately rather than embedded in the URI.
+   *
+   * Building `mongodb://user:pass@host` by string concatenation means every character that is
+   * special in a URI (`@ : / ? #`) has to be percent-encoded by hand, and getting that wrong
+   * surfaces as "Authentication failed" — which reads like a wrong password rather than a
+   * malformed URI. Handing the driver the raw values removes the encoding step entirely.
+   */
+  MONGO_USER: z.string().optional(),
+  MONGO_PASSWORD: z.string().optional(),
+  MONGO_AUTH_SOURCE: z.string().default('admin'),
 
   /**
    * `dev` injects a fixed stub principal instead of verifying a token, so a contributor can run
@@ -44,6 +55,12 @@ export interface AuthConfig {
   clockToleranceSeconds: number;
 }
 
+export interface MongoCredentials {
+  username: string;
+  password: string;
+  authSource: string;
+}
+
 export interface Config {
   env: Environment;
   port: number;
@@ -51,6 +68,8 @@ export interface Config {
   logLevel: string;
   mongoUri: string;
   mongoDb: string;
+  /** Absent when the deployment runs an unauthenticated MongoDB, as local development does. */
+  mongoCredentials?: MongoCredentials;
   auth: AuthConfig;
   corsOrigins: string[];
   auditRetentionDays: number;
@@ -89,6 +108,10 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     logLevel: env.LOG_LEVEL,
     mongoUri: env.MONGO_URI,
     mongoDb: env.MONGO_DB,
+    mongoCredentials:
+      env.MONGO_USER && env.MONGO_PASSWORD
+        ? { username: env.MONGO_USER, password: env.MONGO_PASSWORD, authSource: env.MONGO_AUTH_SOURCE }
+        : undefined,
     auth: {
       mode: env.AUTH_MODE,
       jwksUrl: env.AUTH_JWKS_URL,

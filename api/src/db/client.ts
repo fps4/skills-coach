@@ -7,6 +7,7 @@
  */
 
 import { MongoClient, type Db } from 'mongodb';
+import type { MongoCredentials } from '../config.js';
 import { COLLECTIONS, collections, type Collections } from './collections.js';
 
 export interface Store {
@@ -16,10 +17,15 @@ export interface Store {
   close(): Promise<void>;
 }
 
-export async function connect(uri: string, dbName: string): Promise<Store> {
+export async function connect(uri: string, dbName: string, credentials?: MongoCredentials): Promise<Store> {
   const client = new MongoClient(uri, {
     // Fail fast on a wrong URI rather than hanging a request for the default 30 seconds.
     serverSelectionTimeoutMS: 5_000,
+    // Credentials go through the driver rather than into the URI, so nothing has to be
+    // percent-encoded and a password containing `@` or `#` cannot corrupt the connection string.
+    ...(credentials
+      ? { auth: { username: credentials.username, password: credentials.password }, authSource: credentials.authSource }
+      : {}),
   });
   await client.connect();
   const db = client.db(dbName);

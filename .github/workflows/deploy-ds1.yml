@@ -41,42 +41,25 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
-      - name: Assemble config/ds1/.env (committed base plus secrets, runner-local)
-        env:
-          MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
+      - name: Assemble config/ds1/.env (committed base only — no secrets in the file)
         run: |
           umask 077
           cp config/ds1/.env.base config/ds1/.env
+          echo "Assembled config/ds1/.env ($(grep -c . config/ds1/.env) non-empty lines)"
 
+      # The password reaches compose through the *process* environment, which it interpolates
+      # from just as it does the --env-file. Keeping it out of that file matters: compose parses
+      # the file with dotenv rules, where `#` starts a comment and quotes are stripped — so a
+      # password written there could reach MongoDB as a different string than the one the api
+      # was given, which presents as "Authentication failed" rather than as a config error.
+      - name: Build and deploy
+        env:
+          MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
+        run: |
           if [ -z "$MONGO_PASSWORD" ]; then
             echo "::error::COACH_MONGO_PASSWORD is not set — refusing to deploy with the default password"
             exit 1
           fi
-
-          # Percent-encode the password before it goes into the connection URI. A password
-          # containing @ : / or ? is perfectly legal and would otherwise split the URI apart,
-          # which surfaces as an unexplained connection failure at boot rather than as a
-          # configuration error.
-          urlencode() {
-            local string="$1" out="" char
-            for (( i = 0; i < ${#string}; i++ )); do
-              char="${string:i:1}"
-              case "$char" in
-                [a-zA-Z0-9.~_-]) out+="$char" ;;
-                *) out+=$(printf '%%%02X' "'$char") ;;
-              esac
-            done
-            printf '%s' "$out"
-          }
-
-          {
-            echo "MONGO_PASSWORD=$MONGO_PASSWORD"
-            echo "MONGO_URI=mongodb://coach:$(urlencode "$MONGO_PASSWORD")@mongo:27017/?authSource=admin"
-          } >> config/ds1/.env
-          echo "Assembled config/ds1/.env ($(grep -c . config/ds1/.env) non-empty lines)"
-
-      - name: Build and deploy
-        run: |
           $COMPOSE build
           # `up -d` fails the moment a dependency never turns healthy, and it says only that.
           # The health gate below is the authority and it prints container logs, so a failure
@@ -86,6 +69,8 @@ jobs:
           fi
 
       - name: Wait for api health (via the Docker socket)
+        env:
+          MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
         run: |
           cid=$($COMPOSE ps -q api)
           [ -n "$cid" ] || { echo "::error::api container not found"; exit 1; }
@@ -101,6 +86,8 @@ jobs:
           [ "$ok" = 1 ] || { echo "::error::api did not become healthy"; exit 1; }
 
       - name: Wait for web health
+        env:
+          MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
         run: |
           cid=$($COMPOSE ps -q web)
           [ -n "$cid" ] || { echo "::error::web container not found"; exit 1; }
@@ -118,6 +105,8 @@ jobs:
       # undiagnosable from the run log, which is exactly when the log matters most.
       - name: Container logs (always)
         if: always()
+        env:
+          MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
         run: |
           for service in mongo api web; do
             echo "::group::$service"

@@ -17,7 +17,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const store = await connect(config.mongoUri, config.mongoDb);
+  const store = await connect(config.mongoUri, config.mongoDb, config.mongoCredentials);
   // Idempotent, and applied at boot rather than by a migration runner (ADR-0003).
   await ensureIndexes(store.db, config.auditRetentionDays);
 
