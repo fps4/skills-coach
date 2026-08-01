@@ -47,21 +47,43 @@ jobs:
         run: |
           umask 077
           cp config/ds1/.env.base config/ds1/.env
-          if [ -n "$MONGO_PASSWORD" ]; then
-            {
-              echo "MONGO_PASSWORD=$MONGO_PASSWORD"
-              echo "MONGO_URI=mongodb://coach:$MONGO_PASSWORD@mongo:27017/?authSource=admin"
-            } >> config/ds1/.env
-          else
+
+          if [ -z "$MONGO_PASSWORD" ]; then
             echo "::error::COACH_MONGO_PASSWORD is not set — refusing to deploy with the default password"
             exit 1
           fi
+
+          # Percent-encode the password before it goes into the connection URI. A password
+          # containing @ : / or ? is perfectly legal and would otherwise split the URI apart,
+          # which surfaces as an unexplained connection failure at boot rather than as a
+          # configuration error.
+          urlencode() {
+            local string="$1" out="" char
+            for (( i = 0; i < ${#string}; i++ )); do
+              char="${string:i:1}"
+              case "$char" in
+                [a-zA-Z0-9.~_-]) out+="$char" ;;
+                *) out+=$(printf '%%%02X' "'$char") ;;
+              esac
+            done
+            printf '%s' "$out"
+          }
+
+          {
+            echo "MONGO_PASSWORD=$MONGO_PASSWORD"
+            echo "MONGO_URI=mongodb://coach:$(urlencode "$MONGO_PASSWORD")@mongo:27017/?authSource=admin"
+          } >> config/ds1/.env
           echo "Assembled config/ds1/.env ($(grep -c . config/ds1/.env) non-empty lines)"
 
       - name: Build and deploy
         run: |
           $COMPOSE build
-          $COMPOSE up -d --remove-orphans
+          # `up -d` fails the moment a dependency never turns healthy, and it says only that.
+          # The health gate below is the authority and it prints container logs, so a failure
+          # here is recorded and carried rather than ending the job blind.
+          if ! $COMPOSE up -d --remove-orphans; then
+            echo "::warning::compose up reported an error — see the container logs below"
+          fi
 
       - name: Wait for api health (via the Docker socket)
         run: |
@@ -91,6 +113,18 @@ jobs:
           done
           docker logs --tail 40 "$cid" 2>&1 | tail -40 || true
           [ "$ok" = 1 ] || { echo "::error::web did not become healthy"; exit 1; }
+
+      # Whatever happened above, show what the containers said. Without this a failed boot is
+      # undiagnosable from the run log, which is exactly when the log matters most.
+      - name: Container logs (always)
+        if: always()
+        run: |
+          for service in mongo api web; do
+            echo "::group::$service"
+            $COMPOSE logs --tail 60 "$service" 2>&1 || echo "(no container)"
+            echo "::endgroup::"
+          done
+          $COMPOSE ps -a || true
 
       - name: Cleanup the assembled secrets (always)
         if: always()
