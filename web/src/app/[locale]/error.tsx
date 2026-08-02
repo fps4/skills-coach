@@ -3,6 +3,9 @@
 /**
  * The last line of defence for a page that threw. Most commonly a session that expired mid-render,
  * so the sign-in route is offered alongside a retry.
+ *
+ * It sits above both route groups, so it also catches a signed-in shell that failed to build — which
+ * is why it carries no chrome of its own and centres itself the way the sign-in surface does.
  */
 
 import { useEffect } from 'react';
@@ -17,7 +20,7 @@ export default function ErrorBoundary({ error, reset }: { error: Error & { diges
   }, [error]);
 
   return (
-    <div className="mx-auto w-full max-w-md px-6 py-16">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6 py-12">
       <Card>
         <CardContent className="pt-5">
           <h1 className="text-lg font-semibold tracking-tight">Something went wrong</h1>

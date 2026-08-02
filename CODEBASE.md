@@ -51,6 +51,9 @@ planned MCP server additive: it will be a second caller of the same service func
 ```
 web/src/
   app/[locale]/      all routes live under a locale segment (`nl` | `en`)
+    layout.tsx         the document: <html lang>, theme and palette. No chrome.
+    (app)/             everything that needs a session — header, rail, content
+    (auth)/            everything that does not — the centred sign-in surface
   i18n/              typed dictionaries + the locale negotiator
   lib/               api (server) / api-client (browser) / auth (server-only) / session (shared)
     theme/palettes   the hue axis — a palette is data, not code
@@ -76,6 +79,13 @@ the learner does.
 
 The `lib` split is load-bearing: anything importing `next/headers` cannot be reached from a client
 component, so server-only code lives in `api.ts`/`auth.ts` and shared facts in `session.ts`.
+
+**The `(app)` / `(auth)` split is the auth gate, not a folder preference.** Route groups do not
+appear in the URL, so this is free structurally, and it buys the one guarantee CSS cannot: the header
+and rail exist only inside `(app)/layout.tsx`, which awaits `currentToken()` before it returns
+anything. A visitor without a session never receives markup containing them, so there is nothing to
+hide and nothing to flash. Put a new route in the group that matches whether it needs a session, and
+add public paths to `PUBLIC_SEGMENTS` in the middleware.
 
 ## Where the rules from the original program live
 
