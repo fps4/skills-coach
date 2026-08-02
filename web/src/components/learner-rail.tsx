@@ -3,14 +3,14 @@
 /**
  * The learner rail.
  *
- * Today, then the exercises indented beneath their parent, then progress. The two drills need a
+ * The pack tiles, then the exercises indented beneath their parent, then progress. The two drills need a
  * block to practise, so when the learner has not started one they render disabled rather than
  * disappearing — a rail whose items come and go is harder to learn than one that explains itself.
  */
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Dumbbell, Puzzle, Sparkles, Sun } from 'lucide-react';
+import { BarChart3, Dumbbell, LayoutGrid, Puzzle, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -41,8 +41,8 @@ export function LearnerRail({ locale, dictionary, currentBlockId }: Props) {
       aria-label={t.sections}
       className="hidden w-56 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-border p-3 md:flex"
     >
-      <RailItem href={home} icon={<Sun className="h-4 w-4" />} active={isActive(home, true)}>
-        {t.today}
+      <RailItem href={home} icon={<LayoutGrid className="h-4 w-4" />} active={isActive(home, true)}>
+        {t.home}
       </RailItem>
 
       <RailItem href={blockHref} icon={<Dumbbell className="h-4 w-4" />} active={isActive(`/${locale}/blocks`)}>

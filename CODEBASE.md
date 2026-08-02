@@ -53,6 +53,8 @@ web/src/
   app/[locale]/      all routes live under a locale segment (`nl` | `en`)
     layout.tsx         the document: <html lang>, theme and palette. No chrome.
     (app)/             everything that needs a session — header, rail, content
+                       `(app)/page.tsx` is the landing surface: one tile per pack, started
+                       ones first, then the rest of the published catalogue
     (auth)/            everything that does not — the centred sign-in surface
   i18n/              typed dictionaries + the locale negotiator
   lib/               api (server) / api-client (browser) / auth (server-only) / session (shared)
@@ -61,7 +63,7 @@ web/src/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
     app-header.tsx   sticky brand header with the accent wordmark
-    learner-rail.tsx today · lessons · the two drills · progress
+    learner-rail.tsx your packs · lessons · the two drills · progress
   middleware.ts      locale negotiation + auth gate, before render
 ```
 
