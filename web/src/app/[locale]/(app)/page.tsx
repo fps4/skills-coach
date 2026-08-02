@@ -1,21 +1,26 @@
 /**
- * Vandaag — where the learner left off.
+ * Home — one tile per pack the learner can reach.
  *
- * The one question this page answers is "what do I do now", and the answer is a lesson number,
- * never a date. Everything else is secondary.
+ * The landing surface after sign-in. A tile is a pack: what it is, how far in they are, and the one
+ * action that continues it. Detail belongs on the pack page, so a tile stays readable at a glance
+ * whether the learner has one pack or six.
+ *
+ * The catalogue is fetched every time, not only when nothing is enrolled: a learner who has opened
+ * one pack must still be able to see and start another.
  */
 
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Check, Puzzle, Sparkles, Target } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { ArrowRight, BookOpen, CircleDashed } from 'lucide-react';
 
-import { PageShell, Meter, Pill, Stat } from '@/components/atoms';
+import { PageShell, Meter, Pill } from '@/components/atoms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { pickTitle } from '@/lib/text';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import type { Enrollment, Learner, PackProgress } from '@/lib/types';
+import type { Enrollment, Learner, Pack, PackProgress } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,14 +29,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
   const dictionary = getDictionary(locale);
   const t = dictionary.home;
 
-  const [{ learner }, overview] = await Promise.all([
+  const [{ learner }, overview, catalogue] = await Promise.all([
     api<{ learner: Learner; enrollments: Enrollment[] }>('/api/v1/me'),
     api<{ packs: PackProgress[] }>('/api/v1/progress'),
+    api<{ packs: Pack[] }>('/api/v1/packs'),
   ]);
 
-  // A learner who has not opened anything yet has no enrollment, so the catalogue is the fallback.
-  const enrolled = overview.packs;
-  const catalogue = enrolled.length > 0 ? [] : (await api<{ packs: PackProgress['pack'][] }>('/api/v1/packs')).packs;
+  // Started packs first, then everything published the learner has not opened yet.
+  const started = overview.packs;
+  const startedIds = new Set(started.map((entry) => entry.pack.packId));
+  const available = catalogue.packs.filter((pack) => !startedIds.has(pack.packId));
 
   return (
     <PageShell
@@ -43,7 +50,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
       }
       subtitle={t.subtitle}
     >
-      {enrolled.length === 0 && catalogue.length === 0 ? (
+      {started.length === 0 && available.length === 0 ? (
         <Card>
           <CardContent className="pt-5">
             <p className="text-sm">{t.noPacks}</p>
@@ -52,107 +59,118 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
         </Card>
       ) : null}
 
-      {catalogue.map((pack) => (
-        <Card key={pack.packId}>
-          <CardHeader>
-            <CardTitle>{pickTitle(pack.title, locale)}</CardTitle>
-            {pack.description ? <p className="text-sm text-muted-foreground">{pickTitle(pack.description, locale)}</p> : null}
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {started.map((entry) => {
+          const block = entry.currentBlock;
+          const progress = entry.blockProgress;
+          const next = progress?.nextLessonOrder ?? null;
+          const packHref = `/${locale}/packs/${entry.pack.packId}`;
+
+          return (
+            <Tile
+              key={entry.pack.packId}
+              href={packHref}
+              title={pickTitle(entry.pack.title, locale)}
+              pill={block?.level ? <Pill className="shrink-0 whitespace-nowrap">{block.level}</Pill> : null}
+              // The block's own title, unprefixed: pack authors habitually name it "Blok 01 — …"
+              // already, and a runtime prefix would say it twice.
+              caption={block ? pickTitle(block.title, locale) : undefined}
+            >
+              {progress ? (
+                <div>
+                  <Meter value={progress.completed} total={progress.lessonCount} />
+                  <div className="mt-2 flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
+                    <span>
+                      {progress.completed}/{progress.lessonCount} {t.lessonsDone}
+                    </span>
+                    <span>
+                      {entry.decks.terms.mastered}/{entry.decks.terms.total} {dictionary.progress.words.toLowerCase()}
+                    </span>
+                  </div>
+                  {progress.pendingOrders.length > 0 ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {dictionary.pack.waitingOnCoach}: {dictionary.common.lesson} {progress.pendingOrders.join(', ')}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {/* `relative` lifts the action above the tile-wide link behind it. */}
+              {block && next ? (
+                <Button asChild size="sm" className="relative w-full">
+                  <Link href={`/${locale}/lessons/${block.blockId}.l${next}`}>
+                    {t.continueLesson} {next} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="outline" className="relative w-full">
+                  <Link href={packHref}>
+                    <BookOpen className="h-4 w-4" /> {t.openPack}
+                  </Link>
+                </Button>
+              )}
+            </Tile>
+          );
+        })}
+
+        {available.map((pack) => (
+          <Tile
+            key={pack.packId}
+            href={`/${locale}/packs/${pack.packId}`}
+            title={pickTitle(pack.title, locale)}
+            pill={
+              <Pill className="shrink-0 whitespace-nowrap">
+                <CircleDashed className="mr-1 h-3 w-3 shrink-0" /> {dictionary.pack.notStarted}
+              </Pill>
+            }
+            caption={pack.description ? pickTitle(pack.description, locale) : undefined}
+          >
+            <Button asChild size="sm" variant="outline" className="relative w-full">
               <Link href={`/${locale}/packs/${pack.packId}`}>
                 {t.startPack} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-          </CardContent>
-        </Card>
-      ))}
-
-      {enrolled.map((entry) => {
-        const block = entry.currentBlock;
-        const progress = entry.blockProgress;
-        const next = progress?.nextLessonOrder ?? null;
-        const decks = entry.decks;
-
-        return (
-          <div key={entry.pack.packId} className="space-y-5">
-            {/* Summary before detail — the three figures a learner checks daily. */}
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Stat
-                icon={<Check className="h-4 w-4 text-success" />}
-                value={`${progress?.completed ?? 0}/${progress?.lessonCount ?? 0}`}
-                label={t.lessonsDone}
-              />
-              <Stat
-                icon={<Sparkles className="h-4 w-4 text-primary" />}
-                value={`${decks.terms.mastered}/${decks.terms.total}`}
-                label={dictionary.progress.words.toLowerCase()}
-              />
-              <Stat
-                icon={<Target className="h-4 w-4 text-muted-foreground" />}
-                value={block?.level ?? '—'}
-                label={dictionary.common.level.toLowerCase()}
-              />
-            </div>
-
-            <Card>
-              <CardHeader>
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <CardTitle>{pickTitle(entry.pack.title, locale)}</CardTitle>
-                  {block ? (
-                    <Pill>
-                      {dictionary.common.block} {block.order}
-                    </Pill>
-                  ) : null}
-                </div>
-                {block ? <p className="text-sm text-muted-foreground">{pickTitle(block.title, locale)}</p> : null}
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                {progress ? (
-                  <div>
-                    <Meter value={progress.completed} total={progress.lessonCount} />
-                    {progress.pendingOrders.length > 0 ? (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {dictionary.pack.waitingOnCoach}: {dictionary.common.lesson} {progress.pendingOrders.join(', ')}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                <div className="flex flex-wrap gap-2">
-                  {block && next ? (
-                    <Button asChild>
-                      <Link href={`/${locale}/lessons/${block.blockId}.l${next}`}>
-                        {t.continueLesson} {next} <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  ) : null}
-                  <Button asChild variant="outline">
-                    <Link href={`/${locale}/packs/${entry.pack.packId}`}>
-                      <BookOpen className="h-4 w-4" /> {t.openPack}
-                    </Link>
-                  </Button>
-                  {block ? (
-                    <>
-                      <Button asChild variant="ghost">
-                        <Link href={`/${locale}/drills/words?blockId=${block.blockId}`}>
-                          <Sparkles className="h-4 w-4" /> {dictionary.nav.words}
-                        </Link>
-                      </Button>
-                      <Button asChild variant="ghost">
-                        <Link href={`/${locale}/drills/sentences?blockId=${block.blockId}`}>
-                          <Puzzle className="h-4 w-4" /> {dictionary.nav.sentences}
-                        </Link>
-                      </Button>
-                    </>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-      })}
+          </Tile>
+        ))}
+      </div>
     </PageShell>
+  );
+}
+
+/**
+ * One pack, as a tile.
+ *
+ * The whole tile is the link — the title carries it and spreads over the card, so the target is one
+ * word for a screen reader and the full rectangle for a pointer. Nothing is nested inside that
+ * anchor, which is what keeps the actions in the footer legal and clickable.
+ */
+function Tile({
+  href,
+  title,
+  pill,
+  caption,
+  children,
+}: {
+  href: string;
+  title: string;
+  pill?: ReactNode;
+  caption?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="relative flex flex-col transition-colors hover:border-primary/50">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle>
+            <Link href={href} className="hover:text-primary after:absolute after:inset-0 after:content-['']">
+              {title}
+            </Link>
+          </CardTitle>
+          {pill}
+        </div>
+        {caption ? <p className="text-sm text-muted-foreground">{caption}</p> : null}
+      </CardHeader>
+      <CardContent className="mt-auto space-y-3">{children}</CardContent>
+    </Card>
   );
 }

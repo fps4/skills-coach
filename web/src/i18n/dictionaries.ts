@@ -15,8 +15,7 @@ import type { Locale } from './config';
 const nl = {
   appName: 'Skills Coach',
   nav: {
-    home: 'Start',
-    today: 'Vandaag',
+    home: 'Jouw pakketten',
     lessons: 'Lessen',
     progress: 'Voortgang',
     words: 'Woordtrainer',
@@ -54,8 +53,8 @@ const nl = {
     none: 'Nog niets',
   },
   home: {
-    title: 'Waar je gebleven was',
-    subtitle: 'Eén les per keer. Sla een dag over en je pakt gewoon de volgende op.',
+    title: 'Jouw pakketten',
+    subtitle: 'Kies een pakket en ga verder waar je gebleven was. Eén les per keer.',
     noPacks: 'Er is nog geen pakket voor je klaargezet.',
     noPacksHint: 'Een coach publiceert een pakket via de coach-API.',
     continueLesson: 'Ga verder met les',
@@ -205,8 +204,7 @@ export type Dictionary = typeof nl;
 const en: Dictionary = {
   appName: 'Skills Coach',
   nav: {
-    home: 'Home',
-    today: 'Today',
+    home: 'Your packs',
     lessons: 'Lessons',
     progress: 'Progress',
     words: 'Word trainer',
@@ -244,8 +242,8 @@ const en: Dictionary = {
     none: 'Nothing yet',
   },
   home: {
-    title: 'Where you left off',
-    subtitle: 'One lesson at a time. Miss a day and you simply pick up the next one.',
+    title: 'Your packs',
+    subtitle: 'Pick a pack and carry on where you left off. One lesson at a time.',
     noPacks: 'No pack has been set up for you yet.',
     noPacksHint: 'A coach publishes a pack through the coach API.',
     continueLesson: 'Continue with lesson',
