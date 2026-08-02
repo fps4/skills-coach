@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { PaletteToggle } from '@/components/palette-toggle';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LanguageSwitch } from '@/components/language-switch';
+import { SignOut } from '@/components/sign-out';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 
@@ -23,6 +24,9 @@ export function AppHeader({ locale, dictionary }: { locale: Locale; dictionary: 
         <LanguageSwitch locale={locale} label={dictionary.nav.language} />
         <PaletteToggle label={dictionary.chrome.palette} />
         <ThemeToggle label={dictionary.chrome.theme} />
+        {/* Last, and separated: it leaves the app, unlike everything to its left. */}
+        <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+        <SignOut locale={locale} label={dictionary.nav.signOut} />
       </nav>
     </header>
   );

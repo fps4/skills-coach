@@ -62,7 +62,7 @@ web/src/
   components/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
-    app-header.tsx   sticky brand header with the accent wordmark
+    app-header.tsx   sticky brand header with the accent wordmark, and sign-out
     learner-rail.tsx your packs · lessons · the two drills · progress
   middleware.ts      locale negotiation + auth gate, before render
 ```
