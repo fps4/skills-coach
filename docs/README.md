@@ -26,6 +26,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0007](architecture/decisions/0007-token-driven-theme-with-a-palette-axis.md) | One token theme, two independent axes (theme × palette) |
 | [0008](architecture/decisions/0008-a-packs-manifest-is-product.md) | A pack's manifest is product; its blocks are content |
 | [0009](architecture/decisions/0009-per-pack-presentation-is-declarative.md) | A pack declares how it presents itself; the viewer resolves it |
+| [0010](architecture/decisions/0010-mcp-is-a-second-transport.md) | MCP is a second transport over the same services, hand-written |
 
 ## Reference
 

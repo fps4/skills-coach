@@ -22,6 +22,33 @@ The loop is four steps, and it repeats per block:
                     everything else is the runtime's
 ```
 
+## Driving it as an agent instead
+
+Everything below is also available as MCP tools at `/mcp`
+([ADR-0010](../architecture/decisions/0010-mcp-is-a-second-transport.md)), which turns the four steps
+into one conversation rather than a shuttle of pasted JSON:
+
+```sh
+claude mcp add --scope user --transport http skills-coach https://coach-mcp.fps4.nl/mcp \
+  --client-id skills-coach-mcp-operator --callback-port 9415
+```
+
+Then ask for the brief, write the block, and publish it without leaving the session. The tools are
+the routes below, one for one, behind the same capabilities — `get_brief`, `publish_block`,
+`list_submissions`, `post_correction`, `post_block_review`.
+
+Three things have to exist first, and none of them live in this repository:
+
+1. a public hostname routed to the api container, and `MCP_RESOURCE_URL` set to it;
+2. `skills-coach-mcp-operator` registered in identity-service as a public `authorization_code`
+   client with the loopback redirect `http://localhost:9415/callback` — redirect URIs are
+   exact-matched, so the port is pinned and must match `--callback-port`;
+3. the **`coach` role assigned to the person signing in**. The credential is not the authority; the
+   assignment is. Without it the login succeeds and every tool still refuses.
+
+The rest of this guide is the HTTP surface, which is what the tools call and what to reach for when
+there is no agent in the loop.
+
 ## Getting a token
 
 The coach surface authenticates with a **client-credentials** token from identity-service, carrying
