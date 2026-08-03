@@ -29,6 +29,7 @@ const nl = {
     tagline: 'jouw pakket · jouw tempo',
     theme: 'Wissel licht/donker',
     palette: 'Kleurenpalet',
+    followPack: 'Volg het pakket',
   },
   common: {
     loading: 'Bezig met laden…',
@@ -218,6 +219,7 @@ const en: Dictionary = {
     tagline: 'your pack · your pace',
     theme: 'Toggle light/dark',
     palette: 'Colour palette',
+    followPack: 'Follow the pack',
   },
   common: {
     loading: 'Loading…',

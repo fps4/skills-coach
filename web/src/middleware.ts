@@ -9,6 +9,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale, negotiateLocale } from './i18n/config';
+import { PACK_HEADER, packIdFromUrl } from './lib/pack-scope';
 import { AUTH_MODE, DEV_TOKEN, TOKEN_COOKIE, tokenIsFresh } from './lib/session';
 
 /** Paths that never need a session. */
@@ -48,7 +49,7 @@ export function middleware(request: NextRequest): NextResponse {
       url.search = '';
       return NextResponse.redirect(url);
     }
-    return NextResponse.next();
+    return withPackScope(request, pathname);
   }
 
   if (isPublic) return NextResponse.next();
@@ -58,6 +59,23 @@ export function middleware(request: NextRequest): NextResponse {
   // Remember where they were headed, so signing in lands them there rather than at the start.
   url.search = `?next=${encodeURIComponent(pathname + search)}`;
   return NextResponse.redirect(url);
+}
+
+/**
+ * Tell the shell which pack this URL is inside, before anything renders.
+ *
+ * The signed-in layout sits above the segment that names the pack, so it cannot work this out for
+ * itself — and without it the first paint would use the wrong hue and correct itself a frame later.
+ * Deriving it here costs nothing: the middleware already has the URL, and `packIdFromUrl` is the
+ * same function the client uses afterwards.
+ */
+function withPackScope(request: NextRequest, pathname: string): NextResponse {
+  const packId = packIdFromUrl(pathname, request.nextUrl.searchParams);
+  if (!packId) return NextResponse.next();
+
+  const headers = new Headers(request.headers);
+  headers.set(PACK_HEADER, packId);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {
