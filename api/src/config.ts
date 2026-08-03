@@ -35,9 +35,23 @@ const envSchema = z.object({
   AUTH_MODE: z.enum(['dev', 'jwks']).default('dev'),
   AUTH_JWKS_URL: z.string().url().optional(),
   AUTH_ISSUER: z.string().optional(),
+  /**
+   * Comma-separated, because one product can be more than one OAuth *resource*. A token minted for
+   * the MCP endpoint carries that endpoint's URL as its `aud` (RFC 8707), not the application's, and
+   * both are this service.
+   */
   AUTH_AUDIENCE: z.string().optional(),
   /** Clock skew tolerated when checking `exp`/`nbf`. */
   AUTH_CLOCK_TOLERANCE_SECONDS: z.coerce.number().int().nonnegative().default(30),
+
+  /**
+   * The canonical, public URL of the MCP endpoint — and the switch that turns it on.
+   *
+   * Configured, never derived from the `Host` header: it is published in a discovery document and
+   * checked as a token audience, and a spoofable input has no business in either. Unset means this
+   * deployment serves no MCP resource and advertises none.
+   */
+  MCP_RESOURCE_URL: z.string().url().optional(),
 
   /** Comma-separated. Empty means same-origin only, which is the deployed shape. */
   CORS_ORIGINS: z.string().default(''),
@@ -51,8 +65,14 @@ export interface AuthConfig {
   mode: 'dev' | 'jwks';
   jwksUrl?: string;
   issuer?: string;
-  audience?: string;
+  /** Every audience this service answers to. A token matching any one of them verifies. */
+  audiences: string[];
   clockToleranceSeconds: number;
+}
+
+export interface McpConfig {
+  /** Absent when this deployment exposes no MCP endpoint. Presence is what enables it. */
+  resourceUrl?: string;
 }
 
 export interface MongoCredentials {
@@ -71,6 +91,7 @@ export interface Config {
   /** Absent when the deployment runs an unauthenticated MongoDB, as local development does. */
   mongoCredentials?: MongoCredentials;
   auth: AuthConfig;
+  mcp: McpConfig;
   corsOrigins: string[];
   auditRetentionDays: number;
 }
@@ -84,6 +105,14 @@ export class ConfigError extends Error {}
  * so without this every optional setting arrives as `''` — which fails validation instead of
  * falling back to its default. Dropping empties makes "not configured" a single case.
  */
+/** A comma-separated setting, trimmed, with the empties dropped. */
+function list(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function withoutEmpty(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const cleaned: NodeJS.ProcessEnv = {};
   for (const [key, value] of Object.entries(source)) {
@@ -116,9 +145,13 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       mode: env.AUTH_MODE,
       jwksUrl: env.AUTH_JWKS_URL,
       issuer: env.AUTH_ISSUER,
-      audience: env.AUTH_AUDIENCE,
+      // The MCP resource is appended rather than configured twice: the URL published in the
+      // discovery document and the audience accepted from a token are the same fact, and two
+      // settings for one fact drift.
+      audiences: [...list(env.AUTH_AUDIENCE), ...(env.MCP_RESOURCE_URL ? [env.MCP_RESOURCE_URL] : [])],
       clockToleranceSeconds: env.AUTH_CLOCK_TOLERANCE_SECONDS,
     },
+    mcp: { resourceUrl: env.MCP_RESOURCE_URL },
     corsOrigins: env.CORS_ORIGINS.split(',')
       .map((origin) => origin.trim())
       .filter(Boolean),
@@ -146,11 +179,18 @@ function assertSafe(config: Config, _nodeEnv: string | undefined): void {
   }
 
   if (config.auth.mode === 'jwks') {
-    const missing = (['jwksUrl', 'issuer', 'audience'] as const).filter((key) => !config.auth[key]);
+    const missing: string[] = [];
+    if (!config.auth.jwksUrl) missing.push('AUTH_JWKS_URL');
+    if (!config.auth.issuer) missing.push('AUTH_ISSUER');
+    if (config.auth.audiences.length === 0) missing.push('AUTH_AUDIENCE');
     if (missing.length > 0) {
-      throw new ConfigError(
-        `AUTH_MODE=jwks requires ${missing.map((key) => `AUTH_${key.replace('jwksUrl', 'JWKS_URL').replace('issuer', 'ISSUER').replace('audience', 'AUDIENCE')}`).join(', ')}`,
-      );
+      throw new ConfigError(`AUTH_MODE=jwks requires ${missing.join(', ')}`);
     }
+  }
+
+  // An MCP resource is only meaningful behind a real verifier: the endpoint's whole authorization
+  // story is a token bound to that URL, and `dev` mode verifies nothing.
+  if (config.mcp.resourceUrl && config.auth.mode === 'dev' && isProduction) {
+    throw new ConfigError('MCP_RESOURCE_URL requires AUTH_MODE=jwks in production');
   }
 }

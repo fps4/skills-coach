@@ -89,13 +89,18 @@ export interface Harness {
  * collection — so a shared database would have one file wiping another file's fixtures mid-test.
  * The database is dropped on close.
  */
-export async function createHarness(now: () => Date = () => new Date()): Promise<Harness> {
+export async function createHarness(
+  now: () => Date = () => new Date(),
+  /** Extra environment, for behaviour that only exists under a particular configuration. */
+  env: NodeJS.ProcessEnv = {},
+): Promise<Harness> {
   const config = loadConfig({
     COACH_ENV: 'test',
     MONGO_URI,
     MONGO_DB: `${DB_PREFIX}-${randomUUID().slice(0, 8)}`,
     AUTH_MODE: 'dev',
     LOG_LEVEL: 'silent',
+    ...env,
   } as NodeJS.ProcessEnv);
 
   const store = await connect(config.mongoUri, config.mongoDb);
