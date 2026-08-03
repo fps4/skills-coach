@@ -17,6 +17,16 @@ packs/*
 !packs/demo-*/
 content/
 
+# A pack's MANIFEST is product; its blocks are content (ADR-0008). Granted per pack, by name, so
+# the default outcome of dropping a pack into the tree is still that all of it stays out.
+#
+# Three lines, in this order, because git does not descend into an excluded directory: re-include
+# the directory so it is walked, ignore everything inside it again, then un-ignore the one file.
+# Last match wins — reordering these silently commits a learner's lessons.
+!packs/dutch-conversation-nl/
+packs/dutch-conversation-nl/*
+!packs/dutch-conversation-nl/pack.yaml
+
 # Tooling caches
 .cache/
 coverage/

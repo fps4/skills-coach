@@ -8,7 +8,7 @@ COMPOSE := docker compose -f infra/docker/compose.yml -p skills-coach
 PACK    ?= packs/demo-conversation-nl
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev up down logs ps seed import import-errorlog test test-unit lint format typecheck check clean
+.PHONY: help install dev up down logs ps seed import import-errorlog validate test test-unit lint format typecheck check clean
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -55,6 +55,9 @@ import: ## Import a pack from a local directory: make import PACK=/path/to/pack
 import-errorlog: ## Backfill a learner's error log: make import-errorlog SOURCE=... LEARNER=...
 	cd api && npm run import:errorlog -- --source $(SOURCE) --learner $(LEARNER)
 
+validate: ## Parse and lint every pack manifest in the tree
+	cd api && npm run validate:manifests
+
 ## --- checks -------------------------------------------------------------------
 
 typecheck: ## tsc --noEmit for both packages
@@ -76,7 +79,7 @@ test: ## All tests (integration self-skips when MongoDB is unreachable)
 	cd api && npm test
 	cd web && npm test
 
-check: typecheck lint test ## Everything CI checks
+check: typecheck lint test validate ## Everything CI checks
 
 clean: ## Remove build output and the MongoDB volume
 	$(COMPOSE) down -v --remove-orphans

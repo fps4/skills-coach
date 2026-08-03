@@ -96,6 +96,10 @@ jobs:
     # The importer is the only path real content takes into the system, and the repository holds no
     # real content to test it against (ADR-0006) — so at minimum the bundled demo pack must parse.
     # This is what would catch the pack format and the importer drifting apart.
+    #
+    # Committed manifests (ADR-0008) are checked too, and by a different route: they ship without
+    # blocks, so the importer cannot read them and `validate:manifests` is what proves they still
+    # parse — and still agree with themselves about levels, ramp coverage and category ids.
     runs-on: [self-hosted, ds1]
     steps:
       - uses: actions/checkout@v4
@@ -105,6 +109,10 @@ jobs:
         run: |
           docker run --rm sc-ci-import:${{ github.run_id }}-${{ github.run_attempt }} \
             bash -lc "cd api && npm run import:pack -- --source ../packs/demo-conversation-nl --dry-run"
+      - name: Validate every committed pack manifest
+        run: |
+          docker run --rm sc-ci-import:${{ github.run_id }}-${{ github.run_attempt }} \
+            bash -lc "cd api && npm run validate:manifests"
       - name: Cleanup
         if: always()
         run: docker rmi "sc-ci-import:${{ github.run_id }}-${{ github.run_attempt }}" 2>/dev/null || true

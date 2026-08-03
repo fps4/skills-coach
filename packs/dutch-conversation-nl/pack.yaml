@@ -1,0 +1,148 @@
+# Nederlands in gesprek — the manifest for the Dutch conversation program.
+#
+# COMMITTED, deliberately (ADR-0008): a manifest is the *program* — the ramp, the dials, the error
+# vocabulary — and it names no person, employer or application. The blocks are the content, they are
+# written around one learner's real work, and they stay out of the tree; `.gitignore` un-ignores this
+# one file and nothing else in this directory.
+#
+# The runtime never branches on which pack it is serving (ADR-0004), so everything skill-specific
+# enters here or in a block. Import the two halves together — manifest from the tree, blocks from
+# wherever they are authored:
+#
+#   cd api && npm run import:pack -- \
+#     --source /path/to/blocks --manifest ../packs/dutch-conversation-nl/pack.yaml
+#
+# Publishing is idempotent: identifiers derive from position and content, so republishing updates in
+# place and a drill item whose text is unchanged keeps the learner progress attached to it.
+
+packId: dutch-conversation-nl # lower-case slug; also the URL segment
+
+title:
+  nl: Nederlands in gesprek
+  en: Dutch in conversation
+
+description:
+  nl: Van B1 naar B2 — werken en solliciteren in het Nederlands.
+  en: B1 to B2 — working and interviewing in Dutch.
+
+# The material is written in Dutch and never translated; English is what a term's translation and the
+# interface are in (ADR-0005). These are not swappable to "make it easier" — the content language is
+# the thing being learned.
+contentLanguage: nl
+translationLanguage: en
+skill: conversation # free label, descriptive only — nothing branches on it
+
+# Carried into every next-block brief, so whoever generates block N+1 is reminded what the whole
+# program is for. One sentence, outcome-shaped.
+goal:
+  nl: Een sollicitatiegesprek in het Nederlands voeren op B2-niveau.
+  en: Hold a job interview in Dutch at B2 level.
+
+framework:
+  id: cefr
+  levels: [A2, B1.1, B1.2, B2.1, B2.2]
+
+  # The ramp is where the program's difficulty lives. The runtime never interprets a dial — it reads
+  # off which rung block N+1 sits on and hands the dials to the author verbatim. That is the whole
+  # mechanism by which "one block at a time" still climbs.
+  #
+  # Blocks are not weeks. Miss a day and you do the next lesson, not a later one.
+  ramp:
+    - fromBlock: 1
+      toBlock: 8
+      level: B1.1
+      phase: Consolidate B1
+      dials:
+        textLength: ~170 words
+        sentences: main clauses plus simple subclauses (omdat, dat)
+        vocabulary: concrete daily life, work basics, opinions, time and sequence
+        grammar: perfectum vs imperfectum, subclause word order, om…te, separable verbs, er
+        connectors: omdat, maar, dus, daarom
+        questions: comprehension plus simple opinion
+        output: 8–10 spoken sentences
+        milestone: a one-minute spoken self-introduction, plus five unscripted follow-ups
+
+    - fromBlock: 9
+      toBlock: 20
+      level: B1.2
+      phase: Nuance and reasoning
+      dials:
+        textLength: ~280 words
+        sentences: relative clauses, conditionals, indirect speech
+        vocabulary: abstract and professional, plus the learner's own domain
+        grammar: passive voice, conditionals, indirect speech
+        connectors: hoewel, terwijl, zodat, ondanks
+        questions: inference, and defending an opinion
+        output: a two- to four-minute monologue — describe a project, explain a problem
+        milestone: discuss a work topic for five minutes and react to counter-questions
+
+    - fromBlock: 21
+      toBlock: 28
+      level: B2.1
+      phase: Interview sprint
+      dials:
+        textLength: ~400 words
+        sentences: layered and argued
+        vocabulary: idiomatic, formal register, salary and negotiation language
+        grammar: hedging, formal register, precise tense use under pressure
+        questions: synthesis, and defending a position against push-back
+        output: STAR answers, and whiteboard-style explaining
+        milestone: a thirty-minute mock interview, mostly unscripted
+
+# ---------------------------------------------------------------------------
+# Error categories — the commitment in this file
+# ---------------------------------------------------------------------------
+#
+# These ids are the join key between correction, drilling and next-block generation. A correction
+# naming an id that is not here is rejected by design: an invented one would accumulate its own
+# history and never join anything.
+#
+# Adding a category is always safe. **Renaming one is not** — the old id keeps its history and never
+# joins again, while new corrections pile up under the new name. Once this pack has been corrected
+# against even once, treat the ids below as frozen. Reviewing that is why the manifest is in git.
+errorCategories:
+  - id: woordvolgorde-hoofdzin
+    label: { nl: Woordvolgorde hoofdzin, en: Main-clause word order }
+  - id: woordvolgorde-bijzin
+    label: { nl: Woordvolgorde bijzin, en: Subclause word order }
+  - id: perfectum-imperfectum
+    label: { nl: Perfectum / imperfectum, en: Perfect / past tense }
+  - id: hulpwerkwoord
+    label: { nl: Hulpwerkwoord (hebben/zijn), en: Auxiliary (hebben/zijn) }
+  - id: lidwoord
+    label: { nl: Lidwoord (de/het), en: Article (de/het) }
+  - id: voorzetsel
+    label: { nl: Voorzetsel, en: Preposition }
+  - id: er
+    label: { nl: Gebruik van 'er', en: Use of 'er' }
+  - id: scheidbaar-werkwoord
+    label: { nl: Scheidbaar werkwoord, en: Separable verb }
+  - id: connector-om-te
+    label: { nl: Connector (om…te), en: Connector (om…te) }
+  - id: passief
+    label: { nl: Lijdende vorm, en: Passive voice }
+  - id: congruentie
+    label: { nl: Onderwerp-werkwoordcongruentie, en: Subject-verb agreement }
+  - id: woordkeuze
+    label: { nl: Woordkeuze, en: Word choice }
+  - id: spelling
+    label: { nl: Spelling, en: Spelling }
+  - id: register
+    label: { nl: Register (u/je, formeel), en: Register (formal/informal) }
+  # Only ever logged from a speaking note — nothing written can evidence it.
+  - id: uitspraak
+    label: { nl: Uitspraak, en: Pronunciation }
+
+# Leading words ignored when matching a drill answer, so "de vergadering" is accepted for
+# "vergadering" and the other way round.
+matchArticles:
+  nl: [de, het, een, "'t"]
+  en: [the, a, an]
+# NOTE — there is deliberately no `sectionMap:` here.
+#
+# A manifest's sectionMap REPLACES the built-in heading map rather than extending it
+# (`importer/pack-source.ts`: `manifest.sectionMap?.length ? manifest.sectionMap : DEFAULT_SECTION_MAP`).
+# Add three entries and "Woordenschat" silently stops mapping to a vocabulary section.
+#
+# If a heading ever needs overriding, copy DEFAULT_SECTION_MAP from `importer/markdown.ts` in full
+# and add to it. Otherwise write headings the defaults already recognise.

@@ -64,6 +64,30 @@ matchArticles:               # optional — leading words ignored when matching 
 The runtime never interprets a dial. It carries them into the brief, so whoever writes the next
 block knows which rung they are aiming at.
 
+### `sectionMap` replaces, it does not extend
+
+A manifest's `sectionMap` is used **instead of** the built-in heading map, not in addition to it
+(`importer/pack-source.ts`). Declare three entries and `Woordenschat` stops mapping to a vocabulary
+section, because the entry that recognised it is no longer in the map. If you need one override,
+copy `DEFAULT_SECTION_MAP` from `importer/markdown.ts` in full and add to it — or, better, write
+headings the defaults already recognise.
+
+### Committing a manifest
+
+A manifest may live in this repository even though the pack's content may not
+([ADR-0008](../architecture/decisions/0008-a-packs-manifest-is-product.md)): the manifest is the
+program, the blocks are the learner's content. The grant is per pack, by name, in `.gitignore`, and
+only for a manifest that names no person, employer or organisation.
+
+```sh
+make validate      # parse and lint every manifest in the tree — also runs in CI
+```
+
+The linter checks what the schema cannot: a duplicated error-category id, a ramp step naming a level
+the framework does not list, and ramp ranges that overlap or leave a gap. Each of those is resolved
+silently at runtime — an overlap means the first step declared wins and the other is unreachable —
+so the check is the only place they surface.
+
 ### Error categories are a commitment
 
 They are the join key between correction, drilling and next-block generation. **Once a pack is
