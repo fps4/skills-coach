@@ -17,6 +17,7 @@ import { PageShell, Meter, Pill } from '@/components/atoms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { packIcon } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -70,6 +71,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
             <Tile
               key={entry.pack.packId}
               href={packHref}
+              icon={entry.pack.presentation?.icon}
               title={pickTitle(entry.pack.title, locale)}
               pill={block?.level ? <Pill className="shrink-0 whitespace-nowrap">{block.level}</Pill> : null}
               // The block's own title, unprefixed: pack authors habitually name it "Blok 01 — …"
@@ -117,13 +119,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
           <Tile
             key={pack.packId}
             href={`/${locale}/packs/${pack.packId}`}
+            icon={pack.presentation?.icon}
             title={pickTitle(pack.title, locale)}
             pill={
               <Pill className="shrink-0 whitespace-nowrap">
                 <CircleDashed className="mr-1 h-3 w-3 shrink-0" /> {dictionary.pack.notStarted}
               </Pill>
             }
-            caption={pack.description ? pickTitle(pack.description, locale) : undefined}
+            caption={pickTitle(pack.presentation?.tagline ?? pack.description ?? {}, locale) || undefined}
           >
             <Button asChild size="sm" variant="outline" className="relative w-full">
               <Link href={`/${locale}/packs/${pack.packId}`}>
@@ -146,22 +149,28 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
  */
 function Tile({
   href,
+  icon,
   title,
   pill,
   caption,
   children,
 }: {
   href: string;
+  /** A key the pack declared; unknown ones fall back rather than leaving a gap (ADR-0009). */
+  icon?: string;
   title: string;
   pill?: ReactNode;
   caption?: string;
   children: ReactNode;
 }) {
+  const Icon = packIcon(icon);
+
   return (
     <Card className="relative flex flex-col transition-colors hover:border-primary/50">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle>
+          <CardTitle className="flex items-start gap-2">
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
             <Link href={href} className="hover:text-primary after:absolute after:inset-0 after:content-['']">
               {title}
             </Link>

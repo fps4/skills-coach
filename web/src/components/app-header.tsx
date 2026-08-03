@@ -22,7 +22,7 @@ export function AppHeader({ locale, dictionary }: { locale: Locale; dictionary: 
 
       <nav className="flex items-center gap-1">
         <LanguageSwitch locale={locale} label={dictionary.nav.language} />
-        <PaletteToggle label={dictionary.chrome.palette} />
+        <PaletteToggle label={dictionary.chrome.palette} followLabel={dictionary.chrome.followPack} />
         <ThemeToggle label={dictionary.chrome.theme} />
         {/* Last, and separated: it leaves the app, unlike everything to its left. */}
         <span className="mx-1 h-5 w-px bg-border" aria-hidden />

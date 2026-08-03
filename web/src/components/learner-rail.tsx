@@ -3,38 +3,67 @@
 /**
  * The learner rail.
  *
- * The pack tiles, then the exercises indented beneath their parent, then progress. The two drills need a
- * block to practise, so when the learner has not started one they render disabled rather than
- * disappearing — a rail whose items come and go is harder to learn than one that explains itself.
+ * The pack tiles, then whatever the pack in scope offers, then progress. Two independent things
+ * decide an item (ADR-0009): the manifest's `surfaces` say what this pack *offers* — a pack with no
+ * word-order material never shows the puzzle at all — and the live deck counts say whether there is
+ * anything to practise *today*. Offered-but-empty renders disabled rather than disappearing, because
+ * a rail whose items come and go is harder to learn than one that explains itself.
+ *
+ * Outside a pack the rail shows the platform's full set, which is exactly how it looked before a
+ * pack could declare anything.
  */
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { BarChart3, Dumbbell, LayoutGrid, Puzzle, Sparkles } from 'lucide-react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { LayoutGrid } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
+import { DEFAULT_SURFACES, SURFACES, packIdFromUrl, type DeckTotals } from '@/lib/pack-scope';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
+import type { PackSurface } from '@/lib/types';
+
+/** What the shell knows about one of the learner's packs. */
+export interface RailPack {
+  packId: string;
+  /** The block they are working through in that pack, when they have one. */
+  currentBlockId: string | null;
+  surfaces?: PackSurface[];
+  decks: DeckTotals;
+}
 
 interface Props {
   locale: Locale;
   dictionary: Dictionary;
-  /** The block the learner is currently working through, when they have one. */
-  currentBlockId: string | null;
+  packs: RailPack[];
 }
 
-export function LearnerRail({ locale, dictionary, currentBlockId }: Props) {
+export function LearnerRail({ locale, dictionary, packs }: Props) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const t = dictionary.nav;
 
   const isActive = (href: string, exact = false) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith(`${href}?`);
 
   const home = `/${locale}`;
-  const blockHref = currentBlockId ? `/${locale}/blocks/${currentBlockId}` : null;
-  const words = currentBlockId ? `/${locale}/drills/words?blockId=${currentBlockId}` : null;
-  const sentences = currentBlockId ? `/${locale}/drills/sentences?blockId=${currentBlockId}` : null;
+
+  // The pack in scope, or — on a generic surface such as `/progress` — the learner's first, so the
+  // drills stay reachable from anywhere rather than the rail emptying itself.
+  const scoped = packIdFromUrl(pathname, searchParams);
+  const active = packs.find((entry) => entry.packId === scoped) ?? packs[0] ?? null;
+
+  const context = {
+    locale,
+    currentBlockId: active?.currentBlockId ?? null,
+    decks: active?.decks ?? { terms: 0, wordOrder: 0 },
+  };
+
+  // Filtered through the platform's order, never sorted by the pack's: *which* surfaces appear is
+  // the pack's to say; in what order is not.
+  const declared = active?.surfaces ?? DEFAULT_SURFACES;
+  const offered = DEFAULT_SURFACES.filter((id) => declared.includes(id));
 
   return (
     <nav
@@ -45,26 +74,48 @@ export function LearnerRail({ locale, dictionary, currentBlockId }: Props) {
         {t.home}
       </RailItem>
 
-      <RailItem href={blockHref} icon={<Dumbbell className="h-4 w-4" />} active={isActive(`/${locale}/blocks`)}>
-        {t.lessons}
-      </RailItem>
+      {group(offered).map((run, index) => {
+        const items = run.ids.map((id) => {
+          const surface = SURFACES[id];
+          const Icon = surface.icon;
+          const href = surface.href(context);
+          return (
+            <RailItem
+              key={id}
+              sub={run.sub}
+              href={href}
+              icon={<Icon className="h-4 w-4" />}
+              active={href ? isActive(href.split('?')[0] as string) : false}
+            >
+              {t[surface.labelKey]}
+            </RailItem>
+          );
+        });
 
-      <div className="my-0.5 ml-3.5 space-y-0.5 border-l border-border pl-2">
-        <RailItem sub href={words} icon={<Sparkles className="h-4 w-4" />} active={pathname === `/${locale}/drills/words`}>
-          {t.words}
-        </RailItem>
-        <RailItem sub href={sentences} icon={<Puzzle className="h-4 w-4" />} active={pathname === `/${locale}/drills/sentences`}>
-          {t.sentences}
-        </RailItem>
-      </div>
+        return run.sub ? (
+          <div key={index} className="my-0.5 ml-3.5 space-y-0.5 border-l border-border pl-2">
+            {items}
+          </div>
+        ) : (
+          items
+        );
+      })}
 
-      <RailItem href={`/${locale}/progress`} icon={<BarChart3 className="h-4 w-4" />} active={isActive(`/${locale}/progress`)}>
-        {t.progress}
-      </RailItem>
-
-      {!currentBlockId ? <p className="mt-auto px-2.5 pt-3 text-xs text-muted-foreground">{t.noBlockHint}</p> : null}
+      {!context.currentBlockId ? <p className="mt-auto px-2.5 pt-3 text-xs text-muted-foreground">{t.noBlockHint}</p> : null}
     </nav>
   );
+}
+
+/** Consecutive sub-surfaces share one indent rule, so they are rendered as a run rather than singly. */
+function group(ids: PackSurface[]): { sub: boolean; ids: PackSurface[] }[] {
+  const runs: { sub: boolean; ids: PackSurface[] }[] = [];
+  for (const id of ids) {
+    const sub = Boolean(SURFACES[id].sub);
+    const last = runs[runs.length - 1];
+    if (last && last.sub === sub) last.ids.push(id);
+    else runs.push({ sub, ids: [id] });
+  }
+  return runs;
 }
 
 function RailItem({
