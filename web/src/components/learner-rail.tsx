@@ -19,7 +19,7 @@ import { LayoutGrid } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
-import { DEFAULT_SURFACES, SURFACES, packIdFromUrl, type DeckTotals } from '@/lib/pack-scope';
+import { SURFACES, packIdFromUrl, visibleSurfaces, type DeckTotals } from '@/lib/pack-scope';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { PackSurface } from '@/lib/types';
@@ -49,10 +49,11 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
 
   const home = `/${locale}`;
 
-  // The pack in scope, or — on a generic surface such as `/progress` — the learner's first, so the
-  // drills stay reachable from anywhere rather than the rail emptying itself.
+  // The pack this URL is inside, if any. No fallback to "their first pack": a pack's surfaces
+  // belong to that pack, and offering them before one is chosen is offering something that does
+  // not exist yet.
   const scoped = packIdFromUrl(pathname, searchParams);
-  const active = packs.find((entry) => entry.packId === scoped) ?? packs[0] ?? null;
+  const active = scoped ? (packs.find((entry) => entry.packId === scoped) ?? null) : null;
 
   const context = {
     locale,
@@ -60,10 +61,9 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
     decks: active?.decks ?? { terms: 0, wordOrder: 0 },
   };
 
-  // Filtered through the platform's order, never sorted by the pack's: *which* surfaces appear is
-  // the pack's to say; in what order is not.
-  const declared = active?.surfaces ?? DEFAULT_SURFACES;
-  const offered = DEFAULT_SURFACES.filter((id) => declared.includes(id));
+  // A pack the learner has not opened yet is not in `packs`, so its surfaces fall back to the full
+  // set: it is a real pack, there is simply no progress for it until opening the page enrols them.
+  const offered = visibleSurfaces(Boolean(scoped), active?.surfaces);
 
   return (
     <nav

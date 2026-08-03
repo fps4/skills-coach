@@ -63,7 +63,18 @@ export interface SurfaceDef {
   labelKey: keyof Dictionary['nav'];
   /** Rendered indented under the surface above it. */
   sub?: boolean;
-  /** Null disables the item rather than hiding it: a rail whose items come and go is harder to learn. */
+  /**
+   * Belongs to a pack, so it does not exist outside one.
+   *
+   * The landing page is the product's, not any pack's: it lists packs and nothing else. A surface
+   * marked here is absent there — not greyed out, absent — because an item you cannot use and did
+   * not ask for is worse than no item.
+   */
+  packScoped: boolean;
+  /**
+   * Null disables the item *within* a pack: it is offered, there is simply nothing to practise yet.
+   * That is a different statement from not being offered at all, and it reads differently.
+   */
   href: (context: SurfaceContext) => string | null;
 }
 
@@ -71,12 +82,14 @@ export const SURFACES: Record<PackSurface, SurfaceDef> = {
   lessons: {
     icon: Dumbbell,
     labelKey: 'lessons',
+    packScoped: true,
     href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/blocks/${currentBlockId}` : null),
   },
   'drills:terms': {
     icon: Sparkles,
     labelKey: 'words',
     sub: true,
+    packScoped: true,
     // Offered by the manifest, enabled by the deck: a block with no terms yet disables rather than hides.
     href: ({ locale, currentBlockId, decks }) =>
       currentBlockId && decks.terms > 0 ? `/${locale}/drills/words?blockId=${currentBlockId}` : null,
@@ -85,15 +98,33 @@ export const SURFACES: Record<PackSurface, SurfaceDef> = {
     icon: Puzzle,
     labelKey: 'sentences',
     sub: true,
+    packScoped: true,
     href: ({ locale, currentBlockId, decks }) =>
       currentBlockId && decks.wordOrder > 0 ? `/${locale}/drills/sentences?blockId=${currentBlockId}` : null,
   },
   progress: {
     icon: BarChart3,
     labelKey: 'progress',
+    // Spans every pack the learner has, so it survives outside one.
+    packScoped: false,
     href: ({ locale }) => `/${locale}/progress`,
   },
 };
+
+/**
+ * Which surfaces the rail shows.
+ *
+ * Outside a pack, only what spans packs — the landing page is the product's, not any pack's, and an
+ * item you cannot use and did not ask for is worse than no item. Inside one, whatever that pack
+ * declares, filtered through the platform's order rather than sorted by the pack's.
+ *
+ * `declared` being undefined means the pack said nothing, which means all of them: a pack opts out
+ * of a surface, never in.
+ */
+export function visibleSurfaces(packInScope: boolean, declared: PackSurface[] | undefined): PackSurface[] {
+  const offered = declared ?? DEFAULT_SURFACES;
+  return DEFAULT_SURFACES.filter((id) => (SURFACES[id].packScoped ? packInScope && offered.includes(id) : true));
+}
 
 /** Icons a pack may name for its tile. Unknown keys fall back — losing an icon must not lose a tile. */
 const PACK_ICONS: Record<string, LucideIcon> = {
