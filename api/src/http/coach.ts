@@ -169,16 +169,22 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
   /**
    * The assembled brief for authoring the next block: how the learner did, the next rung on the
    * ramp, and the program goal. Aggregation, not generation.
+   *
+   * `submission:read-all`, not `lesson:read`. A brief is *about a learner* — it carries their error
+   * log and their lesson record — so the capability that guards it has to be the one that means
+   * "may see work that is not yours". `lesson:read` means "may read published content", and every
+   * learner holds it.
    */
   app.get('/coach/v1/blocks/:blockId/brief', async (request) => {
-    requireCapability(request, 'lesson:read');
+    requireCapability(request, 'submission:read-all');
     const { blockId } = request.params as { blockId: string };
     const { learnerId } = learnerQuerySchema.parse(request.query);
     return brief.buildBrief(ctx, blockId, await brief.resolveLearnerId(ctx, blockId, learnerId));
   });
 
+  /** Also about a learner, and gated the same way. */
   app.get('/coach/v1/blocks/:blockId/review', async (request) => {
-    requireCapability(request, 'lesson:read');
+    requireCapability(request, 'submission:read-all');
     const { blockId } = request.params as { blockId: string };
     const { learnerId } = learnerQuerySchema.parse(request.query);
     return { review: await brief.getBlockReview(ctx, blockId, await brief.resolveLearnerId(ctx, blockId, learnerId)) };

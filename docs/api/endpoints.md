@@ -117,8 +117,8 @@ The only way content and corrections enter the system
 | GET | `/submissions/:id` | `submission:read-all` | Submission, correction and the lesson it answers |
 | POST | `/submissions/:id/correction` | `correction:write` | Post a correction → `201` |
 | POST | `/blocks/:blockId/review` | `review:write` | Post a review; **closes the block** → `201` |
-| GET | `/blocks/:blockId/review` | `lesson:read` | Read a review back |
-| GET | `/blocks/:blockId/brief` | `lesson:read` | The assembled brief for the next block |
+| GET | `/blocks/:blockId/review` | `submission:read-all` | Read a review back |
+| GET | `/blocks/:blockId/brief` | `submission:read-all` | The assembled brief for the next block |
 | GET | `/learners` | `submission:read-all` | Learner ids and display names. No email |
 
 ### `POST /coach/v1/packs/:packId/blocks`
@@ -170,6 +170,10 @@ judgement, and `fromReview` — whatever the last review asked for.
 `?learnerId` picks the learner. It can be omitted when exactly one learner has work in the pack;
 with more than one it is a `400` listing them, because guessing would produce a brief about the
 wrong person. "Work" includes a backfilled error log, not only an enrollment.
+
+A brief is **about a person** — it carries their error log and their lesson record — so it needs
+`submission:read-all`, the capability that means "may see work that is not yours". `lesson:read`
+would not do: that means "may read published content", and every learner holds it.
 
 ### `POST /coach/v1/blocks/:blockId/review`
 

@@ -65,6 +65,48 @@ describeIfMongo('authorization', () => {
     expect(response.statusCode).toBe(403);
   });
 
+  /**
+   * A brief is about a *person*: it carries their error log and their lesson record. `lesson:read`
+   * — which every learner holds, because it is what lets them read published content — must not be
+   * enough to open one, or a learner reads whoever else is working through that pack.
+   */
+  it('stops a learner reading a brief about someone', async () => {
+    // Another learner does a lesson, so there is evidence for a brief to be about.
+    await harness.app.inject({
+      method: 'POST',
+      url: `/api/v1/lessons/${lessonIds[0]}/submissions`,
+      headers: auth('other-token'),
+      payload: { answers: [{ ref: 'q1', text: 'Ik ben gisteren naar de winkel geweest.' }] },
+    });
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/coach/v1/blocks/${blockId}/brief`,
+      headers: auth('learner-token'),
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.message).toContain('submission:read-all');
+  });
+
+  it('stops a learner reading a block review about someone', async () => {
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/coach/v1/blocks/${blockId}/review`,
+      headers: auth('learner-token'),
+    });
+
+    expect(response.statusCode).toBe(403);
+  });
+
+  it('still lets a coach read both', async () => {
+    for (const url of [`/coach/v1/blocks/${blockId}/brief`, `/coach/v1/blocks/${blockId}/review`]) {
+      const response = await harness.app.inject({ method: 'GET', url, headers: auth('coach-token') });
+      // 404 where nobody has worked in the pack yet — the point is that it is not a 403.
+      expect(response.statusCode).not.toBe(403);
+    }
+  });
+
   it('stops a coach credential practising as if it were a learner', async () => {
     const response = await harness.app.inject({
       method: 'GET',
