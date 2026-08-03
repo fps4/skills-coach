@@ -1,0 +1,82 @@
+name: publish-pack
+
+# Publishes a committed pack manifest to the ds1 deployment.
+#
+# Content does not ride the deploy pipeline (ADR-0006): a block gets written every week or two and
+# should not need a pull request and a release. But a *manifest* is committed (ADR-0008), and until
+# it is published a deployment does not know the pack exists at all — no tile, nothing for a coach
+# to author against. That gap is what this closes, and nothing more: it never publishes blocks.
+#
+# Manually dispatched, always. Publishing is idempotent — republishing a manifest updates it in
+# place — but it is still a write to a live deployment, and those happen because someone asked.
+#
+# Runs on the ds1 runner because the api binds to loopback there; from anywhere else it is
+# unreachable.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pack:
+        description: "Directory under packs/ holding the manifest to publish"
+        type: string
+        required: true
+        default: dutch-conversation-nl
+      dry_run:
+        description: "Parse and report, publish nothing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-pack
+  cancel-in-progress: false
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+
+jobs:
+  publish:
+    runs-on: [self-hosted, ds1]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse a pack that is not in the tree
+        run: |
+          test -f "packs/${{ inputs.pack }}/pack.yaml" \
+            || { echo "no manifest at packs/${{ inputs.pack }}/pack.yaml"; exit 1; }
+
+      - name: Build the CI image
+        run: docker build -t sc-publish:${{ github.run_id }} -f infra/docker/ci.Dockerfile .
+
+      - name: Mint a coach token
+        id: token
+        env:
+          CLIENT_SECRET: ${{ secrets.COACH_CLIENT_SECRET }}
+        run: |
+          test -n "$CLIENT_SECRET" || { echo "COACH_CLIENT_SECRET is not set"; exit 1; }
+          TOKEN=$(curl -sS -X POST https://auth.fps4.nl/oauth2/token \
+            -H 'content-type: application/json' \
+            -d "{\"grant_type\":\"client_credentials\",\"client_id\":\"skills-coach-coach\",\"client_secret\":\"$CLIENT_SECRET\"}" \
+            | jq -r '.access_token // .accessToken')
+          test -n "$TOKEN" -a "$TOKEN" != "null" || { echo "no access token in the response"; exit 1; }
+          # Masked before it is written anywhere, so a later step cannot echo it into the log.
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the manifest
+        run: |
+          # `--network host` so the container reaches the api on the host's loopback, which is the
+          # only interface it listens on.
+          docker run --rm --network host \
+            -e COACH_API_URL=http://127.0.0.1:8010 \
+            -e COACH_API_TOKEN='${{ steps.token.outputs.token }}' \
+            sc-publish:${{ github.run_id }} \
+            bash -lc "cd api && npm run import:pack -- \
+              --source ../packs/${{ inputs.pack }} --manifest-only ${{ inputs.dry_run && '--dry-run' || '' }}"
+
+      - name: Cleanup
+        if: always()
+        run: docker rmi "sc-publish:${{ github.run_id }}" 2>/dev/null || true
