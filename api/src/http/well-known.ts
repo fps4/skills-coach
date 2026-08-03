@@ -52,7 +52,10 @@ export function registerWellKnownRoutes(app: FastifyInstance, ctx: ServiceContex
 
   const document = {
     resource,
-    authorization_servers: ctx.config.auth.issuer ? [ctx.config.auth.issuer] : [],
+    // Omitted rather than empty when there is no issuer — which only happens in dev mode, where
+    // there is nothing to authorize against. An empty list would tell a client that nobody can
+    // issue it a token, which is a different and wrong statement.
+    ...(ctx.config.auth.issuer ? { authorization_servers: [ctx.config.auth.issuer] } : {}),
     bearer_methods_supported: ['header'],
     resource_documentation: 'https://github.com/fps4/skills-coach/blob/main/docs/guides/coach-loop.md',
   };

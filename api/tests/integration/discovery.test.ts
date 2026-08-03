@@ -45,9 +45,29 @@ describeIfMongo('discovery, when an MCP resource is configured', () => {
 
   it('points at the authorization server rather than pretending to be one', async () => {
     // Skills Coach verifies tokens and issues none (ADR-0002).
+    const harnessWithIssuer = await createHarness(undefined, {
+      MCP_RESOURCE_URL: RESOURCE,
+      AUTH_MODE: 'jwks',
+      AUTH_JWKS_URL: 'https://auth.example.invalid/.well-known/jwks.json',
+      AUTH_ISSUER: 'https://auth.example.invalid',
+      AUTH_AUDIENCE: 'skills-coach',
+    });
+
+    const response = await harnessWithIssuer.app.inject({
+      method: 'GET',
+      url: '/.well-known/oauth-protected-resource',
+    });
+
+    expect(response.json().authorization_servers).toEqual(['https://auth.example.invalid']);
+    await harnessWithIssuer.close();
+  });
+
+  it('omits the authorization server rather than claiming there is none', async () => {
+    // Dev mode has no issuer. An empty list would say "nobody can give you a token", which is a
+    // different statement from "this document does not say".
     const response = await harness.app.inject({ method: 'GET', url: '/.well-known/oauth-protected-resource' });
 
-    expect(response.json().authorization_servers).toEqual([harness.config.auth.issuer].filter(Boolean));
+    expect(response.json()).not.toHaveProperty('authorization_servers');
   });
 
   it('leaves everything else needing a token', async () => {

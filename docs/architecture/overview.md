@@ -78,8 +78,9 @@ layers. It is the part that decides whether an answer is right, whether a streak
 whether an error category has become recurring — and it is testable with no database, no HTTP and no
 model.
 
-`services/` being transport-agnostic is deliberate: the planned MCP server for the coach surface
-becomes a second caller of the same functions rather than a parallel implementation.
+`services/` being transport-agnostic is deliberate, and now load-bearing: the MCP server for the
+coach surface (`/mcp`, ADR-0010) is a second caller of the same functions rather than a parallel
+implementation — same capability gate, same audit trail, same store.
 
 ## The adaptation loop
 

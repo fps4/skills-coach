@@ -16,6 +16,7 @@ import { registerCoachRoutes } from './http/coach.js';
 import { registerLearnerRoutes } from './http/learner.js';
 import { PUBLIC_PATHS, registerOpsRoutes } from './http/ops.js';
 import { registerWellKnownRoutes, wellKnownPaths } from './http/well-known.js';
+import { registerMcpRoutes } from './mcp/route.js';
 import { createContext } from './services/context.js';
 
 export interface BuildOptions {
@@ -57,6 +58,9 @@ export async function buildApp(options: BuildOptions): Promise<FastifyInstance> 
   registerWellKnownRoutes(app, ctx);
   registerLearnerRoutes(app, ctx);
   registerCoachRoutes(app, ctx);
+  // Only when a resource URL is configured, so a deployment without an MCP endpoint is byte for
+  // byte the app it was before this existed.
+  registerMcpRoutes(app, ctx);
 
   return app;
 }

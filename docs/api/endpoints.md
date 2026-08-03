@@ -183,6 +183,37 @@ Posting a review **closes the block** on the error log: every category that did 
 earns a clean block, which is what eventually retires a mistake. Clean blocks are derived rather
 than accumulated, so posting a review twice is harmless.
 
+## The same surface over MCP
+
+`POST /mcp` is the coach API again, as tools ([ADR-0010](../architecture/decisions/0010-mcp-is-a-second-transport.md)).
+Streamable HTTP, JSON responses, no session. Mounted only when `MCP_RESOURCE_URL` is set.
+
+| Tool | Capability | Same as |
+|---|---|---|
+| `list_packs` | `lesson:read` | `GET /coach/v1/packs` |
+| `get_block` | `lesson:read` | `GET /coach/v1/blocks/:blockId` |
+| `get_brief` | `submission:read-all` | `GET /coach/v1/blocks/:blockId/brief` |
+| `get_block_review` | `submission:read-all` | `GET /coach/v1/blocks/:blockId/review` |
+| `list_learners` | `submission:read-all` | `GET /coach/v1/learners` |
+| `list_submissions` | `submission:read-all` | `GET /coach/v1/submissions` |
+| `get_submission` | `submission:read-all` | `GET /coach/v1/submissions/:id` |
+| `upsert_pack` | `pack:publish` | `POST /coach/v1/packs` |
+| `publish_block` | `pack:publish` | `POST /coach/v1/packs/:packId/blocks` |
+| `archive_block` | `pack:publish` | `POST /coach/v1/blocks/:blockId/archive` |
+| `post_correction` | `correction:write` | `POST /coach/v1/submissions/:id/correction` |
+| `post_block_review` | `review:write` | `POST /coach/v1/blocks/:blockId/review` |
+
+Two gates. The endpoint refuses a token holding no coach capability at all, and each tool then checks
+its own — `tools/list` shows only what the caller could actually run. There are no learner tools: a
+coach credential cannot practise, and a second transport must not become the way around that.
+
+**What comes back as what.** No token or a bad one is an HTTP `401` carrying
+`WWW-Authenticate: Bearer resource_metadata=…`, because that is what starts a client's OAuth flow. A
+missing capability, invalid arguments or a domain refusal come back as a tool result with
+`isError: true` — a model can read those and act on them.
+
+`GET` and `DELETE` on `/mcp` are `405`: nothing streams, and there is no session to end.
+
 ## What is deliberately absent
 
 - No endpoint that generates or corrects anything. See ADR-0001.

@@ -35,6 +35,8 @@ api/src/
   services/          domain rules + persistence, transport-agnostic
   auth/              JWKS verification, role → capability map, fastify plugin
   http/              route definitions only — thin, delegating to services
+  mcp/               the same coach surface as tools — `handler.ts` is transport-agnostic,
+                     `route.ts` is the fastify bridge (ADR-0010)
   importer/          local markdown/CSV → pack payload → coach API
                      (also `validate-manifests.ts`, the linter CI runs over every
                       committed `packs/*/pack.yaml` — ADR-0008)
@@ -45,8 +47,9 @@ streak survives, or whether an error category has become recurring lives there a
 no dependencies. That is what the unit tests in `api/tests/unit/` pin down, and it is why those tests
 are the real specification of the product's behaviour.
 
-`services/` is where domain rules meet the database. Keeping it transport-agnostic is what makes the
-planned MCP server additive: it will be a second caller of the same service functions, not a fork.
+`services/` is where domain rules meet the database. Keeping it transport-agnostic is what made the
+MCP server additive: `mcp/tools.ts` is a second caller of the same service functions, behind the same
+capability gate and writing the same audit trail, not a fork.
 
 ## `web/` — the learner surface
 
