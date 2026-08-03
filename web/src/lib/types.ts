@@ -29,6 +29,22 @@ export interface Framework {
   levels: string[];
 }
 
+/** A surface this app can render for a pack. The api validates against the same closed set. */
+export type PackSurface = 'lessons' | 'drills:terms' | 'drills:word-order' | 'progress';
+
+/**
+ * How a pack asks to be presented. Declared by the pack, resolved here.
+ *
+ * `palette` and `icon` are keys into this app's registries, deliberately not enums in the api — an
+ * unrecognised one falls back rather than failing a publish. See `lib/pack-scope.ts`.
+ */
+export interface PackPresentation {
+  palette?: string;
+  icon?: string;
+  tagline?: LocalizedText;
+  surfaces?: PackSurface[];
+}
+
 export interface Pack {
   packId: string;
   title: LocalizedText;
@@ -38,6 +54,7 @@ export interface Pack {
   goal?: LocalizedText;
   framework: Framework;
   errorCategories: { id: string; label?: LocalizedText }[];
+  presentation?: PackPresentation;
 }
 
 export interface Block {
