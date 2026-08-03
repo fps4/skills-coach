@@ -11,7 +11,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { requireCapability } from '../auth/plugin.js';
-import { invalid, notFound } from './errors.js';
 import {
   packManifestSchema,
   postBlockReviewSchema,
@@ -22,10 +21,14 @@ import * as audit from '../services/audit.js';
 import * as brief from '../services/brief.js';
 import * as content from '../services/content.js';
 import * as corrections from '../services/corrections.js';
+import * as learners from '../services/learners.js';
 import * as submissions from '../services/submissions.js';
 import type { ServiceContext } from '../services/context.js';
 
 const learnerQuerySchema = z.object({ learnerId: z.string().optional() });
+
+/** Which door a write came through. Recorded so the audit trail does not fork by transport. */
+const HTTP = { transport: 'http' } as const;
 
 export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): void {
   // --- publishing -----------------------------------------------------------
@@ -38,7 +41,12 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
   app.post('/coach/v1/packs', async (request) => {
     const auth = requireCapability(request, 'pack:publish');
     const pack = await content.upsertPack(ctx, packManifestSchema.parse(request.body));
-    await audit.record(ctx, { principal: auth.principal, action: 'pack.upsert', resource: `pack/${pack.packId}` });
+    await audit.record(ctx, {
+      principal: auth.principal,
+      action: 'pack.upsert',
+      resource: `pack/${pack.packId}`,
+      meta: { ...HTTP },
+    });
     return { pack };
   });
 
@@ -56,6 +64,7 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
       action: 'block.publish',
       resource: `block/${result.block.blockId}`,
       meta: {
+        ...HTTP,
         lessons: result.lessonsPublished,
         drillItems: result.drillItemsPublished,
         removed: result.drillItemsRemoved,
@@ -70,7 +79,12 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
     const auth = requireCapability(request, 'pack:publish');
     const { blockId } = request.params as { blockId: string };
     const block = await content.archiveBlock(ctx, blockId);
-    await audit.record(ctx, { principal: auth.principal, action: 'block.archive', resource: `block/${blockId}` });
+    await audit.record(ctx, {
+      principal: auth.principal,
+      action: 'block.archive',
+      resource: `block/${blockId}`,
+      meta: { ...HTTP },
+    });
     return { block };
   });
 
@@ -118,7 +132,11 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
       principal: auth.principal,
       action: 'correction.post',
       resource: `submission/${submissionId}`,
-      meta: { items: result.correction.items.length, categories: Object.keys(result.correction.categoryTally) },
+      meta: {
+        ...HTTP,
+        items: result.correction.items.length,
+        categories: Object.keys(result.correction.categoryTally),
+      },
     });
 
     return reply.status(201).send(result);
@@ -142,7 +160,7 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
       principal: auth.principal,
       action: 'block.review',
       resource: `block/${blockId}`,
-      meta: { learnerId, transitioned: result.transitioned },
+      meta: { ...HTTP, learnerId, transitioned: result.transitioned },
     });
 
     return reply.status(201).send(result);
@@ -156,14 +174,14 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
     requireCapability(request, 'lesson:read');
     const { blockId } = request.params as { blockId: string };
     const { learnerId } = learnerQuerySchema.parse(request.query);
-    return brief.buildBrief(ctx, blockId, await resolveLearnerId(ctx, blockId, learnerId));
+    return brief.buildBrief(ctx, blockId, await brief.resolveLearnerId(ctx, blockId, learnerId));
   });
 
   app.get('/coach/v1/blocks/:blockId/review', async (request) => {
     requireCapability(request, 'lesson:read');
     const { blockId } = request.params as { blockId: string };
     const { learnerId } = learnerQuerySchema.parse(request.query);
-    return { review: await brief.getBlockReview(ctx, blockId, await resolveLearnerId(ctx, blockId, learnerId)) };
+    return { review: await brief.getBlockReview(ctx, blockId, await brief.resolveLearnerId(ctx, blockId, learnerId)) };
   });
 
   /**
@@ -172,40 +190,6 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
    */
   app.get('/coach/v1/learners', async (request) => {
     requireCapability(request, 'submission:read-all');
-    const docs = await ctx.store.collections.learners
-      .find({})
-      .project<{ _id: string; displayName?: string; uiLanguage: string }>({ displayName: 1, uiLanguage: 1 })
-      .toArray();
-    return { learners: docs.map(({ _id, ...rest }) => ({ learnerId: _id, ...rest })) };
+    return { learners: await learners.listLearnerSummaries(ctx) };
   });
-}
-
-/**
- * Which learner a brief or review is about.
- *
- * Skills Coach is single-learner in most deployments, so requiring the id every time would be
- * friction for no safety. When exactly one learner has evidence for the pack, that is unambiguous;
- * when more than one does, guessing would silently produce a brief about the wrong person, so it
- * asks instead.
- *
- * "Evidence" is deliberately wider than enrollment: a learner whose history was backfilled has an
- * error log for the pack before they have ever opened it in the surface, and a brief about them is
- * exactly what an author needs at that point.
- */
-async function resolveLearnerId(ctx: ServiceContext, blockId: string, learnerId?: string): Promise<string> {
-  if (learnerId) return learnerId;
-
-  const block = await content.getBlock(ctx, blockId);
-  const packId = block.packId;
-
-  const [enrolled, submitted, errored] = await Promise.all([
-    ctx.store.collections.enrollments.distinct('learnerId', { packId }),
-    ctx.store.collections.submissions.distinct('learnerId', { packId }),
-    ctx.store.collections.errorLog.distinct('learnerId', { packId }),
-  ]);
-
-  const unique = [...new Set([...enrolled, ...submitted, ...errored])];
-  if (unique.length === 1) return unique[0] as string;
-  if (unique.length === 0) throw notFound(`any learner with work in pack ${packId}`);
-  throw invalid('several learners have work in this pack — pass ?learnerId=', { learnerIds: unique });
 }

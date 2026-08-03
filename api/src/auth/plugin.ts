@@ -69,11 +69,21 @@ export function requireAuth(request: FastifyRequest): RequestAuth {
   return request.auth;
 }
 
-/** Assert a capability, returning the caller so a route can use it in one expression. */
-export function requireCapability(request: FastifyRequest, capability: Capability): RequestAuth {
-  const auth = requireAuth(request);
+/**
+ * Assert a capability against an already-authenticated caller.
+ *
+ * The decision itself, with no request in it — so a transport that is not a route (the MCP server
+ * dispatches JSON-RPC, not HTTP verbs) gates on exactly the same rule rather than reimplementing it.
+ * One place decides what a role may do, which is the whole of ADR-0002.
+ */
+export function requireCapabilityOn(auth: RequestAuth, capability: Capability): RequestAuth {
   if (!auth.capabilities.has(capability)) {
     throw new ApiError('forbidden', `this operation requires the ${capability} capability`);
   }
   return auth;
+}
+
+/** Assert a capability, returning the caller so a route can use it in one expression. */
+export function requireCapability(request: FastifyRequest, capability: Capability): RequestAuth {
+  return requireCapabilityOn(requireAuth(request), capability);
 }

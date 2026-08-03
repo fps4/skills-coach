@@ -16,7 +16,7 @@
  * it earns a clean block, which is what eventually retires a mistake.
  */
 
-import { notFound } from '../http/errors.js';
+import { invalid, notFound } from '../http/errors.js';
 import { closeBlock, redrillCategories, retireCategories, topRecurring } from '../domain/error-log.js';
 import { blockProgress, type BlockProgress } from '../domain/progression.js';
 import { rampPosition, type RampPosition } from '../domain/ramp.js';
@@ -26,6 +26,39 @@ import { getBlock, getPack } from './content.js';
 import { listErrorLog } from './corrections.js';
 import { blockReviewIdFor, errorLogIdFor, type ServiceContext } from './context.js';
 import { blockSubmissionState } from './submissions.js';
+
+/**
+ * Which learner a brief or review is about.
+ *
+ * Skills Coach is single-learner in most deployments, so requiring the id every time would be
+ * friction for no safety. When exactly one learner has evidence for the pack, that is unambiguous;
+ * when more than one does, guessing would silently produce a brief about the wrong person, so it
+ * asks instead.
+ *
+ * "Evidence" is deliberately wider than enrollment: a learner whose history was backfilled has an
+ * error log for the pack before they have ever opened it in the surface, and a brief about them is
+ * exactly what an author needs at that point.
+ *
+ * A rule, not a routing convenience — which is why it lives beside the brief it guards rather than
+ * in whichever transport happens to ask.
+ */
+export async function resolveLearnerId(ctx: ServiceContext, blockId: string, learnerId?: string): Promise<string> {
+  if (learnerId) return learnerId;
+
+  const block = await getBlock(ctx, blockId);
+  const packId = block.packId;
+
+  const [enrolled, submitted, errored] = await Promise.all([
+    ctx.store.collections.enrollments.distinct('learnerId', { packId }),
+    ctx.store.collections.submissions.distinct('learnerId', { packId }),
+    ctx.store.collections.errorLog.distinct('learnerId', { packId }),
+  ]);
+
+  const unique = [...new Set([...enrolled, ...submitted, ...errored])];
+  if (unique.length === 1) return unique[0] as string;
+  if (unique.length === 0) throw notFound(`any learner with work in pack ${packId}`);
+  throw invalid('several learners have work in this pack — pass ?learnerId=', { learnerIds: unique });
+}
 
 export interface PostReviewResult {
   review: BlockReview;
