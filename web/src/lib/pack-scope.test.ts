@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SURFACES, SURFACES, packIcon, packIdFromUrl, resolvePalette } from './pack-scope';
+import { DEFAULT_SURFACES, SURFACES, packIcon, packIdFromUrl, resolvePalette, visibleSurfaces } from './pack-scope';
 
 const search = (query: string) => new URLSearchParams(query);
 
@@ -84,6 +84,34 @@ describe('surfaces', () => {
     expect(SURFACES['drills:terms'].href(context)).toBeNull();
     // Progress is not block-scoped, so it stays reachable.
     expect(SURFACES.progress.href(context)).toBe('/nl/progress');
+  });
+});
+
+describe('visibleSurfaces', () => {
+  it('shows no pack surfaces at all before a pack is chosen', () => {
+    // The landing page is the product's, not any pack's. Lessons and drills belong to a pack, so
+    // outside one they are absent — not greyed out, absent.
+    expect(visibleSurfaces(false, undefined)).toEqual(['progress']);
+  });
+
+  it('keeps showing them absent even when the learner has packs with material', () => {
+    expect(visibleSurfaces(false, ['lessons', 'drills:terms', 'drills:word-order', 'progress'])).toEqual(['progress']);
+  });
+
+  it('shows everything a pack offers once inside it', () => {
+    expect(visibleSurfaces(true, undefined)).toEqual(DEFAULT_SURFACES);
+  });
+
+  it('honours a pack that opts out of one', () => {
+    expect(visibleSurfaces(true, ['lessons', 'drills:terms', 'progress'])).toEqual(['lessons', 'drills:terms', 'progress']);
+  });
+
+  it('renders in the platform’s order, not the order the pack listed them', () => {
+    expect(visibleSurfaces(true, ['progress', 'drills:word-order', 'lessons'])).toEqual([
+      'lessons',
+      'drills:word-order',
+      'progress',
+    ]);
   });
 });
 
