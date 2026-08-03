@@ -66,6 +66,23 @@ export interface SectionMapEntry {
   kind: SectionKind;
 }
 
+/** A surface the learner surface can render past the landing page. Closed set — see the schema. */
+export type PackSurface = 'lessons' | 'drills:terms' | 'drills:word-order' | 'progress';
+
+/**
+ * How a pack presents itself, declared and never interpreted here.
+ *
+ * The runtime carries this to the viewer the way it carries a ramp's dials to an author. `palette`
+ * and `icon` are keys into registries the web app owns; an unknown one falls back there.
+ */
+export interface PackPresentation {
+  palette?: string;
+  icon?: string;
+  tagline?: LocalizedText;
+  /** Omitted means "everything the platform offers" — a pack opts out, not in. */
+  surfaces?: PackSurface[];
+}
+
 export interface PackManifest {
   packId: string;
   title: LocalizedText;
@@ -82,6 +99,7 @@ export interface PackManifest {
   sectionMap?: SectionMapEntry[];
   /** Words stripped from the front of an answer when matching, per language. */
   matchArticles?: Record<string, string[]>;
+  presentation?: PackPresentation;
   version: number;
 }
 

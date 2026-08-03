@@ -133,6 +133,30 @@ export const sectionKindSchema = z.enum([
   'exercise',
 ]);
 
+/**
+ * The surfaces a pack offers past the landing page.
+ *
+ * **Closed, like the section kinds, and for the same reason** (ADR-0004): a surface the runtime
+ * cannot render is the failure this contract exists to prevent, so a typo must fail the publish
+ * rather than silently hide a rail item. Adding one is a platform change with a renderer behind it.
+ */
+export const packSurfaceSchema = z.enum(['lessons', 'drills:terms', 'drills:word-order', 'progress']);
+
+/**
+ * How a pack presents itself.
+ *
+ * `palette` and `icon` are **open strings on purpose**: they are keys into registries the *viewer*
+ * owns, and the api has no business enumerating a hue list it does not render. An unrecognised value
+ * falls back, exactly as `framework.ramp.dials` is carried without ever being interpreted. Cosmetics
+ * are not worth failing a publish over; structure is.
+ */
+export const packPresentationSchema = z.object({
+  palette: nonEmpty.optional(),
+  icon: nonEmpty.optional(),
+  tagline: localizedTextSchema.optional(),
+  surfaces: z.array(packSurfaceSchema).min(1).optional(),
+});
+
 export const packManifestSchema = z.object({
   packId: nonEmpty.regex(/^[a-z0-9][a-z0-9-]*$/, 'packId must be lower-case slug-like'),
   title: localizedTextSchema,
@@ -159,6 +183,7 @@ export const packManifestSchema = z.object({
   errorCategories: z.array(z.object({ id: nonEmpty, label: localizedTextSchema.optional() })).min(1),
   sectionMap: z.array(z.object({ match: nonEmpty, kind: sectionKindSchema })).optional(),
   matchArticles: z.record(z.array(z.string())).optional(),
+  presentation: packPresentationSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------

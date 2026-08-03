@@ -138,6 +138,18 @@ errorCategories:
 matchArticles:
   nl: [de, het, een, "'t"]
   en: [the, a, an]
+
+# How this pack presents itself past the landing page (ADR-0009). Declared here, resolved by the
+# viewer against its own registries — nothing in the runtime branches on which pack this is.
+presentation:
+  palette: orange
+  icon: message-circle
+  tagline:
+    nl: Van B1 naar B2, één blok tegelijk.
+    en: B1 to B2, one block at a time.
+# No `surfaces:` — this program uses every surface the platform offers, and omitting the list is
+# how a pack says so. Naming them is how a pack opts *out* of one.
+
 # NOTE — there is deliberately no `sectionMap:` here.
 #
 # A manifest's sectionMap REPLACES the built-in heading map rather than extending it

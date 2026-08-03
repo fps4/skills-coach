@@ -59,10 +59,34 @@ sectionMap:                  # optional — override how headings map to section
 
 matchArticles:               # optional — leading words ignored when matching an answer
   nl: [de, het, een]
+
+presentation:                # optional — how the pack presents itself past the landing page
+  palette: blue
+  icon: message-circle
+  tagline: { nl: …, en: … }
+  surfaces: [lessons, drills:terms, drills:word-order, progress]
 ```
 
 The runtime never interprets a dial. It carries them into the brief, so whoever writes the next
 block knows which rung they are aiming at.
+
+### Presentation
+
+`presentation` is how a pack asks to look and what it offers
+([ADR-0009](../architecture/decisions/0009-per-pack-presentation-is-declarative.md)). The landing
+tiles stay generic; this governs everything after them.
+
+| Key | Behaviour when unrecognised |
+|---|---|
+| `palette` | falls back to the default hue, silently — it is a key into the viewer's registry |
+| `icon` | falls back to a default icon |
+| `tagline` | shown under the pack title |
+| `surfaces` | **fails the publish** — a closed set, because the runtime must be able to render it |
+
+**Omitting `surfaces` means all of them.** A pack opts *out* of a surface, never in, so a manifest
+with no `presentation` at all renders exactly like every pack does today. Leave out
+`drills:word-order` and the rail stops offering it; a surface that *is* offered but whose deck is
+empty renders disabled rather than disappearing.
 
 ### `sectionMap` replaces, it does not extend
 

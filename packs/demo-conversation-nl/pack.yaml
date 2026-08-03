@@ -76,3 +76,18 @@ errorCategories:
 matchArticles:
   nl: [de, het, een, "'t"]
   en: [the, a, an]
+
+# How this pack presents itself past the landing page. Everything here is a *declaration*: the
+# runtime carries it, the viewer resolves it against its own registries, and nothing branches on
+# which pack it is (ADR-0004, ADR-0009).
+presentation:
+  palette: blue # a key into the viewer's palettes; an unknown one falls back to the default
+  icon: message-circle # likewise, a key into its icon registry
+  tagline:
+    nl: Een rondleiding door elk soort lesonderdeel.
+    en: A tour of every kind of lesson section.
+  # The surfaces this pack offers. Omit the list entirely and a pack gets all of them; naming them
+  # is how a pack opts *out* — a pack with no word-order material leaves that entry out and the
+  # rail stops offering it. Unlike the two keys above, this set is closed and a typo fails the
+  # publish, because a surface the runtime cannot render is the failure the contract prevents.
+  surfaces: [lessons, drills:terms, drills:word-order, progress]
