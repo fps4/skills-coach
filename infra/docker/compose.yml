@@ -66,6 +66,9 @@ services:
       AUTH_JWKS_URL: ${AUTH_JWKS_URL:-}
       AUTH_ISSUER: ${AUTH_ISSUER:-}
       AUTH_AUDIENCE: ${AUTH_AUDIENCE:-}
+      # Unset in every deployment that does not expose an MCP endpoint; setting it both publishes
+      # the discovery document and adds the URL to the accepted token audiences.
+      MCP_RESOURCE_URL: ${MCP_RESOURCE_URL:-}
       AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-365}
     ports:
       - "${API_BIND:-127.0.0.1}:${API_PORT:-8010}:8000"

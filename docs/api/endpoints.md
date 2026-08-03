@@ -28,6 +28,14 @@ An unrecognised role grants nothing and is logged. An absent `roles` claim is tr
 |---|---|---|---|
 | GET | `/health` | none | Liveness — the process is up |
 | GET | `/ready` | none | Readiness — MongoDB answers. `503` when it does not |
+| GET | `/.well-known/oauth-protected-resource` | none | Protected-resource metadata (RFC 9728) — which authorization server guards this API. Served only when `MCP_RESOURCE_URL` is set; also at `…/mcp`, the resource-path form the RFC specifies |
+
+Discovery is unauthenticated by necessity: a client cannot present a token it has no way to obtain.
+The exemption is an exact-match path list (`http/ops.ts` plus the well-known paths), never a prefix.
+
+`AUTH_AUDIENCE` is comma-separated, and `MCP_RESOURCE_URL` is appended to it automatically — one
+service can be more than one OAuth *resource*, and a token bound to the MCP endpoint (RFC 8707)
+carries that URL as its `aud` rather than the application's.
 
 ## Learner API — `/api/v1`
 

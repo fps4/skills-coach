@@ -15,6 +15,7 @@ import { registerErrorHandler } from './http/errors.js';
 import { registerCoachRoutes } from './http/coach.js';
 import { registerLearnerRoutes } from './http/learner.js';
 import { PUBLIC_PATHS, registerOpsRoutes } from './http/ops.js';
+import { registerWellKnownRoutes, wellKnownPaths } from './http/well-known.js';
 import { createContext } from './services/context.js';
 
 export interface BuildOptions {
@@ -44,10 +45,16 @@ export async function buildApp(options: BuildOptions): Promise<FastifyInstance> 
     await app.register(cors, { origin: config.corsOrigins, credentials: true });
   }
 
-  registerAuth(app, { verifier: options.verifier ?? createVerifier(config.auth), publicPaths: PUBLIC_PATHS });
+  registerAuth(app, {
+    verifier: options.verifier ?? createVerifier(config.auth),
+    // Discovery has to be readable without a token — that is the whole point of it (RFC 9728).
+    // The list is exact-match, so each path is named in full rather than matched by prefix.
+    publicPaths: [...PUBLIC_PATHS, ...wellKnownPaths(config.mcp.resourceUrl)],
+  });
 
   const ctx = createContext(store, config, options.now);
   registerOpsRoutes(app, ctx);
+  registerWellKnownRoutes(app, ctx);
   registerLearnerRoutes(app, ctx);
   registerCoachRoutes(app, ctx);
 

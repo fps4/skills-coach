@@ -88,7 +88,7 @@ describe('configuration safety', () => {
       AUTH_AUDIENCE: 'skills-coach',
     } as NodeJS.ProcessEnv);
     expect(config.auth.mode).toBe('jwks');
-    expect(config.auth.audience).toBe('skills-coach');
+    expect(config.auth.audiences).toEqual(['skills-coach']);
   });
 });
 

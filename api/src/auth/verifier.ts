@@ -69,7 +69,9 @@ export function createVerifier(config: AuthConfig): Verifier {
       try {
         const { payload } = await jwtVerify(token, jwks, {
           issuer: config.issuer,
-          audience: config.audience,
+          // Any one is enough: the application and the MCP endpoint are separate OAuth resources
+          // (RFC 8707) and the same service answers for both.
+          audience: config.audiences,
           clockTolerance: config.clockToleranceSeconds,
         });
 
