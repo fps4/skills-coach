@@ -9,13 +9,15 @@
  * just another coach-API caller, and anything it can do, a person or a service can do too.
  */
 
-import { loadPack } from './pack-source.js';
+import { loadManifest, loadPack } from './pack-source.js';
 
 interface Args {
   source: string;
   manifest?: string;
   only?: number;
   dryRun: boolean;
+  /** Publish the manifest and stop — for a pack whose blocks are authored elsewhere, or not yet. */
+  manifestOnly: boolean;
   apiUrl: string;
   token: string;
 }
@@ -38,7 +40,8 @@ function parseArgs(argv: string[]): Args {
   const source = args.source ?? args.s;
   if (typeof source !== 'string') {
     throw new Error(
-      'usage: import:pack --source <dir> [--manifest <file>] [--only <block>] [--dry-run] [--api-url <url>] [--token <token>]',
+      'usage: import:pack --source <dir> [--manifest <file>] [--only <block>] [--manifest-only] ' +
+        '[--dry-run] [--api-url <url>] [--token <token>]',
     );
   }
 
@@ -47,6 +50,7 @@ function parseArgs(argv: string[]): Args {
     manifest: typeof args.manifest === 'string' ? args.manifest : undefined,
     only: typeof args.only === 'string' ? Number(args.only) : undefined,
     dryRun: args['dry-run'] === true,
+    manifestOnly: args['manifest-only'] === true,
     apiUrl:
       (typeof args['api-url'] === 'string' ? args['api-url'] : process.env.COACH_API_URL) ?? 'http://127.0.0.1:8010',
     // Local development runs AUTH_MODE=dev, where any bearer value is accepted.
@@ -69,15 +73,37 @@ async function post(args: Args, path: string, body: unknown): Promise<unknown> {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
+
+  const log = (message: string): void => {
+    process.stdout.write(`${message}\n`);
+  };
+
+  // A pack whose blocks live outside the tree — or do not exist yet — still has a manifest worth
+  // publishing: it is what makes the pack appear at all, so a learner can open it and a coach can
+  // author against its ramp. `loadPack` insists on a block directory, and rightly; this path does
+  // not go through it.
+  if (args.manifestOnly) {
+    const manifest = await loadManifest(args.manifest ?? `${args.source}/pack.yaml`);
+    log(`pack     ${manifest.packId} (${manifest.contentLanguage} → ${manifest.translationLanguage})`);
+    log(`manifest only — no blocks are published by this run`);
+
+    if (args.dryRun) {
+      log('\n--dry-run: nothing was published.');
+      return;
+    }
+
+    log(`\npublishing to ${args.apiUrl}`);
+    await post(args, '/coach/v1/packs', manifest);
+    log(`  pack ${manifest.packId} ✓`);
+    log('\ndone.');
+    return;
+  }
+
   const { manifest, blocks, warnings } = await loadPack({
     source: args.source,
     manifest: args.manifest,
     only: args.only,
   });
-
-  const log = (message: string): void => {
-    process.stdout.write(`${message}\n`);
-  };
 
   log(`pack     ${manifest.packId} (${manifest.contentLanguage} → ${manifest.translationLanguage})`);
   log(`blocks   ${blocks.length}`);

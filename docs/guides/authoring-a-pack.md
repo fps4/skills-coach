@@ -107,6 +107,16 @@ only for a manifest that names no person, employer or organisation.
 make validate      # parse and lint every manifest in the tree — also runs in CI
 ```
 
+A committed manifest is published on its own, without blocks — that is what makes the pack exist in
+a deployment at all:
+
+```sh
+cd api && npm run import:pack -- --source ../packs/your-pack --manifest-only --dry-run
+```
+
+On ds1 that is the `publish-pack` workflow rather than a local run, because the api binds to
+loopback there: `gh workflow run publish-pack.yml -f pack=your-pack -f dry_run=false`.
+
 The linter checks what the schema cannot: a duplicated error-category id, a ramp step naming a level
 the framework does not list, and ramp ranges that overlap or leave a gap. Each of those is resolved
 silently at runtime — an overlap means the first step declared wins and the other is unreachable —
