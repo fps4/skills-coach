@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "import:pack": "tsx src/importer/import-pack.ts",
-    "import:errorlog": "tsx src/importer/import-error-log.ts"
+    "import:errorlog": "tsx src/importer/import-error-log.ts",
+    "validate:manifests": "tsx src/importer/validate-manifests.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",

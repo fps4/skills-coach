@@ -36,6 +36,8 @@ api/src/
   auth/              JWKS verification, role → capability map, fastify plugin
   http/              route definitions only — thin, delegating to services
   importer/          local markdown/CSV → pack payload → coach API
+                     (also `validate-manifests.ts`, the linter CI runs over every
+                      committed `packs/*/pack.yaml` — ADR-0008)
 ```
 
 **The important line is `domain/`.** Everything that decides whether an answer is right, whether a
