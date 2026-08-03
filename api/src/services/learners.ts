@@ -60,6 +60,27 @@ export async function resolveLearner(ctx: ServiceContext, principal: Principal):
   }
 }
 
+/**
+ * Learner identifiers and display names — the minimum a coach needs to address a brief or a review
+ * to someone.
+ *
+ * Deliberately narrower than `Learner`: no email, no subject, nothing identity-service owns. The
+ * projection is the privacy boundary, so it lives here rather than in whichever transport asks.
+ */
+export interface LearnerSummary {
+  learnerId: string;
+  displayName?: string;
+  uiLanguage: string;
+}
+
+export async function listLearnerSummaries(ctx: ServiceContext): Promise<LearnerSummary[]> {
+  const docs = await ctx.store.collections.learners
+    .find({})
+    .project<{ _id: string; displayName?: string; uiLanguage: string }>({ displayName: 1, uiLanguage: 1 })
+    .toArray();
+  return docs.map(({ _id, ...rest }) => ({ learnerId: _id, ...rest }));
+}
+
 export async function getLearner(ctx: ServiceContext, learnerId: string): Promise<Learner> {
   const doc = await ctx.store.collections.learners.findOne({ _id: learnerId });
   if (!doc) throw notFound(`learner ${learnerId}`);
