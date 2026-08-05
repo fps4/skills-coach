@@ -34,6 +34,8 @@ const nl = {
   common: {
     loading: 'Bezig met laden…',
     error: 'Er ging iets mis',
+    sessionExpired: 'Je sessie is verlopen. Log opnieuw in om verder te gaan.',
+    signInAgain: 'Opnieuw inloggen',
     retry: 'Opnieuw proberen',
     back: 'Terug',
     next: 'Volgende',
@@ -224,6 +226,8 @@ const en: Dictionary = {
   common: {
     loading: 'Loading…',
     error: 'Something went wrong',
+    sessionExpired: 'Your session has expired. Sign in again to carry on.',
+    signInAgain: 'Sign in again',
     retry: 'Try again',
     back: 'Back',
     next: 'Next',

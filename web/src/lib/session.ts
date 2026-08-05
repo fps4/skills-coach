@@ -21,6 +21,8 @@ export interface TokenSet {
   accessToken: string;
   refreshToken?: string;
   expiresIn?: number;
+  /** identity-service returns `refresh_expires_in`; the refresh cookie is cut to match it. */
+  refreshExpiresIn?: number;
 }
 
 /**

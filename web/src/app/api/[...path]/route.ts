@@ -14,7 +14,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { API_INTERNAL_URL } from '@/lib/api';
 import { AUTH_MODE, DEV_TOKEN } from '@/lib/session';
-import { currentToken } from '@/lib/auth';
+import { ensureToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +31,9 @@ async function proxy(request: NextRequest, path: string[]): Promise<NextResponse
     return NextResponse.json({ error: { code: 'not_found', message: `not proxied: /${suffix}` } }, { status: 404 });
   }
 
-  const token = AUTH_MODE === 'dev' ? DEV_TOKEN : await currentToken();
+  // A route handler may write cookies, so this is allowed to renew rather than merely read. It is
+  // what keeps a drill alive when the token lapses between one answer and the next.
+  const token = AUTH_MODE === 'dev' ? DEV_TOKEN : await ensureToken();
   if (!token) return unauthorized();
 
   const target = `${API_INTERNAL_URL}/api/${suffix}${request.nextUrl.search}`;

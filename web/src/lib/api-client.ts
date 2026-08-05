@@ -43,6 +43,17 @@ export async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, message, details);
 }
 
+/**
+ * True when the call failed because the session behind the httpOnly cookie is gone.
+ *
+ * Worth distinguishing from any other failure: the middleware only gates *page* requests, so a
+ * token that expires while a drill is open surfaces as a failed fetch and nothing navigates. Told
+ * "something went wrong", a learner retries forever; told the session expired, they sign in again.
+ */
+export function isSessionExpired(error: unknown): boolean {
+  return error instanceof ApiError && error.isUnauthenticated;
+}
+
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;

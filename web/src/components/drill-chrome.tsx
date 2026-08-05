@@ -27,6 +27,7 @@ export function DrillShell({
   summary,
   loading,
   error,
+  expired,
   empty,
   stage,
   onSwitchStage,
@@ -39,6 +40,8 @@ export function DrillShell({
   summary?: DeckSummary;
   loading: boolean;
   error: string | null;
+  /** The session went stale mid-drill — a sign-in prompt, not a failure. */
+  expired: boolean;
   empty: boolean;
   stage?: Stage;
   onSwitchStage: () => void;
@@ -65,7 +68,21 @@ export function DrillShell({
         </Button>
       </div>
 
-      {error ? (
+      {expired ? (
+        <div className="flex flex-wrap items-center gap-3" role="alert">
+          <p className="text-sm text-destructive">{dictionary.common.sessionExpired}</p>
+          {/* Back through the front door: the sign-in page returns them to this exact drill. */}
+          <Button
+            size="sm"
+            onClick={() => {
+              const here = window.location.pathname + window.location.search;
+              window.location.assign(`/login?next=${encodeURIComponent(here)}`);
+            }}
+          >
+            {dictionary.common.signInAgain}
+          </Button>
+        </div>
+      ) : error ? (
         <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
