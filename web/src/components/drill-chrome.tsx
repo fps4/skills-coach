@@ -33,6 +33,7 @@ export function DrillShell({
   onSwitchStage,
   onReset,
   children,
+  footer,
 }: {
   title: string;
   intro: string;
@@ -47,6 +48,13 @@ export function DrillShell({
   onSwitchStage: () => void;
   onReset: () => Promise<void>;
   children: ReactNode;
+  /**
+   * Rendered under the card's content whether or not there is anything to practise. The deck meters
+   * and the add-your-own-word form both belong here: an exhausted deck is precisely when a learner
+   * wants to see what they have mastered and to add something new, so hiding them with the prompt
+   * would take them away at the one moment they are useful.
+   */
+  footer?: ReactNode;
 }) {
   const t = dictionary.drills;
 
@@ -90,19 +98,22 @@ export function DrillShell({
 
       {loading ? (
         <p className="text-sm text-muted-foreground">{dictionary.common.loading}</p>
-      ) : empty ? (
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-sm">{t.deckEmpty}</p>
-            {/* An empty stage 2 usually means it is not unlocked yet, not that there is nothing. */}
-            <p className="mt-1 text-sm text-muted-foreground">
-              {stage === 2 && summary && summary.stage2Unlocked === 0 ? t.locked : t.deckEmptyHint}
-            </p>
-          </CardContent>
-        </Card>
       ) : (
         <Card>
-          <CardContent className="pt-5">{children}</CardContent>
+          <CardContent className="pt-5">
+            {empty ? (
+              <>
+                <p className="text-sm">{t.deckEmpty}</p>
+                {/* An empty stage 2 usually means it is not unlocked yet, not that there is nothing. */}
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {stage === 2 && summary && summary.stage2Unlocked === 0 ? t.locked : t.deckEmptyHint}
+                </p>
+              </>
+            ) : (
+              children
+            )}
+            {footer}
+          </CardContent>
         </Card>
       )}
     </PageShell>

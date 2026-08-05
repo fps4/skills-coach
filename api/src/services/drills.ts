@@ -78,6 +78,7 @@ export async function nextItems(ctx: ServiceContext, query: NextItemsQuery): Pro
     packId: query.packId,
     lessonOrder: query.lessonOrder,
     kind: query.kind,
+    learnerId: query.learnerId,
   });
   if (items.length === 0) return { items: [], summary: summarize([], 0) };
 
@@ -137,6 +138,9 @@ export async function recordAttempt(
   input: PostAttemptInput,
 ): Promise<AttemptOutcome> {
   const item: DrillItem = await getDrillItem(ctx, drillItemId);
+  // Someone else's own word is not practisable by id — and a 404 rather than a 403, because its
+  // existence is not this caller's business (ADR-0012).
+  if (item.learnerId && item.learnerId !== learnerId) throw notFound(`drill item ${drillItemId}`);
   const pack = await getPack(ctx, item.packId);
 
   if (input.stage === 2 && stagesFor(item) === 1) {
@@ -202,7 +206,7 @@ export async function deckSummary(
   learnerId: string,
   scope: { blockId?: string; packId?: string; kind?: 'term' | 'word-order' },
 ): Promise<DeckSummary> {
-  const items = await listDrillItems(ctx, scope);
+  const items = await listDrillItems(ctx, { ...scope, learnerId });
   const progressById = await loadProgress(
     ctx,
     learnerId,

@@ -78,6 +78,12 @@ export interface DrillQuery {
   packId?: string;
   lessonOrder?: number;
   kind?: 'term' | 'word-order';
+  /**
+   * Whose deck this is. The pack's own items are always included; this adds the words *this* learner
+   * added themselves. Omitting it yields pack content only — which is what every coach-side caller
+   * wants, and means a learner's own words cannot leak into one by forgetting a filter (ADR-0012).
+   */
+  learnerId?: string;
 }
 
 export async function listDrillItems(ctx: ServiceContext, query: DrillQuery): Promise<DrillItem[]> {
@@ -86,6 +92,9 @@ export async function listDrillItems(ctx: ServiceContext, query: DrillQuery): Pr
   if (query.packId) filter.packId = query.packId;
   if (query.lessonOrder !== undefined) filter.lessonOrder = query.lessonOrder;
   if (query.kind) filter['payload.kind'] = query.kind;
+  filter.$or = query.learnerId
+    ? [{ learnerId: { $exists: false } }, { learnerId: query.learnerId }]
+    : [{ learnerId: { $exists: false } }];
 
   const docs = await ctx.store.collections.drillItems.find(filter).sort({ lessonOrder: 1, _id: 1 }).toArray();
   return docs.map(toDrillItem);
@@ -212,8 +221,11 @@ export async function publishBlock(
     );
   }
 
+  // `learnerId` guards the sweep: a republish removes what the *pack* no longer defines, and a
+  // learner's own words were never in the payload to begin with. Without it, every publish would
+  // quietly delete them and the progress attached to them (ADR-0012).
   const staleDrills = await ctx.store.collections.drillItems
-    .find({ blockId, _id: { $nin: drillIds } })
+    .find({ blockId, learnerId: { $exists: false }, _id: { $nin: drillIds } })
     .project<{ _id: string }>({ _id: 1 })
     .toArray();
   if (staleDrills.length > 0) {

@@ -52,6 +52,8 @@ export async function ensureIndexes(db: Db, auditRetentionDays: number): Promise
 
   await c.drillItems.createIndex({ blockId: 1, lessonOrder: 1 }, { name: 'drill_by_block_lesson' });
   await c.drillItems.createIndex({ packId: 1 }, { name: 'drill_by_pack' });
+  // Sparse: only a learner's own words carry an owner, and the pack's items far outnumber them.
+  await c.drillItems.createIndex({ learnerId: 1, blockId: 1 }, { sparse: true, name: 'drill_by_owner' });
 
   // The token's `sub` is the only identity we keep, so it must map to exactly one learner.
   await c.learners.createIndex({ subject: 1 }, { unique: true, name: 'learner_subject_unique' });

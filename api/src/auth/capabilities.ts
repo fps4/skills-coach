@@ -12,6 +12,9 @@
 export const CAPABILITIES = [
   'lesson:read',
   'drill:practice',
+  // Adding words to your *own* deck. Separate from `drill:practice` because it writes content, and
+  // a capability that permits writing should never be implied by one that permits reading (ADR-0012).
+  'drill:curate',
   'submission:write',
   'progress:read',
   'pack:publish',
@@ -28,7 +31,7 @@ export type Capability = (typeof CAPABILITIES)[number];
  * machine credential cannot practise.
  */
 export const ROLE_CAPABILITIES: Record<string, readonly Capability[]> = {
-  learner: ['lesson:read', 'drill:practice', 'submission:write', 'progress:read'],
+  learner: ['lesson:read', 'drill:practice', 'drill:curate', 'submission:write', 'progress:read'],
   coach: ['lesson:read', 'pack:publish', 'submission:read-all', 'correction:write', 'review:write'],
 };
 

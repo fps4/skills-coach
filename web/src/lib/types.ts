@@ -187,6 +187,14 @@ export interface DueItem {
   progress: DrillProgress;
 }
 
+/** A word the learner added themselves — a `term` item they own (ADR-0012). */
+export interface LearnerTerm {
+  drillItemId: string;
+  blockId: string;
+  packId: string;
+  payload: { kind: 'term'; term: string; translation: string; example?: string };
+}
+
 export interface DeckPage {
   items: DueItem[];
   summary: DeckSummary;

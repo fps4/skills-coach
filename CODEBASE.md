@@ -33,6 +33,8 @@ api/src/
 
   db/                collections, indexes, the Mongo client
   services/          domain rules + persistence, transport-agnostic
+    learner-terms.ts   the words a learner adds themselves — owned, private, and
+                       untouched by a republish (ADR-0012)
   auth/              JWKS verification, role → capability map, fastify plugin
   http/              route definitions only — thin, delegating to services
   mcp/               the same coach surface as tools — `handler.ts` is transport-agnostic,
@@ -70,6 +72,7 @@ web/src/
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
     app-header.tsx   sticky brand header with the accent wordmark, and sign-out
     learner-rail.tsx your packs · lessons · the two drills · progress
+    own-words.tsx    the entry form for your own words, inside the word trainer
   middleware.ts      locale negotiation + session renewal + auth gate, before render
 ```
 

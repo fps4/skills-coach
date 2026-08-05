@@ -251,6 +251,19 @@ export const postAttemptSchema = z.object({
   override: z.boolean().default(false),
 });
 
+/**
+ * A word the learner adds to their own deck (ADR-0012).
+ *
+ * The same three fields a pack's vocabulary entry carries, and no more: this is the learner filling
+ * the same shape from another source, not a second kind of content. `term` is in the pack's content
+ * language and `translation` in its translation language, exactly as a published entry would be.
+ */
+export const createLearnerTermSchema = z.object({
+  term: nonEmpty.max(200),
+  translation: nonEmpty.max(200),
+  example: z.string().trim().max(500).optional(),
+});
+
 export const patchMeSchema = z.object({
   uiLanguage: localeSchema.optional(),
   displayName: z.string().max(120).optional(),
@@ -261,5 +274,6 @@ export type PublishBlockInput = z.infer<typeof publishBlockSchema>;
 export type PostCorrectionInput = z.infer<typeof postCorrectionSchema>;
 export type PostBlockReviewInput = z.infer<typeof postBlockReviewSchema>;
 export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
+export type CreateLearnerTermInput = z.infer<typeof createLearnerTermSchema>;
 export type PostAttemptInput = z.infer<typeof postAttemptSchema>;
 export type PatchMeInput = z.infer<typeof patchMeSchema>;

@@ -253,6 +253,12 @@ export interface DrillItem {
   /** Which lesson introduced it, when the source says. Powers the per-lesson filter. */
   lessonOrder?: number;
   payload: DrillPayload;
+  /**
+   * Who owns this item. Absent means the pack does — it came from a publish and every learner
+   * working the block gets it. Present means one learner added it themselves, and only they ever
+   * see it (ADR-0012).
+   */
+  learnerId?: string;
 }
 
 // ---------------------------------------------------------------------------
