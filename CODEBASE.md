@@ -63,13 +63,14 @@ web/src/
     (auth)/            everything that does not — the centred sign-in surface
   i18n/              typed dictionaries + the locale negotiator
   lib/               api (server) / api-client (browser) / auth (server-only) / session (shared)
+    refresh.ts       spending the rotating refresh token — middleware and route handler only (ADR-0011)
     theme/palettes   the hue axis — a palette is data, not code
   components/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
     app-header.tsx   sticky brand header with the accent wordmark, and sign-out
     learner-rail.tsx your packs · lessons · the two drills · progress
-  middleware.ts      locale negotiation + auth gate, before render
+  middleware.ts      locale negotiation + session renewal + auth gate, before render
 ```
 
 **Styling is token-driven (ADR-0007).** Components name roles — `bg-background`, `text-primary`,
@@ -104,7 +105,7 @@ executable:
 | "2 correct in a row → the word is hidden" | `domain/drill-progress.ts`, `tests/unit/drill-progress.test.ts` |
 | "EN→NL is gated behind NL→EN" | same — the `stage` concept, one machine for both drills |
 | "a wrong answer resets that word's streak to 0" | same |
-| "answers are matched tolerantly (case, articles, `to …`, `a / b`)" | `domain/matching.ts`, `tests/unit/matching.test.ts` |
+| "answers are matched tolerantly (case, articles, `to …`, `a / b`)" | `domain/matching.ts`, `tests/unit/matching.test.ts` — a key listing several meanings (`/`, `,`, `;`) is satisfied by any one of them |
 | "for anything it wrongly rejects, hit 'I was right'" | `domain/grading.ts` — `override`, recorded as one |
 | "DelenB must be a permutation of the same chunks, else ignored" | `domain/word-order.ts::usableAlternative` |
 | "↔ ook goed Nederlands — but this round we practise the other order" | same — `otherValidOrder` in the result |

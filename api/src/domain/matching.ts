@@ -47,14 +47,38 @@ export function stripLeadingWords(input: string, words: string[]): string {
 }
 
 /**
- * Split synonym alternatives. Only ` / ` (space-slash-space) separates — the notation the source
- * CSVs use — so "and/or" and "he/she" stay one answer.
+ * Split one string into the meanings it lists, at the separators the sources actually use:
+ * ` / ` (space-slash-space, the CSV notation), a comma, or a semicolon. Each is a way of writing
+ * "any one of these will do".
+ *
+ * Two things deliberately do *not* separate. An **unspaced** slash, so "and/or" and "he/she" stay
+ * one answer; and anything inside a "(parenthetical, like this)", which belongs to the meaning it
+ * qualifies rather than starting a new one.
  */
 export function splitAlternatives(expected: string): string[] {
-  return expected
-    .split(/\s+\/\s+/)
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0);
+  const parts: string[] = [];
+  let current = '';
+  let depth = 0;
+
+  for (let i = 0; i < expected.length; i += 1) {
+    const char = expected[i] as string;
+    if (char === '(') depth += 1;
+    else if (char === ')') depth = Math.max(0, depth - 1);
+
+    const separates =
+      depth === 0 &&
+      (char === ',' || char === ';' || (char === '/' && /\s$/.test(current) && /^\s/.test(expected.slice(i + 1))));
+
+    if (separates) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  parts.push(current);
+
+  return parts.map((part) => part.trim()).filter((part) => part.length > 0);
 }
 
 /** "to move (house) to" yields both "to move (house) to" and "to move to". */
@@ -101,8 +125,21 @@ function candidateForms(given: string, options: MatchOptions = {}): string[] {
   return [base, withoutParticle, stripLeadingWords(withoutParticle, articles), stripLeadingWords(base, articles)];
 }
 
-/** True when `given` is an acceptable rendering of `expected`. */
+/**
+ * True when `given` is an acceptable rendering of `expected`.
+ *
+ * A key that lists several meanings is satisfied by **any one** of them — "meanwhile" is a right
+ * answer for "by now / meanwhile", and being asked for two words when you were taught one is not
+ * what this drill is testing. A learner who writes several meanings is right too, whichever
+ * separator they reach for, as long as each one is a meaning the key would have taken on its own.
+ */
 export function matches(given: string, expected: string, options: MatchOptions = {}): boolean {
   const accepted = acceptedForms(expected, options);
-  return candidateForms(given, options).some((form) => form.length > 0 && accepted.has(form));
+  const acceptsOne = (text: string): boolean =>
+    candidateForms(text, options).some((form) => form.length > 0 && accepted.has(form));
+
+  if (acceptsOne(given)) return true;
+
+  const listed = splitAlternatives(given);
+  return listed.length > 1 && listed.every(acceptsOne);
 }
