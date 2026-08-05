@@ -46,6 +46,20 @@ describe('splitAlternatives', () => {
   it('does not split an unspaced slash', () => {
     expect(splitAlternatives('and/or')).toEqual(['and/or']);
   });
+
+  it('splits a comma or a semicolon — a hand-typed list of meanings', () => {
+    expect(splitAlternatives('by now, meanwhile')).toEqual(['by now', 'meanwhile']);
+    expect(splitAlternatives('by now; meanwhile')).toEqual(['by now', 'meanwhile']);
+    expect(splitAlternatives('by now, meanwhile / in the meantime')).toEqual([
+      'by now',
+      'meanwhile',
+      'in the meantime',
+    ]);
+  });
+
+  it('does not split inside a parenthetical — that comma qualifies, it does not separate', () => {
+    expect(splitAlternatives('to move (house, home) to')).toEqual(['to move (house, home) to']);
+  });
 });
 
 describe('matches', () => {
@@ -56,6 +70,33 @@ describe('matches', () => {
   it('accepts either side of a synonym pair', () => {
     expect(matches('meanwhile', 'by now / meanwhile')).toBe(true);
     expect(matches('by now', 'by now / meanwhile')).toBe(true);
+  });
+
+  it('accepts any one meaning of a comma-separated key', () => {
+    expect(matches('to discuss', 'to discuss, to talk about')).toBe(true);
+    expect(matches('to talk about', 'to discuss, to talk about')).toBe(true);
+    expect(matches('to finish', 'to finish; to complete')).toBe(true);
+  });
+
+  it('accepts a key with three meanings from any one of them', () => {
+    const key = 'lately / recently, of late';
+    expect(matches('lately', key)).toBe(true);
+    expect(matches('recently', key)).toBe(true);
+    expect(matches('of late', key)).toBe(true);
+  });
+
+  it('accepts the whole list too, whichever separator the learner used', () => {
+    expect(matches('by now / meanwhile', 'by now / meanwhile')).toBe(true);
+    expect(matches('by now, meanwhile', 'by now / meanwhile')).toBe(true);
+    expect(matches('meanwhile, by now', 'by now / meanwhile')).toBe(true);
+  });
+
+  it('rejects a list containing a meaning the key does not have', () => {
+    expect(matches('by now, tomorrow', 'by now / meanwhile')).toBe(false);
+  });
+
+  it('still rejects a wrong answer when the key lists several meanings', () => {
+    expect(matches('tevreden', 'to discuss, to talk about')).toBe(false);
   });
 
   it('treats a parenthetical as optional in either direction', () => {

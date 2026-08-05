@@ -16,6 +16,7 @@ import 'server-only';
  */
 
 import { cookies } from 'next/headers';
+import { refreshSession, sessionCookies } from './refresh';
 import {
   AUTH_MODE,
   DEV_TOKEN,
@@ -36,11 +37,47 @@ export class SignInError extends Error {
   }
 }
 
-/** The current access token, if the request carries a usable one. */
+/**
+ * The current access token, if the request carries a usable one.
+ *
+ * Read-only, and that is load-bearing. A server component render may not write cookies, so it must
+ * not refresh either — identity-service rotates, and a refresh whose result cannot be persisted
+ * revokes the chain and kills the session. Renders rely on the middleware having refreshed first;
+ * anything that may legally write cookies calls `ensureToken()` instead.
+ */
 export async function currentToken(): Promise<string | null> {
   const store = await cookies();
   const token = store.get(TOKEN_COOKIE)?.value;
   return tokenIsFresh(token) ? (token as string) : null;
+}
+
+/**
+ * The access token, refreshed first if it has lapsed.
+ *
+ * **Only from a route handler or a server action** — it writes cookies. This is what keeps a drill
+ * alive: the page was fine when it rendered, the token expired while the learner was working, and
+ * the next fetch quietly renews it instead of failing.
+ */
+export async function ensureToken(): Promise<string | null> {
+  const store = await cookies();
+  const token = store.get(TOKEN_COOKIE)?.value;
+  if (tokenIsFresh(token)) return token as string;
+
+  const refreshToken = store.get(REFRESH_COOKIE)?.value;
+  if (!refreshToken) return null;
+
+  const outcome = await refreshSession(refreshToken);
+  if (outcome.status !== 'refreshed') {
+    // Spent or revoked: drop the cookies so the next page request goes straight to sign-in rather
+    // than paying for a refresh that cannot succeed. An outage leaves them be — it may yet work.
+    if (outcome.status === 'rejected') await clearSession();
+    return null;
+  }
+
+  for (const cookie of sessionCookies(outcome.tokens)) {
+    store.set(cookie.name, cookie.value, cookie.options);
+  }
+  return outcome.tokens.accessToken;
 }
 
 /** The OAuth password grant against identity-service. */
@@ -70,29 +107,25 @@ export async function signIn(email: string, password: string): Promise<TokenSet>
     refresh_token?: string;
     refreshToken?: string;
     expires_in?: number;
+    refresh_expires_in?: number;
   };
 
   // identity-service has both snake_case (OAuth) and camelCase (SDK) shapes in circulation.
   const accessToken = body.access_token ?? body.accessToken;
   if (!accessToken) throw new SignInError('no access token in the response', 'unavailable');
 
-  return { accessToken, refreshToken: body.refresh_token ?? body.refreshToken, expiresIn: body.expires_in };
+  return {
+    accessToken,
+    refreshToken: body.refresh_token ?? body.refreshToken,
+    expiresIn: body.expires_in,
+    refreshExpiresIn: body.refresh_expires_in,
+  };
 }
 
 export async function setSession(tokens: TokenSet): Promise<void> {
   const store = await cookies();
-  const secure = process.env.NODE_ENV === 'production';
-  const maxAge = tokens.expiresIn ?? 60 * 60 * 8;
-
-  store.set(TOKEN_COOKIE, tokens.accessToken, { httpOnly: true, sameSite: 'lax', secure, path: '/', maxAge });
-  if (tokens.refreshToken) {
-    store.set(REFRESH_COOKIE, tokens.refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure,
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30,
-    });
+  for (const cookie of sessionCookies(tokens)) {
+    store.set(cookie.name, cookie.value, cookie.options);
   }
 }
 

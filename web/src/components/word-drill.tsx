@@ -18,9 +18,10 @@ import { DeckProgress, DrillShell, Feedback } from './drill-chrome';
 import { Pill } from '@/components/atoms';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { clientApi, query } from '@/lib/api-client';
+import { clientApi, isSessionExpired, query } from '@/lib/api-client';
+import { applyProgress } from '@/lib/deck-summary';
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { AttemptResult, DeckPage, DueItem, Stage } from '@/lib/types';
+import type { AttemptResult, DeckPage, DeckSummary, DueItem, Stage } from '@/lib/types';
 
 interface Props {
   blockId: string;
@@ -33,6 +34,8 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
   const t = dictionary.drills;
 
   const [deck, setDeck] = useState<DeckPage | null>(null);
+  // Kept beside the deck rather than inside it: the meters move on every answer, the deck does not.
+  const [summary, setSummary] = useState<DeckSummary | null>(null);
   const [index, setIndex] = useState(0);
   const [stage, setStage] = useState<Stage | undefined>(undefined);
   const [answer, setAnswer] = useState('');
@@ -40,19 +43,23 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
   const [showHint, setShowHint] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError(null);
+    setExpired(false);
     try {
       const page = await clientApi<DeckPage>(`/v1/drills${query({ blockId, kind: 'term', stage, limit: 40 })}`);
       setDeck(page);
+      setSummary(page.summary);
       setIndex(0);
       setResult(null);
       setAnswer('');
-    } catch {
-      setError(dictionary.common.error);
+    } catch (cause) {
+      if (isSessionExpired(cause)) setExpired(true);
+      else setError(dictionary.common.error);
     } finally {
       setLoading(false);
     }
@@ -71,14 +78,18 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
   const check = async (override = false): Promise<void> => {
     if (!current) return;
     if (!override && answer.trim().length === 0) return;
+    // An override grades a second time, so what it moves from is the first verdict, not the deck.
+    const before = result?.progress ?? current.progress;
     try {
       const outcome = await clientApi<AttemptResult>(`/v1/drills/${current.drillItemId}/attempts`, {
         method: 'POST',
         body: { stage: current.stage, given: answer, override },
       });
       setResult(outcome);
-    } catch {
-      setError(dictionary.common.error);
+      setSummary((previous) => (previous ? applyProgress(previous, before, outcome.progress) : previous));
+    } catch (cause) {
+      if (isSessionExpired(cause)) setExpired(true);
+      else setError(dictionary.common.error);
     }
   };
 
@@ -107,9 +118,10 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
       title={t.words}
       intro={t.wordsIntro}
       dictionary={dictionary}
-      summary={deck?.summary}
+      summary={summary ?? undefined}
       loading={loading}
       error={error}
+      expired={expired}
       empty={!loading && deck !== null && deck.items.length === 0}
       stage={current?.stage}
       onSwitchStage={() => setStage((value) => (value === 2 ? 1 : 2))}
@@ -178,7 +190,7 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
         </>
       ) : null}
 
-      {deck ? <DeckProgress summary={deck.summary} dictionary={dictionary} /> : null}
+      {summary ? <DeckProgress summary={summary} dictionary={dictionary} /> : null}
     </DrillShell>
   );
 }
