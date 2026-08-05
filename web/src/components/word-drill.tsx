@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DeckProgress, DrillShell, Feedback } from './drill-chrome';
+import { OwnWords } from './own-words';
 import { Pill } from '@/components/atoms';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,6 +130,19 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
         await clientApi('/v1/drills/reset', { method: 'POST', body: { blockId } });
         await load();
       }}
+      footer={
+        <>
+          {summary ? <DeckProgress summary={summary} dictionary={dictionary} /> : null}
+          <OwnWords
+            blockId={blockId}
+            contentLanguage={contentLanguage}
+            translationLanguage={translationLanguage}
+            dictionary={dictionary}
+            onChanged={() => void load()}
+            onSessionExpired={() => setExpired(true)}
+          />
+        </>
+      }
     >
       {current && prompt ? (
         <>
@@ -189,8 +203,6 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
           )}
         </>
       ) : null}
-
-      {summary ? <DeckProgress summary={summary} dictionary={dictionary} /> : null}
     </DrillShell>
   );
 }

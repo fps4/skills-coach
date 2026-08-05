@@ -26,6 +26,10 @@ own way; `write` sections are what produce a submission.
 scheduled independently. Two kinds today: `term` (a word or phrase with its translation and an
 example) and `word-order` (a sentence, its correct chunk order, a translation and a grammar tip).
 
+**Own word** — a `term` item a learner added themselves rather than one that arrived with the pack.
+It practises identically and lives in the same deck, but only its owner can see it and a republish of
+the block never removes it. See [ADR-0012](docs/architecture/decisions/0012-a-learner-may-add-to-their-own-deck.md).
+
 **Content language** — the language a pack's material is written in. Distinct from **UI language**,
 the language of the interface chrome. A Dutch pack renders as Dutch whether the interface is set to
 Dutch or English. See [ADR-0005](docs/architecture/decisions/0005-ui-language-vs-content-language.md).

@@ -57,6 +57,9 @@ reach another's work.
 | GET | `/drills` | `drill:practice` | Due items as **prompts**. Requires `blockId` or `packId` |
 | POST | `/drills/:drillItemId/attempts` | `drill:practice` | Grade an attempt |
 | POST | `/drills/reset` | `drill:practice` | Clear progress for a scope. Refuses an unscoped reset |
+| POST | `/blocks/:blockId/terms` | `drill:curate` | Add a word of your own to this block's deck → `201` |
+| GET | `/blocks/:blockId/terms` | `drill:curate` | The words you added to this block |
+| DELETE | `/terms/:drillItemId` | `drill:curate` | Remove one of your words, and its progress → `204` |
 | GET | `/progress` | `progress:read` | Overview, or one pack with `?packId` |
 
 ### `GET /drills`
@@ -100,6 +103,22 @@ Returns the verdict, the expected answer, `acceptedAlso` (every form that would 
 
 `otherValidOrder: true` with `correct: false` means the learner built the *other* correct order —
 good material, wrong round. Requesting stage 2 before stage 1 is cleared is a `400`.
+
+### `POST /blocks/:blockId/terms`
+
+```jsonc
+{ "term": "de begroting", "translation": "the budget", "example": "De begroting klopt." }
+```
+
+A word the learner adds themselves ([ADR-0012](../architecture/decisions/0012-a-learner-may-add-to-their-own-deck.md)).
+It becomes an ordinary `term` item in that block's deck — same prompting, same tolerant matching,
+same streak machine — owned by the learner who added it.
+
+**Idempotent by content**, as publishing is: adding a word already there returns the same
+`drillItemId` and updates its translation, so a correction does not cost the streak. Private —
+another learner cannot list it, practise it or delete it even knowing its id, and it does not appear
+on the coach surface. **A republish of the block never deletes it**; the publish sweep only removes
+what the pack itself no longer defines.
 
 ## Coach API — `/coach/v1`
 

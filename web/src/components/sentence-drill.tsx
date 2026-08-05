@@ -154,6 +154,7 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
         await clientApi('/v1/drills/reset', { method: 'POST', body: { blockId } });
         await load();
       }}
+      footer={summary ? <DeckProgress summary={summary} dictionary={dictionary} /> : null}
     >
       {current && prompt ? (
         <>
@@ -250,8 +251,6 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
           )}
         </>
       ) : null}
-
-      {summary ? <DeckProgress summary={summary} dictionary={dictionary} /> : null}
     </DrillShell>
   );
 }

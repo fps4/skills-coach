@@ -31,11 +31,18 @@ export const lessonIdFor = (blockId: string, order: number): string => `${blockI
 /**
  * A drill item's identity is its content, so re-importing a pack does not orphan learner progress.
  * The key is the side a learner is asked to produce first — the term, or the sentence.
+ *
+ * A learner's own word (ADR-0012) is namespaced by who added it: two people adding the same word to
+ * the same block must not collide on one document, and the *same* person adding it twice must land
+ * on the one they already have rather than a duplicate. The owner is hashed rather than embedded —
+ * the id travels in URLs, and it does not need to name anybody.
  */
-export function drillIdFor(blockId: string, payload: DrillPayload): string {
+export function drillIdFor(blockId: string, payload: DrillPayload, learnerId?: string): string {
   const key = payload.kind === 'term' ? payload.term : payload.sentence;
   const digest = createHash('sha256').update(`${payload.kind}|${key}`).digest('hex').slice(0, 12);
-  return `${blockId}.d.${digest}`;
+  if (!learnerId) return `${blockId}.d.${digest}`;
+  const owner = createHash('sha256').update(learnerId).digest('hex').slice(0, 8);
+  return `${blockId}.u${owner}.${digest}`;
 }
 
 export const enrollmentIdFor = (learnerId: string, packId: string): string => `${learnerId}:${packId}`;

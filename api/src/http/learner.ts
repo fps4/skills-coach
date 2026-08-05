@@ -10,10 +10,16 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { requireCapability } from '../auth/plugin.js';
 import { forbidden, invalid } from './errors.js';
-import { createSubmissionSchema, patchMeSchema, postAttemptSchema } from '../domain/schemas.js';
+import {
+  createLearnerTermSchema,
+  createSubmissionSchema,
+  patchMeSchema,
+  postAttemptSchema,
+} from '../domain/schemas.js';
 import type { Learner } from '../domain/types.js';
 import * as content from '../services/content.js';
 import * as drills from '../services/drills.js';
+import * as learnerTerms from '../services/learner-terms.js';
 import * as learners from '../services/learners.js';
 import * as progress from '../services/progress.js';
 import * as submissions from '../services/submissions.js';
@@ -161,6 +167,33 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const learner = await caller(request, 'drill:practice');
     const { drillItemId } = request.params as { drillItemId: string };
     return drills.recordAttempt(ctx, learner.learnerId, drillItemId, postAttemptSchema.parse(request.body));
+  });
+
+  // --- the learner's own words ----------------------------------------------
+
+  app.post('/api/v1/blocks/:blockId/terms', async (request, reply) => {
+    const learner = await caller(request, 'drill:curate');
+    const { blockId } = request.params as { blockId: string };
+    const item = await learnerTerms.addTerm(
+      ctx,
+      learner.learnerId,
+      blockId,
+      createLearnerTermSchema.parse(request.body),
+    );
+    return reply.status(201).send({ term: item });
+  });
+
+  app.get('/api/v1/blocks/:blockId/terms', async (request) => {
+    const learner = await caller(request, 'drill:curate');
+    const { blockId } = request.params as { blockId: string };
+    return { terms: await learnerTerms.listTerms(ctx, learner.learnerId, blockId) };
+  });
+
+  app.delete('/api/v1/terms/:drillItemId', async (request, reply) => {
+    const learner = await caller(request, 'drill:curate');
+    const { drillItemId } = request.params as { drillItemId: string };
+    await learnerTerms.removeTerm(ctx, learner.learnerId, drillItemId);
+    return reply.status(204).send();
   });
 
   app.post('/api/v1/drills/reset', async (request) => {
