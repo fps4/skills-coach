@@ -13,6 +13,11 @@ connected to the Skills Coach MCP.
 Read it before writing a block. The rules in it are not style preferences — most of them are things
 the runtime enforces or silently degrades, and getting one wrong costs a learner their progress.
 
+It covers the *contract*: what a block is, what fails a publish. For what makes a block **good** —
+how a lesson is shaped, how much new vocabulary it carries, how a write prompt is built so it
+actually elicits the mistakes you want to see — read [the teaching method](teaching-method.md), and
+then the `method:` block the pack itself declares.
+
 ## What you are doing, and what you are not
 
 **You author one block at a time, from evidence.** A block is roughly six lessons on a theme. You
@@ -67,12 +72,18 @@ It assembles what you would otherwise have to go and find:
 | `evidence.redrill` | categories at 3+ occurrences — these **must** come back as practice |
 | `evidence.retire` | categories with two clean blocks — stop drilling these |
 | `nextBlock.ramp` | the level, phase and **dials** for the block you are about to write |
+| `pack.method` | how this pack is taught — lesson arc, authoring rules, per-topic sequencing |
 | `goal` | what the whole program is for |
 | `evidence.review.nextBlockBrief` | what the last review explicitly asked for |
 
 **The dials are the specification.** `textLength: ~170 words` means write ~170 words, not 400.
 `grammar: perfectum, subclause word order` means those structures carry the block. The runtime never
 interprets a dial — it hands them to you verbatim because you are the one who acts on them.
+
+**`pack.method` is how to build it.** The dials say how hard; the method says how — the lesson arc,
+how many new terms a lesson carries, how much of the last block to recycle, and the sequencing notes
+for topics that fail when taught in the obvious order. It is carried verbatim for the same reason.
+A pack that declares none leaves you working from the dials alone.
 
 ### 2. Write the block
 
@@ -194,7 +205,8 @@ Then go back to `get_brief` for the next one.
 > Here are the pack's declared error categories: `<ids from list_packs>`
 >
 > Write the block as a `publish_block` payload. Six lessons. Honour every dial in
-> `nextBlock.ramp.dials` — text length, sentence complexity, grammar load — and build practice for
+> `nextBlock.ramp.dials` — text length, sentence complexity, grammar load — and build every lesson
+> to the arc and rules in `pack.method`. Build practice for
 > every category in `evidence.redrill`. Do not drill anything in `evidence.retire`.
 > Use only the nine section kinds. Every lesson must contain one `write` or `questions` section, or
 > it generates no evidence. Word-order `partsAlt` must be a permutation of the same chunks.

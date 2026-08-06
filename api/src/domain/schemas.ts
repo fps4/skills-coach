@@ -157,6 +157,24 @@ export const packPresentationSchema = z.object({
   surfaces: z.array(packSurfaceSchema).min(1).optional(),
 });
 
+/**
+ * How a pack's material should be taught.
+ *
+ * **Open, like a ramp's dials, and for the same reason** (ADR-0001): the author acts on it, the
+ * runtime only carries it. There is no key set worth enumerating here — a language pack, a
+ * certification syllabus and a craft do not share a lesson shape, and a schema that insisted they
+ * did would be the runtime holding an opinion about didactics it cannot act on.
+ *
+ * Wholly optional. A pack that declares nothing gets an author working from the dials alone, which
+ * is what every pack did before this existed.
+ */
+export const packMethodSchema = z.object({
+  principles: z.array(nonEmpty).min(1).optional(),
+  lessonArc: z.array(nonEmpty).min(1).optional(),
+  rules: z.record(z.string()).optional(),
+  sequencing: z.record(z.string()).optional(),
+});
+
 export const packManifestSchema = z.object({
   packId: nonEmpty.regex(/^[a-z0-9][a-z0-9-]*$/, 'packId must be lower-case slug-like'),
   title: localizedTextSchema,
@@ -180,6 +198,7 @@ export const packManifestSchema = z.object({
       )
       .optional(),
   }),
+  method: packMethodSchema.optional(),
   errorCategories: z.array(z.object({ id: nonEmpty, label: localizedTextSchema.optional() })).min(1),
   sectionMap: z.array(z.object({ match: nonEmpty, kind: sectionKindSchema })).optional(),
   matchArticles: z.record(z.array(z.string())).optional(),

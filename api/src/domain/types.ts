@@ -83,6 +83,28 @@ export interface PackPresentation {
   surfaces?: PackSurface[];
 }
 
+/**
+ * How a pack's material should be taught, declared and never interpreted here.
+ *
+ * The ramp says *how hard* block N+1 should be; this says *how it should be built*. Both are carried
+ * into the brief verbatim, because the author is the one who acts on them (ADR-0001). The runtime
+ * has no opinion about didactics and gains nothing by parsing one.
+ *
+ * Every field is free-form on purpose. A pack teaching a language, a certification syllabus and a
+ * craft do not share a lesson shape, and enumerating one here would be the runtime branching on
+ * which pack it is serving (ADR-0004).
+ */
+export interface PackMethod {
+  /** The didactic commitments this program is built on. Prose, ordered by importance. */
+  principles?: string[];
+  /** The shape of a single lesson, in order — e.g. ['input', 'form', 'practice', 'output']. */
+  lessonArc?: string[];
+  /** Open authoring rules, e.g. { newTermsPerLesson: '8–12, as chunks' }. Like a ramp's dials. */
+  rules?: Record<string, string>;
+  /** Per-topic teaching notes, keyed by whatever the pack calls the topic. */
+  sequencing?: Record<string, string>;
+}
+
 export interface PackManifest {
   packId: string;
   title: LocalizedText;
@@ -95,6 +117,8 @@ export interface PackManifest {
   skill: string;
   goal?: LocalizedText;
   framework: Framework;
+  /** How to teach this pack's material. Carried into every brief; never interpreted. */
+  method?: PackMethod;
   errorCategories: ErrorCategoryDef[];
   sectionMap?: SectionMapEntry[];
   /** Words stripped from the front of an answer when matching, per language. */
