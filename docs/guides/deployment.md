@@ -99,8 +99,27 @@ and unreachable from inside the container. The network name comes from `docker n
 **Logs** are JSON lines on stdout: `docker logs skills-coach-api`.
 
 **Backups.** MongoDB is the only copy of everything — content, learner state, and history. Content
-authored directly through the coach API exists nowhere else. A `mongodump` of the `skills-coach`
-database is the whole backup.
+authored directly through the coach API exists nowhere else. `infra/docker/backup.sh` dumps the
+`skills-coach` database to `/mnt/backup/skills-coach` on the host, keeping 30 days.
+
+It runs from the **host crontab**, not from the pipeline — the runner is a container with only the
+Docker socket and cannot write host paths, and `on: schedule` is best-effort
+([ADR-0013](../architecture/decisions/0013-nightly-backups-run-from-the-host.md)). The host holds a
+clone of this repository; `git -C ~/skills-coach pull` is what picks up a change to the script.
+
+```sh
+0 3 * * *  /home/<user>/skills-coach/infra/docker/backup.sh backup >> ~/coach-backup.log 2>&1
+```
+
+03:00 is deliberate: identity-service backs up at 02:30 to the same disk.
+
+```sh
+backup.sh verify                    # is last night's snapshot present, whole, and under 36h old?
+backup.sh restore <snapshot.gz>     # confirms first; DROPS the collections it restores over
+```
+
+Nothing calls `verify` on a schedule yet, so a stopped backup is currently silent. The database
+password never leaves the container: `mongodump` runs inside it and reads its own environment.
 
 **Rollback** is a `workflow_dispatch` of `deploy-ds1` from an earlier commit. Data is unaffected:
 there are no schema migrations, and indexes are applied idempotently at boot.

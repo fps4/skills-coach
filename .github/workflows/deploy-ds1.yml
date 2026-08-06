@@ -80,6 +80,7 @@ jobs:
           MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
         run: |
           echo "::warning::Deleting the MongoDB volume — every document in it is lost."
+          echo "::warning::The nightly snapshot in /mnt/backup/skills-coach is the way back (ADR-0013)."
           $COMPOSE down -v --remove-orphans
 
       - name: Build and deploy
