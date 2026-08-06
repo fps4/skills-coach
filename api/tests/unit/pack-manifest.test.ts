@@ -70,3 +70,49 @@ describe('pack manifest', () => {
     expect(parsed.presentation).toEqual({ palette: 'blue' });
   });
 });
+
+/**
+ * The method block sits on the *other* side of the same asymmetry: it is authoring guidance, acted
+ * on by whoever writes the next block and never by the runtime. So it validates like a ramp's dials
+ * — shape only — and anything a pack chooses to say inside it survives to the brief unchanged.
+ */
+describe('pack manifest method', () => {
+  it('is optional — a pack that declares no method is still valid', () => {
+    expect(packManifestSchema.parse(base).method).toBeUndefined();
+  });
+
+  it('carries principles, arc, rules and sequencing through untouched', () => {
+    const method = {
+      principles: ['Every lesson makes the learner produce, not only read.'],
+      lessonArc: ['input', 'form', 'practice', 'output'],
+      rules: { newTermsPerLesson: '8–12, as chunks' },
+      sequencing: { articles: 'drilled as chunks, never taught as a rule' },
+    };
+
+    expect(packManifestSchema.parse({ ...base, method }).method).toEqual(method);
+  });
+
+  it('takes any rule and any sequencing key — the author reads them, nothing parses them', () => {
+    const parsed = packManifestSchema.parse({
+      ...base,
+      method: { rules: { somethingOnlyThisPackCaresAbout: 'yes' }, sequencing: { er: 'one function per block' } },
+    });
+
+    expect(parsed.method?.rules?.somethingOnlyThisPackCaresAbout).toBe('yes');
+    expect(parsed.method?.sequencing?.er).toBe('one function per block');
+  });
+
+  it('refuses an empty principle list — omit the key rather than declaring nothing loudly', () => {
+    expect(() => packManifestSchema.parse({ ...base, method: { principles: [] } })).toThrow();
+  });
+
+  it('refuses a blank principle, which would reach an author as an empty instruction', () => {
+    expect(() => packManifestSchema.parse({ ...base, method: { principles: ['  '] } })).toThrow();
+  });
+
+  it('drops keys it does not know, so an invented field never reaches the database', () => {
+    const parsed = packManifestSchema.parse({ ...base, method: { lessonArc: ['input'], tone: 'friendly' } });
+
+    expect(parsed.method).toEqual({ lessonArc: ['input'] });
+  });
+});

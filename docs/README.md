@@ -36,6 +36,8 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 
 - [`guides/setup.md`](guides/setup.md) — running it locally
 - [`guides/authoring-a-pack.md`](guides/authoring-a-pack.md) — the pack format and the importer
+- [`guides/teaching-method.md`](guides/teaching-method.md) — how a block should be built, and why;
+  the didactic half of authoring
 - [`guides/coach-loop.md`](guides/coach-loop.md) — driving Skills Coach as the external coach
 - [`guides/authoring-with-an-agent.md`](guides/authoring-with-an-agent.md) — the same loop over MCP,
   written for the model doing the authoring

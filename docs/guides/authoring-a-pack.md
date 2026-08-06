@@ -50,6 +50,12 @@ framework:
       phase: Consolidate
       dials: { textLength: "~170 words", grammar: "perfectum, subclause word order" }
 
+method:                      # optional — how the material should be taught, see below
+  principles: ["Every lesson makes the learner produce, not only read."]
+  lessonArc: [input, form, controlled practice, pushed output]
+  rules: { newTermsPerLesson: "8–12, as chunks with the article" }
+  sequencing: { article: "drilled as a chunk, never taught as a rule" }
+
 errorCategories:             # THE STABLE VOCABULARY — see below
   - id: word-order-sub
     label: { nl: Woordvolgorde bijzin, en: Subclause word order }
@@ -69,6 +75,22 @@ presentation:                # optional — how the pack presents itself past th
 
 The runtime never interprets a dial. It carries them into the brief, so whoever writes the next
 block knows which rung they are aiming at.
+
+### Method
+
+`method` is the other half of that: the ramp says how *hard* the next block should be, `method` says
+how it should be *built* — the lesson arc, how much new vocabulary a lesson carries, how much of the
+previous block to recycle, and the sequencing notes for topics that fail when taught in the obvious
+order.
+
+Every field is optional and every value is free text. `rules` and `sequencing` are open records, like
+a ramp's `dials`, for the same reason: a language pack, a certification syllabus and a craft do not
+share a lesson shape. The runtime carries the whole block into `get_brief` under `pack.method` and
+parses none of it — the author is the one who acts on it.
+
+The principles worth declaring, and where they come from, are in
+[the teaching method](teaching-method.md). Declare in the manifest only what is specific to *this*
+pack; the general half is platform, and repeating it per pack means it drifts.
 
 ### Presentation
 

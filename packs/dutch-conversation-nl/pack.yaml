@@ -90,6 +90,81 @@ framework:
         milestone: a thirty-minute mock interview, mostly unscripted
 
 # ---------------------------------------------------------------------------
+# Method — how a block is built, as opposed to how hard it is
+# ---------------------------------------------------------------------------
+#
+# The ramp sets the difficulty. This sets the construction. Both are carried into the brief verbatim
+# and neither is interpreted (ADR-0001) — the author is the one who acts on them.
+#
+# Before this existed, the only methodology in the system was a single sentence about six lessons per
+# block, and everything else came from whatever the author already believed about teaching. That is
+# the gap this closes: the dials said *B1.2, ~280 words* and said nothing about what a lesson should
+# do with them.
+#
+# The general half is the platform's, and is explained with its sources in
+# `docs/guides/teaching-method.md`. The half that is specific to Dutch is `sequencing:` below.
+method:
+  principles:
+    - >-
+      Every lesson makes the learner produce Dutch. A lesson of only text and rules yields no
+      submission, so it yields no evidence, so it cannot influence what comes next.
+    - >-
+      Input sits just past the current level, never far past it. The ramp's textLength and sentences
+      dials are the ceiling for a block, not a target to beat.
+    - >-
+      Output is pushed, not merely permitted. A write prompt answerable without the block's target
+      structures is the wrong prompt — make them unavoidable.
+    - >-
+      Correction is focus-on-form. It targets the declared error categories; a sentence that is
+      correct but plain is left alone.
+    - >-
+      Practice interleaves. Spread the re-drill categories across the whole block rather than giving
+      each one its own lesson — a structure met once in isolation is recognised, not learned.
+    - >-
+      Prior material recycles. Vocabulary and structures from the previous block reappear inside this
+      block's texts, so an item keeps being met in context after it leaves the active deck.
+    - >-
+      Vocabulary is learned as chunks. A noun without its article and a verb without its preposition
+      are two facts the learner will have to acquire twice.
+
+  # The shape of one lesson, in order. Not every lesson needs every stage — but a lesson that skips
+  # `output` produces nothing to correct, and one that skips `input` is drilling in a vacuum.
+  lessonArc:
+    - input — a text or listening source at the block's level, read aloud before anything else
+    - form — the structure that text just demonstrated, in one short explanation with examples
+    - controlled practice — exercises or dictation, where the answer is knowable
+    - pushed output — a write or speak prompt that forces the structures above
+
+  # Free-form, like a ramp's dials: the author reads them, nothing parses them.
+  rules:
+    lessonsPerBlock: six — vocabulary, grammar, listening, professional, reading, then free conversation and review
+    newTermsPerLesson: 8–12, as chunks with article and one collocation — "de vergadering bijwonen", not "vergadering"
+    recycleFromPriorBlock: at least a third of the previous block's drill items reappear in this block's texts
+    grammarPerLesson: one structure carries a lesson; a second may be revised, but not introduced
+    writePrompt: must make every category in evidence.redrill unavoidable, and must sit in the learner's own working world
+    milestone: what the block's six lessons work backwards from; testable in one sitting
+
+  # Dutch-specific ordering. These are the places where teaching in the obvious order reliably fails.
+  sequencing:
+    lidwoord: >-
+      Never taught as a rule — de/het is not predictable enough to be worth one. Drilled as an
+      article+noun chunk, and a term always carries its article in a vocabulary section.
+    woordvolgorde: >-
+      Main-clause inversion before subclause verb-final. Split subject and verb into separate
+      word-order chunks, or inversion cannot be practised at all.
+    perfectum: >-
+      hebben/zijn taught through minimal pairs inside one text, not as two lists to memorise.
+    er: >-
+      One function per block — locative, then partitive, then prepositional. This is the B1→B2 wall;
+      introducing two functions at once is the standard way to lose it.
+    scheidbaar-werkwoord: >-
+      First met in a main clause where the particle separates, before any subclause use where it
+      does not.
+    register: >-
+      The u/je contrast belongs with the interview and professional material, where it carries a
+      consequence — not with everyday themes, where it reads as trivia.
+
+# ---------------------------------------------------------------------------
 # Error categories — the commitment in this file
 # ---------------------------------------------------------------------------
 #

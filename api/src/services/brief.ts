@@ -8,6 +8,10 @@
  *   (2) the competency ramp — the next rung;
  *   (3) the program goal.
  *
+ * A pack's declared method rides along with (2): the ramp says how hard the next block should be,
+ * the method says how it should be built. Both are carried verbatim — the runtime has no opinion
+ * about didactics, and the author is the one who acts on them.
+ *
  * Assembling those is aggregation, not generation, so it is the runtime's job. Whoever authors the
  * next block reads one payload instead of going to find the evidence — which is what stops the
  * "adaptive" part from quietly degrading into "whatever the author remembered".
@@ -136,6 +140,8 @@ export interface NextBlockBriefPayload {
     contentLanguage: string;
     translationLanguage: string;
     framework: PackManifest['framework'];
+    /** How this pack is taught, as the pack declared it. Undefined when it declares nothing. */
+    method?: PackManifest['method'];
     errorCategories: PackManifest['errorCategories'];
   };
   completedBlock: {
@@ -192,6 +198,7 @@ export async function buildBrief(
       contentLanguage: pack.contentLanguage,
       translationLanguage: pack.translationLanguage,
       framework: pack.framework,
+      method: pack.method,
       errorCategories: pack.errorCategories,
     },
     completedBlock: {

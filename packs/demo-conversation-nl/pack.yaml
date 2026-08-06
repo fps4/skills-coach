@@ -53,6 +53,26 @@ framework:
         vocabulary: abstract and professional
         output: a 2-minute argued monologue
 
+# How this pack's material should be taught, as opposed to how hard it should be. The ramp above is
+# the difficulty; this is the construction. The runtime carries both into the brief for the next
+# block and interprets neither — see `docs/guides/teaching-method.md`.
+method:
+  principles:
+    - Every lesson makes the learner produce, not only read.
+    - Input sits just past the current level; the ramp's dials are a ceiling, not a target.
+    - Practice interleaves — spread the re-drill categories across the block, not one per lesson.
+  lessonArc:
+    - input — a text at the block's level
+    - form — the structure it demonstrated
+    - controlled practice — where the answer is knowable
+    - pushed output — a write or speak prompt that forces the structure
+  # Free-form, like a ramp's dials. The author reads these; nothing parses them.
+  rules:
+    newTermsPerLesson: 8–12, as chunks with the article
+    recycleFromPriorBlock: a third of the previous block's items reappear in this block's texts
+  sequencing:
+    article: drilled as an article+noun chunk, never taught as a rule
+
 # The stable vocabulary for kinds of mistake. These are the join key between correction, drilling
 # and next-block generation — once published, they must not be renamed.
 errorCategories:

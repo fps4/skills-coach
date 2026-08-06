@@ -11,6 +11,11 @@ its own **content language**, its competency **framework**, its **error categori
 map. Everything skill-specific enters the platform through a pack; nothing about a skill is hardcoded
 in the runtime.
 
+**Method** — a pack's declared teaching method: the lesson arc, its authoring rules, and its
+per-topic sequencing notes. Where the **ramp** says how hard the next block should be, the method
+says how it should be built. Both are carried into the **brief** verbatim and neither is interpreted.
+See [`docs/guides/teaching-method.md`](docs/guides/teaching-method.md).
+
 **Block** *(Dutch pack: "blok")* — an ordered, themed batch of lessons within a pack, with a level, a
 grammar/skill focus and a milestone. Blocks are the unit of authoring and of adaptation: only the
 current block need exist, and the next one is written from evidence about the last.
@@ -77,7 +82,7 @@ makes adaptation possible.
 what to retire, and the theme and difficulty for the block after this one.
 
 **Brief** — the assembled input for authoring the next block: current error-log state, position on
-the competency ramp, and the program goal. Fetched from `GET /coach/v1/blocks/:id/brief`. The runtime
+the competency ramp, the pack's **method**, and the program goal. Fetched from `GET /coach/v1/blocks/:id/brief`. The runtime
 assembles it; an external coach consumes it.
 
 ## Boundaries

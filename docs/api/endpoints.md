@@ -183,6 +183,10 @@ The hinge of the design. Assembles the three inputs for authoring the next block
 2. **The ramp** — the next block's level, phase and authoring dials
 3. **The goal** — the pack's stated objective
 
+Plus `pack.method`, the pack's declared teaching method — lesson arc, authoring rules and per-topic
+sequencing — carried verbatim beside the dials, since the ramp says how hard the next block should be
+and the method says how it should be built. Absent when the pack declares none.
+
 Plus `suggestions`: what the runtime believes should drive the next block, before an author's
 judgement, and `fromReview` — whatever the last review asked for.
 
