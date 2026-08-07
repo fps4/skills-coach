@@ -9,7 +9,7 @@ import { blockProgress, type BlockProgress } from '../domain/progression.js';
 import { redrillCategories, retireCategories, topRecurring } from '../domain/error-log.js';
 import type { DeckSummary } from '../domain/drill-progress.js';
 import type { Block, ErrorLogEntry, PackManifest } from '../domain/types.js';
-import { getBlock, getPack, listBlocks } from './content.js';
+import { getBlockFor, getPack, listBlocks } from './content.js';
 import { listErrorLog } from './corrections.js';
 import { deckSummary } from './drills.js';
 import { getEnrollment, listEnrollments } from './learners.js';
@@ -36,7 +36,10 @@ export interface PackProgress {
 
 export async function packProgress(ctx: ServiceContext, learnerId: string, packId: string): Promise<PackProgress> {
   const pack = await getPack(ctx, packId);
-  const blocks = await listBlocks(ctx, packId);
+  // Scoped to this learner, or a pack whose blocks are all written for individuals reports no blocks
+  // at all and the surface renders an empty pack (ADR-0015). This is the list the pack page actually
+  // draws from — `listBlocks` on its own is not.
+  const blocks = await listBlocks(ctx, packId, { learnerId });
   const enrollment = await getEnrollment(ctx, learnerId, packId);
 
   const perBlock: { block: Block; progress: BlockProgress }[] = [];
@@ -89,7 +92,9 @@ export async function overview(ctx: ServiceContext, learnerId: string): Promise<
 
 /** Progress within one block, for the block page. */
 export async function progressForBlock(ctx: ServiceContext, learnerId: string, blockId: string) {
-  const block = await getBlock(ctx, blockId);
+  // Gated here as well as at the route: this already knows whose progress it is being asked for, so
+  // it should not depend on a caller having checked ownership first.
+  const block = await getBlockFor(ctx, blockId, learnerId);
   const { correctedOrders, pendingOrders } = await blockSubmissionState(ctx, learnerId, blockId);
   return {
     block,

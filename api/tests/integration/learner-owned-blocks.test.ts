@@ -103,6 +103,50 @@ describeIfMongo('blocks written for one learner', () => {
     expect((await blocksVisibleTo('other-token')).map((block) => block.slug)).toEqual(['for-everyone']);
   });
 
+  /**
+   * `/api/v1/progress` is what the pack page actually draws its block list from — not the pack route
+   * above. The two were fixed apart, and for one deploy this endpoint returned an empty list for
+   * every learner in a pack whose blocks were all owned, so both of them opened their pack and found
+   * nothing in it. Asserting on the pack route alone is what let that through.
+   */
+  const progressBlocksFor = async (token: string) => {
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/api/v1/progress?packId=${TEST_PACK.packId}`,
+      headers: auth(token),
+    });
+    return (response.json().blocks as { block: { slug: string } }[]).map((entry) => entry.block.slug);
+  };
+
+  it('reports each learner their own blocks on the surface the pack page renders', async () => {
+    await publish(blockFor(mine, 'my-first'));
+    await publish(blockFor(theirs, 'their-first'));
+
+    expect(await progressBlocksFor('learner-token')).toEqual(['my-first']);
+    expect(await progressBlocksFor('other-token')).toEqual(['their-first']);
+  });
+
+  it('still reports a pack-owned block to everyone there', async () => {
+    await publish({ ...TEST_BLOCK, slug: 'for-everyone' });
+
+    expect(await progressBlocksFor('learner-token')).toEqual(['for-everyone']);
+    expect(await progressBlocksFor('other-token')).toEqual(['for-everyone']);
+  });
+
+  it('points a learner at their own block as the current one', async () => {
+    await publish(blockFor(theirs, 'their-first'));
+    await publish(blockFor(mine, 'my-first'));
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/api/v1/progress?packId=${TEST_PACK.packId}`,
+      headers: auth('learner-token'),
+    });
+
+    // Not merely non-empty: the block it resumes into has to be theirs.
+    expect(response.json().currentBlock.slug).toBe('my-first');
+  });
+
   it("is a 404, not a 403, when a learner guesses another's block id", async () => {
     const other = (await publish(blockFor(theirs, 'their-first'))).json().block.blockId as string;
 
