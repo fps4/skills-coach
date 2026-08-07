@@ -25,10 +25,19 @@ import { closeBlock, redrillCategories, retireCategories, topRecurring } from '.
 import { blockProgress, type BlockProgress } from '../domain/progression.js';
 import { rampPosition, type RampPosition } from '../domain/ramp.js';
 import { postBlockReviewSchema, type PostBlockReviewInput } from '../domain/schemas.js';
-import type { Block, BlockReview, ErrorLogEntry, LocalizedText, PackManifest, Ratings } from '../domain/types.js';
+import type {
+  Block,
+  BlockReview,
+  ErrorLogEntry,
+  LearnerProfile,
+  LocalizedText,
+  PackManifest,
+  Ratings,
+} from '../domain/types.js';
 import type { CategoryBreakdown, QuizScore } from '../domain/quiz.js';
 import { getBlock, getPack } from './content.js';
 import { listErrorLog } from './corrections.js';
+import { getLearner } from './learners.js';
 import { blockReviewIdFor, errorLogIdFor, type ServiceContext } from './context.js';
 import { packBreakdown } from './quiz.js';
 import { blockSubmissionState } from './submissions.js';
@@ -137,6 +146,18 @@ export interface LessonEvidence {
 
 export interface NextBlockBriefPayload {
   goal?: LocalizedText;
+  /**
+   * (0) Who the block is for, and what their working world is.
+   *
+   * Carried verbatim beside `pack.method`, and for the same reason: the pack says how hard the next
+   * block should be and how it should be built, and this says what it should be *about*. The runtime
+   * interprets none of the three (ADR-0001, ADR-0015).
+   */
+  learner: {
+    learnerId: string;
+    displayName?: string;
+    profile?: LearnerProfile;
+  };
   pack: {
     packId: string;
     contentLanguage: string;
@@ -146,6 +167,7 @@ export interface NextBlockBriefPayload {
     method?: PackManifest['method'];
     errorCategories: PackManifest['errorCategories'];
   };
+  /** The block this brief reads from — `null` when there is not one yet, before block 1. */
   completedBlock: {
     blockId: string;
     order: number;
@@ -155,7 +177,7 @@ export interface NextBlockBriefPayload {
     focus?: string[];
     milestone?: string;
     progress: BlockProgress;
-  };
+  } | null;
   /** (1) How the learner actually did. */
   evidence: {
     lessons: LessonEvidence[];
@@ -198,19 +220,9 @@ export async function buildBrief(
   const { correctedOrders, pendingOrders } = await blockSubmissionState(ctx, learnerId, blockId);
   const progress = blockProgress(block.lessonCount, correctedOrders, pendingOrders);
 
-  const entries = await listErrorLog(ctx, learnerId, block.packId);
   const review = await getBlockReview(ctx, blockId, learnerId).catch(() => null);
 
-  return {
-    goal: pack.goal,
-    pack: {
-      packId: pack.packId,
-      contentLanguage: pack.contentLanguage,
-      translationLanguage: pack.translationLanguage,
-      framework: pack.framework,
-      method: pack.method,
-      errorCategories: pack.errorCategories,
-    },
+  return assemble(ctx, pack, learnerId, block.order + 1, {
     completedBlock: {
       blockId: block.blockId,
       order: block.order,
@@ -221,24 +233,96 @@ export async function buildBrief(
       milestone: block.milestone,
       progress,
     },
+    lessons: await lessonEvidence(ctx, learnerId, blockId),
+    review,
+  });
+}
+
+/**
+ * The brief for a learner who has not finished a block yet — usually because they have not started
+ * one.
+ *
+ * `buildBrief` reads *from* a completed block, which leaves block 1 with nowhere to come from: the
+ * first block of a programme was the one piece an author had to write blind, without the goal, the
+ * ramp's first rung, the method or the learner's own world in front of them. It is also the block
+ * that sets the tone for every one after it.
+ *
+ * Everything is the same payload, with the evidence half empty. The error log is not necessarily
+ * empty even here — a learner whose history was imported has one before they have opened anything —
+ * which is exactly why it is read rather than assumed.
+ */
+export async function buildFirstBrief(
+  ctx: ServiceContext,
+  packId: string,
+  learnerId: string,
+): Promise<NextBlockBriefPayload> {
+  const pack = await getPack(ctx, packId);
+
+  // The next position to author, which is 1 for a learner with nothing. Blocks already published for
+  // them are counted so that asking twice does not propose writing over one.
+  const [highest] = await ctx.store.collections.blocks
+    .find({ packId, learnerId })
+    .sort({ order: -1 })
+    .limit(1)
+    .project<{ order: number }>({ order: 1 })
+    .toArray();
+
+  return assemble(ctx, pack, learnerId, (highest?.order ?? 0) + 1, {
+    completedBlock: null,
+    lessons: [],
+    review: null,
+  });
+}
+
+/** The half of a brief that does not depend on whether a block has been completed. */
+async function assemble(
+  ctx: ServiceContext,
+  pack: PackManifest,
+  learnerId: string,
+  nextOrder: number,
+  from: {
+    completedBlock: NextBlockBriefPayload['completedBlock'];
+    lessons: LessonEvidence[];
+    review: BlockReview | null;
+  },
+): Promise<NextBlockBriefPayload> {
+  const learner = await getLearner(ctx, learnerId);
+  const entries = await listErrorLog(ctx, learnerId, pack.packId);
+
+  return {
+    goal: pack.goal,
+    learner: {
+      learnerId: learner.learnerId,
+      displayName: learner.displayName,
+      profile: learner.profile,
+    },
+    pack: {
+      packId: pack.packId,
+      contentLanguage: pack.contentLanguage,
+      translationLanguage: pack.translationLanguage,
+      framework: pack.framework,
+      method: pack.method,
+      errorCategories: pack.errorCategories,
+    },
+    completedBlock: from.completedBlock,
     evidence: {
-      lessons: await lessonEvidence(ctx, learnerId, blockId),
+      lessons: from.lessons,
       errorLog: entries,
       redrill: redrillCategories(entries),
       retire: retireCategories(entries),
       top: topRecurring(entries),
-      review,
-      quiz: await packBreakdown(ctx, learnerId, block.packId),
+      review: from.review,
+      quiz: await packBreakdown(ctx, learnerId, pack.packId),
     },
     nextBlock: {
-      order: block.order + 1,
-      ramp: rampPosition(pack.framework, block.order + 1),
+      order: nextOrder,
+      ramp: rampPosition(pack.framework, nextOrder),
     },
     suggestions: {
       redrill: redrillCategories(entries),
       retire: retireCategories(entries),
       focusCategories: topRecurring(entries).map((entry) => entry.category),
-      fromReview: review?.nextBlockBrief ?? null,
+      fromReview: from.review?.nextBlockBrief ?? null,
     },
   };
 }

@@ -264,3 +264,27 @@ This is a migration tool, not part of the loop — it writes counters directly, 
 does. It refuses any heading that does not resolve to a category the pack declares, suggesting what
 is available; use `--map "raw heading=declared-id"` for the rest. Run it once: running it again
 would double the counts.
+
+## Handing an old pack's blocks to their learner
+
+A pack published before [ADR-0015](../architecture/decisions/0015-a-block-may-be-owned-by-a-learner.md)
+has blocks nobody owns, which means everyone in the pack sees lessons written about one person's job:
+
+```sh
+cd api && npm run migrate:block-ownership -- --pack your-pack --learner <learnerId> --dry-run
+```
+
+It gives every unowned block in the pack to that learner and **changes no identifier**, so streaks,
+submissions and reviews stay attached — which is also why it is safe to re-run, and why it is a
+`$set` rather than a republish. Words the learner added themselves are left alone. The learner must
+have signed in at least once, because that is what creates their record.
+
+If the pack was a fork made only to give somebody their own domain, fold it back — republish its
+blocks into the original pack under a `learnerId`, then:
+
+```sh
+cd api && npm run remove:pack -- --pack the-fork --dry-run
+```
+
+which refuses outright if anyone has submitted, been corrected, or built a streak in it. History is
+archived, never deleted.

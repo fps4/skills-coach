@@ -62,3 +62,16 @@ human reading the diff, which is exactly the check ADR-0006 says a public reposi
 **Not decided here.** Whether a manifest can be a *template* other packs inherit from. With one real
 pack there is nothing to inherit; the manifest is the template, copied. Revisit if a second variant
 of the same program appears.
+
+## Postscript — resolved by ADR-0015
+
+A second variant appeared: the same Dutch B1→B2 programme, needed for a second learner whose lessons
+had to be about their own work rather than the first learner's. Copying the manifest was the only
+way, and it duplicated the error-category vocabulary this ADR put in git precisely so that it would
+exist once and be reviewed once.
+
+[ADR-0015](0015-a-block-may-be-owned-by-a-learner.md) answers the deferred question by not needing a
+template at all: **a block may be owned by a learner**, and the domain their lessons are written
+about moves to a profile on the learner. One manifest, several learners, each with their own blocks.
+The split this ADR drew — manifest is product, blocks are content — turned out to be exactly right;
+what was missing was that blocks are content *about somebody*, and nothing said whom.

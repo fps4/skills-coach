@@ -12,6 +12,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { requireCapability } from '../auth/plugin.js';
 import {
+  learnerProfileSchema,
   packManifestSchema,
   postBlockReviewSchema,
   postCorrectionSchema,
@@ -191,11 +192,50 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
   });
 
   /**
+   * The brief before there is a block to read one from.
+   *
+   * `buildBrief` reads *from* a completed block, which leaves block 1 with nowhere to come from —
+   * the one block an author had to write blind. Same payload, evidence half empty (ADR-0015).
+   */
+  app.get('/coach/v1/packs/:packId/brief', async (request) => {
+    requireCapability(request, 'submission:read-all');
+    const { packId } = request.params as { packId: string };
+    const { learnerId } = z.object({ learnerId: z.string().min(1) }).parse(request.query);
+    return brief.buildFirstBrief(ctx, packId, learnerId);
+  });
+
+  /**
    * Learner identifiers and display names — the minimum a coach needs to address a brief or a
    * review to someone. No email, and nothing identity-service owns.
    */
   app.get('/coach/v1/learners', async (request) => {
     requireCapability(request, 'submission:read-all');
     return { learners: await learners.listLearnerSummaries(ctx) };
+  });
+
+  /**
+   * The working world a learner's blocks are written about (ADR-0015).
+   *
+   * Gated on `pack:publish` rather than a capability of its own: this is authoring context, and it
+   * carries exactly the authority of publishing the blocks written from it.
+   */
+  app.get('/coach/v1/learners/:learnerId/profile', async (request) => {
+    requireCapability(request, 'submission:read-all');
+    const { learnerId } = request.params as { learnerId: string };
+    const learner = await learners.getLearner(ctx, learnerId);
+    return { learnerId, displayName: learner.displayName, profile: learner.profile ?? null };
+  });
+
+  app.put('/coach/v1/learners/:learnerId/profile', async (request) => {
+    const auth = requireCapability(request, 'pack:publish');
+    const { learnerId } = request.params as { learnerId: string };
+    const learner = await learners.setLearnerProfile(ctx, learnerId, learnerProfileSchema.parse(request.body));
+    await audit.record(ctx, {
+      principal: auth.principal,
+      action: 'learner.profile.set',
+      resource: `learner/${learnerId}`,
+      meta: { ...HTTP },
+    });
+    return { learnerId, displayName: learner.displayName, profile: learner.profile };
   });
 }

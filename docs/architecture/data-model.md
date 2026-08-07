@@ -17,8 +17,12 @@ Content identifiers are **deterministic**, derived from position and content rat
 ```
 pack            demo-conversation-nl
 block           demo-conversation-nl.b1              packId + order
+  owned by a learner
+                dutch-conversation-nl.ua1f3c9e2.b1   packId + hash(learnerId) + order
 lesson          demo-conversation-nl.b1.l2           blockId + order
 drill item      demo-conversation-nl.b1.d.00250fd6   blockId + hash(kind|term|sentence|stem)
+  added by a learner
+                demo-conversation-nl.b1.ua1f3c9e2.00250fd6
 ```
 
 For a question the hashed key is its **stem**, so rewording a distractor or fixing a typo in an
@@ -28,6 +32,16 @@ new question, which is the right outcome: it is one.
 This is what makes republishing safe. A lesson keeps its id when the block is re-imported, and a
 drill item whose text has not changed keeps the learner progress attached to it — with random ids
 every republish would silently reset everyone's streaks.
+
+The owner is hashed rather than embedded, because these ids travel in URLs and do not need to name
+anybody ([ADR-0012](decisions/0012-a-learner-may-add-to-their-own-deck.md),
+[ADR-0015](decisions/0015-a-block-may-be-owned-by-a-learner.md)).
+
+**An existing id is reused, never recomputed.** Everything above hangs off a block id, so giving a
+block an owner by re-deriving its id would orphan every streak, submission and review under it.
+`publishBlock` reads the block's stored `_id` and mints a new one only when there is none — which is
+why blocks published before ownership existed keep their unnamespaced form permanently, and why the
+migration that gave them an owner changed no identifier at all.
 
 Events (submissions, corrections) get random ids: each is a new thing that happened, not a thing
 that has an identity.
@@ -42,9 +56,14 @@ Derived keys: `enrollment = learnerId:packId`, `drillState = learnerId:drillItem
 | Collection | Key | Notable indexes |
 |---|---|---|
 | `packs` | `_id = packId` | — |
-| `blocks` | deterministic | `(packId, order)` unique · `(packId, status)` |
+| `blocks` | deterministic | `(packId, learnerId, order)` unique · `(packId, status)` |
 | `lessons` | deterministic | `(blockId, order)` unique · `packId` |
-| `drillItems` | content hash | `(blockId, lessonOrder)` · `packId` |
+| `drillItems` | content hash | `(blockId, lessonOrder)` · `packId` · `(learnerId, blockId)` sparse |
+
+A block's position is `(pack, owner, order)`. A missing `learnerId` indexes as null, which is what
+lets a pack-wide block 1 and one learner's block 1 coexist under a single unique key. This is the one
+index the codebase has had to replace rather than simply declare — `ensureIndexes` creates the new
+one and drops the superseded `block_order_unique`, idempotently, on every boot.
 
 A `lesson` holds `sections: Section[]` — an ordered array of the nine kinds
 ([ADR-0004](decisions/0004-pack-contract-and-typed-sections.md)). Nesting stays nested; this is the
@@ -64,9 +83,17 @@ places collapses to one item.
 | `drillState` | derived | `(learnerId, drillItemId)` unique · `(learnerId, blockId)` |
 | `attempts` | random, append-only | `(learnerId, at)` · `(drillItemId, at)` |
 
-`learners` is a thin profile keyed on the token's `sub` — display name and UI language, no
-credentials ([ADR-0002](decisions/0002-identity-service-as-authentication-engine.md)). The unique
-index on `subject` is what makes lazy creation safe under concurrent first requests.
+`learners` is keyed on the token's `sub` and holds no credentials
+([ADR-0002](decisions/0002-identity-service-as-authentication-engine.md)): display name, UI language,
+and a `profile` — the working world their blocks are written about
+([ADR-0015](decisions/0015-a-block-may-be-owned-by-a-learner.md)). Free text, carried to an author
+and interpreted by nothing. The unique index on `subject` is what makes lazy creation safe under
+concurrent first requests.
+
+A `drillItem` carries two things that used to be one. `learnerId` is *who sees it* — a word they
+added, or the content of a block written for them. `origin` is *where it came from*, which decides
+whether a republish may sweep it away and whether the learner may delete it. Absent on documents
+written before the distinction existed, where `learnerId` still answered both.
 
 `drillState` is the spaced-repetition state: `stage`, `streak`, `stage1Cleared`, `stage2Cleared`,
 `mastered`, plus attempt counters. `attempts` is the append-only record behind it, including whether
@@ -115,7 +142,9 @@ correction — deriving it means it can never drift from what actually happened.
 - **Deck summaries** — from `drillState`
 - **Quiz scores and per-category accuracy** — from a sitting's answers
 - **Which questions the next sitting asks** — from the error log, in `domain/quiz.ts`
-- **The next-block brief** — from the error log, quiz accuracy, the ramp and the pack goal
+- **The next-block brief** — from the error log, quiz accuracy, the ramp, the pack goal and method,
+  and the learner's profile; and for a learner with no finished block, the same payload with the
+  evidence half empty, so block 1 is not the one block written blind
 
 That list is the point of the design: everything an author needs in order to write the next block is
 computed from what happened, not maintained by hand alongside it.

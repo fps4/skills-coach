@@ -11,8 +11,8 @@
 import { randomUUID } from 'node:crypto';
 import { notFound } from '../http/errors.js';
 import type { Principal } from '../auth/verifier.js';
-import type { PatchMeInput } from '../domain/schemas.js';
-import { DEFAULT_LOCALE, type Enrollment, type Learner } from '../domain/types.js';
+import { learnerProfileSchema, type LearnerProfileInput, type PatchMeInput } from '../domain/schemas.js';
+import { DEFAULT_LOCALE, type Enrollment, type Learner, type LearnerProfile } from '../domain/types.js';
 import type { LearnerDoc } from '../db/collections.js';
 import { enrollmentIdFor, type ServiceContext } from './context.js';
 
@@ -71,14 +71,49 @@ export interface LearnerSummary {
   learnerId: string;
   displayName?: string;
   uiLanguage: string;
+  /**
+   * Whether a domain profile has been written for them. The profile itself is not projected here —
+   * a list is for choosing who to author for, and this is the one thing about it worth knowing at
+   * that point: without one, the next block has nothing to be about (ADR-0015).
+   */
+  hasProfile: boolean;
 }
 
 export async function listLearnerSummaries(ctx: ServiceContext): Promise<LearnerSummary[]> {
   const docs = await ctx.store.collections.learners
     .find({})
-    .project<{ _id: string; displayName?: string; uiLanguage: string }>({ displayName: 1, uiLanguage: 1 })
+    .project<{ _id: string; displayName?: string; uiLanguage: string; profile?: LearnerProfile }>({
+      displayName: 1,
+      uiLanguage: 1,
+      profile: 1,
+    })
     .toArray();
-  return docs.map(({ _id, ...rest }) => ({ learnerId: _id, ...rest }));
+  return docs.map(({ _id, profile, ...rest }) => ({
+    learnerId: _id,
+    ...rest,
+    hasProfile: Boolean(profile && Object.keys(profile).length > 0),
+  }));
+}
+
+/**
+ * Set the working world a learner's blocks are written about.
+ *
+ * Separate from `updateLearner` because the two have different callers and different authority: a
+ * learner edits their own profile through `/me`, and a coach writes one for whoever they are
+ * authoring for. Same document, same replace-wholesale rule.
+ */
+export async function setLearnerProfile(
+  ctx: ServiceContext,
+  learnerId: string,
+  profile: LearnerProfileInput,
+): Promise<Learner> {
+  const result = await ctx.store.collections.learners.findOneAndUpdate(
+    { _id: learnerId },
+    { $set: { profile: learnerProfileSchema.parse(profile) } },
+    { returnDocument: 'after' },
+  );
+  if (!result) throw notFound(`learner ${learnerId}`);
+  return toLearner(result);
 }
 
 export async function getLearner(ctx: ServiceContext, learnerId: string): Promise<Learner> {
@@ -91,6 +126,9 @@ export async function updateLearner(ctx: ServiceContext, learnerId: string, inpu
   const update: Partial<LearnerDoc> = {};
   if (input.uiLanguage) update.uiLanguage = input.uiLanguage;
   if (input.displayName !== undefined) update.displayName = input.displayName;
+  // Replaced wholesale rather than merged field by field: a profile is a short description of one
+  // working world, and a caller that sends half of it means the other half no longer applies.
+  if (input.profile !== undefined) update.profile = input.profile;
 
   if (Object.keys(update).length === 0) return getLearner(ctx, learnerId);
 

@@ -29,7 +29,7 @@ import {
 import type { AnswerQuizInput, StartQuizInput } from '../domain/schemas.js';
 import type { DrillItem, ErrorStatus, McqPayload, QuizAnswer, QuizSession } from '../domain/types.js';
 import type { QuizSessionDoc } from '../db/collections.js';
-import { getBlock, listDrillItems } from './content.js';
+import { getBlockFor, listDrillItems } from './content.js';
 import { listErrorLog } from './corrections.js';
 import { recordAttempt } from './drills.js';
 import { newEventId, type ServiceContext } from './context.js';
@@ -64,8 +64,11 @@ export async function startSession(
   learnerId: string,
   input: StartQuizInput,
 ): Promise<QuizSessionView> {
-  const block = await getBlock(ctx, input.blockId);
-  const items = (await listDrillItems(ctx, { blockId: input.blockId, kind: 'mcq' })).filter(isMcq);
+  // Scoped to the caller both ways (ADR-0015). A block written for somebody else is a 404 rather
+  // than a sitting; and a block written for *this* learner has questions carrying their id, which a
+  // deck read without an owner would filter out — leaving them told their own block has none.
+  const block = await getBlockFor(ctx, input.blockId, learnerId);
+  const items = (await listDrillItems(ctx, { blockId: input.blockId, kind: 'mcq', learnerId })).filter(isMcq);
   if (items.length === 0) throw notFound(`questions in block ${input.blockId}`);
 
   const stateDocs = await ctx.store.collections.drillState

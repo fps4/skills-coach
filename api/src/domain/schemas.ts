@@ -287,6 +287,11 @@ export const publishBlockSchema = z.object({
   status: z.enum(['draft', 'published']).default('published'),
   lessons: z.array(lessonSchema).min(1),
   drillItems: z.array(drillItemSchema).default([]),
+  /**
+   * Who this block is for (ADR-0015). Omit and the pack owns it, which is what a demo or template
+   * pack publishes; name a learner and only they ever see it.
+   */
+  learnerId: nonEmpty.optional(),
 });
 
 export const correctionItemSchema = z.object({
@@ -376,9 +381,26 @@ export const answerQuizSchema = z.object({
   chosen: z.array(nonEmpty).default([]),
 });
 
+/**
+ * The working world a learner's blocks are written about (ADR-0015).
+ *
+ * Free text throughout, and bounded only so a profile cannot become an essay: an author reads this
+ * alongside the pack's method, and neither is parsed by anything. Every field optional, because a
+ * half-filled profile is more useful to an author than an empty one.
+ */
+export const learnerProfileSchema = z.object({
+  domain: z.string().trim().max(200).optional(),
+  background: z.string().trim().max(4000).optional(),
+  targetRole: z.string().trim().max(200).optional(),
+  register: z.string().trim().max(200).optional(),
+  avoid: z.string().trim().max(1000).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+
 export const patchMeSchema = z.object({
   uiLanguage: localeSchema.optional(),
   displayName: z.string().max(120).optional(),
+  profile: learnerProfileSchema.optional(),
 });
 
 export type PackManifestInput = z.infer<typeof packManifestSchema>;
@@ -391,3 +413,4 @@ export type PostAttemptInput = z.infer<typeof postAttemptSchema>;
 export type PatchMeInput = z.infer<typeof patchMeSchema>;
 export type StartQuizInput = z.infer<typeof startQuizSchema>;
 export type AnswerQuizInput = z.infer<typeof answerQuizSchema>;
+export type LearnerProfileInput = z.infer<typeof learnerProfileSchema>;

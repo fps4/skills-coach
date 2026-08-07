@@ -26,6 +26,14 @@ every block is built the same way.
 | This document | the principles, and why each one is a rule rather than a preference |
 | A pack's `method:` block in `pack.yaml` | that pack's own commitments — lesson arc, authoring rules, per-topic sequencing |
 | A pack's `framework.ramp[].dials` | how hard the next block should be |
+| The learner's `profile` | what the block is **about** — their domain, background, target role |
+
+The last one is not part of the method and is listed here because it is the third thing an author
+reads and the one most easily forgotten. The dials say how hard, the method says how, the profile
+says what about ([ADR-0015](../architecture/decisions/0015-a-block-may-be-owned-by-a-learner.md)).
+It lives on the learner rather than in the pack because it is true of the person, not of the
+programme — the same profile serves every pack they ever take, and a pack serves every learner
+without naming one.
 
 The runtime carries all three and interprets none of them
 ([ADR-0001](../architecture/decisions/0001-runtime-not-agent.md)). `method` and `dials` reach an
