@@ -213,7 +213,10 @@ errorCategories:
   - id: spelling
     label: { nl: Spelling, en: Spelling }
   - id: register
-    label: { nl: Register (u/je, formeel), en: Register (formal/informal) }
+    # Quoted: an unquoted comma inside a flow mapping ends the value, so this silently stored as
+    # "Register (u/je" and put "formeel)" where a key was expected. The label is what a learner reads
+    # on their own error log, so it was wrong in Dutch on the surface and nowhere else.
+    label: { nl: "Register (u/je, formeel)", en: Register (formal/informal) }
   # Only ever logged from a speaking note — nothing written can evidence it.
   - id: uitspraak
     label: { nl: Uitspraak, en: Pronunciation }
