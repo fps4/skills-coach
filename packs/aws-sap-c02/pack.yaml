@@ -1,0 +1,276 @@
+# AWS Certified Solutions Architect – Professional (SAP-C02) — the manifest for the exam-prep program.
+#
+# COMMITTED, deliberately (ADR-0008): a manifest is the *program* — the ramp, the dials, the method
+# and the error vocabulary — and it names no person or employer. The question bank is content: it is
+# authored per learner against their weak areas and stays out of the tree. `.gitignore` un-ignores
+# this one file and nothing else in this directory.
+#
+# ---------------------------------------------------------------------------
+# Where the curriculum comes from, and what may not be copied
+# ---------------------------------------------------------------------------
+#
+# `errorCategories` below are the twenty task statements of the official SAP-C02 exam guide, taken
+# verbatim from AWS's published content outline:
+#
+#   https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-professional-02/
+#
+# The exam guide is published material and using it as a syllabus skeleton is what it is for. **Real
+# exam questions are confidential and must never enter this pack.** Every question is authored from
+# AWS documentation and carries `sourceRefs` pointing at the docs it was derived from — which is
+# both the honesty check and what makes a disputed answer key resolvable. See `method.rules`.
+
+packId: aws-sap-c02
+
+title:
+  nl: AWS Solutions Architect – Professional
+  en: AWS Solutions Architect – Professional
+
+description:
+  nl: Voorbereiding op het SAP-C02-examen, met oefentoetsen die zich richten op je zwakke plekken.
+  en: SAP-C02 exam preparation, with practice tests that aim at your weak areas.
+
+# The material is written in English because the exam is, whatever the interface is set to
+# (ADR-0005). `translationLanguage` is unused by this pack — it declares no `term` drills — but the
+# contract requires it, so it names the same language rather than implying a translation direction
+# that does not exist here.
+contentLanguage: en
+translationLanguage: en
+skill: certification
+
+goal:
+  nl: Slagen voor SAP-C02 — 750 of hoger op de schaal van 100–1000.
+  en: Pass SAP-C02 — 750 or better on the 100–1000 scale.
+
+# ---------------------------------------------------------------------------
+# The ramp — how hard, and in what proportion
+# ---------------------------------------------------------------------------
+#
+# The runtime never interprets a dial; it reads off which rung block N+1 sits on and hands the dials
+# to whoever writes it, verbatim. `domainMix` is where the exam's own weighting lives: the guide
+# gives Domain 1 26%, Domain 2 29%, Domain 3 25% and Domain 4 20% of scored content, and a bank that
+# ignores that trains the wrong proportions.
+#
+# Blocks are not weeks. Miss a day and you take the next block's questions, not a later one's.
+framework:
+  id: sap-c02-readiness
+  levels: [foundations, domain-competent, exam-ready, exam-fit]
+
+  ramp:
+    - fromBlock: 1
+      toBlock: 4
+      level: foundations
+      phase: One domain at a time
+      dials:
+        scenarioLength: 60–100 words — one requirement, stated plainly
+        servicesPerQuestion: one or two, and named explicitly
+        distractorSubtlety: wrong options are wrong on service capability, not on nuance
+        multiResponseShare: none — single answer only while the vocabulary is still settling
+        domainMix: one domain per block, in guide order
+        milestone: 80% on a 20-question set drawn from a single domain
+
+    - fromBlock: 5
+      toBlock: 12
+      level: domain-competent
+      phase: Trade-offs within a domain
+      dials:
+        scenarioLength: 120–180 words — requirements plus a constraint that rules options out
+        servicesPerQuestion: three or four, some implied rather than named
+        distractorSubtlety: every option would work; only one meets the stated constraint
+        multiResponseShare: about one question in five
+        domainMix: weighted to the exam — 26 / 29 / 25 / 20 across a block
+        milestone: 75% on a mixed 20-question set with no domain below half
+
+    - fromBlock: 13
+      toBlock: 20
+      level: exam-ready
+      phase: Cross-domain, under constraint
+      dials:
+        scenarioLength: 180–250 words — existing estate, migration pressure, a cost or RPO ceiling
+        servicesPerQuestion: four or more, across domains
+        distractorSubtlety: options differ on operational overhead and cost, not on whether they work
+        multiResponseShare: about one question in four
+        domainMix: exam-weighted, and no question tests only one task statement
+        milestone: 75% on a timed 20-question set at exam pace
+
+    - fromBlock: 21
+      toBlock: 30
+      level: exam-fit
+      phase: Full-length rehearsal
+      dials:
+        scenarioLength: as the exam — some short, some a full screen
+        servicesPerQuestion: unconstrained
+        distractorSubtlety: as the exam — the "most cost-effective" and "least operational overhead" split
+        multiResponseShare: about one question in four
+        domainMix: exam-weighted
+        milestone: 75% on a 75-question timed sitting, and no task statement left unseen
+
+# ---------------------------------------------------------------------------
+# Method — how a block is built, as opposed to how hard it is
+# ---------------------------------------------------------------------------
+#
+# The ramp sets the difficulty. This sets the construction. Both are carried into the brief verbatim
+# and neither is interpreted (ADR-0001) — the author is the one who acts on them.
+method:
+  principles:
+    - >-
+      Every question is authored from AWS documentation, never reproduced from an exam. A question
+      that cannot cite the doc it came from does not go in the bank.
+    - >-
+      A distractor must be a real AWS service used plausibly wrongly. An option nobody would pick
+      teaches nothing and makes a four-option question a three-option one.
+    - >-
+      The explanation carries the teaching, and it has to say why the *other* options fail. A learner
+      who knows only why the right answer is right cannot transfer it to the next scenario.
+    - >-
+      Questions test judgement, not recall. If the answer is a service's headline feature, the
+      question belongs in the Associate exam.
+    - >-
+      The constraint in the stem is what decides the answer — an RPO, a budget, an existing Direct
+      Connect, a compliance boundary. A scenario with no binding constraint has several right answers.
+    - >-
+      Weak task statements come back interleaved, not batched. A block that gives each weak area its
+      own run of five questions teaches the pattern of the block, not the content.
+    - >-
+      Every question names the task statements it tests. That tag is the only thing connecting a
+      wrong answer to what gets asked next block (ADR-0014), so an untagged question is invisible.
+
+  # The shape of one block. Lessons are optional here in a way they are not for a language pack:
+  # the practice test is the sitting, and prose exists to explain what the last one exposed.
+  lessonArc:
+    - review — what the previous sitting got wrong, as prose, before any new questions
+    - concept — the service comparison or trade-off the weak task statements turn on
+    - worked example — one scenario reasoned through in full, including why each distractor fails
+    - practice test — the twenty questions, which is where the evidence actually comes from
+
+  rules:
+    questionsPerBlock: 20–30, so a sitting has room to select from rather than exhausting the block
+    redrillShare: at least a third of a block's questions target categories in evidence.redrill
+    sourceRefs: every question cites at least one docs.aws.amazon.com or AWS whitepaper URL
+    distractorNotes: one `why` per incorrect option, no exceptions
+    multiResponse: state the count in the stem ("Choose TWO"), as the exam does
+    stemVoice: third person, present tense, a company with a stated requirement — the exam's register
+    neverReuse: a question already in an earlier block is not republished into a later one; the
+      streak rule retires it, and re-publishing resets nothing but does duplicate the bank
+    milestone: what the block's questions work backwards from; testable in one sitting
+
+  # Where teaching these in the obvious order reliably fails.
+  sequencing:
+    organizations: >-
+      Accounts and OUs before SCPs. A learner who meets an SCP before they can picture the OU tree
+      memorises the syntax and cannot answer where it should attach.
+    networking: >-
+      VPC peering, then Transit Gateway, then Direct Connect gateways. Introducing Transit Gateway
+      first makes every peering question look like a trick.
+    disaster-recovery: >-
+      Always paired with a stated RTO and RPO. The four strategies are indistinguishable without
+      numbers, which is exactly what the exam exploits.
+    cost: >-
+      Savings Plans and Reserved Instances together, as a contrast, never separately — the exam's
+      cost questions almost always turn on which of the two fits a commitment pattern.
+    migration: >-
+      The 7 Rs before any tool. A learner who meets DMS and Application Migration Service first
+      reaches for a tool when the question is asking for a strategy.
+    security: >-
+      Identity boundaries before detective controls. GuardDuty findings mean little to someone who
+      cannot yet say which account a role was assumed from.
+
+# ---------------------------------------------------------------------------
+# Error categories — the twenty task statements, and the commitment in this file
+# ---------------------------------------------------------------------------
+#
+# These ids are the join key between a wrong answer, the error log, and next-block generation. A
+# question naming an id that is not here is rejected at publish by design (ADR-0014): an invented one
+# would accumulate its own history and never join anything.
+#
+# Adding a category is always safe. **Renaming one is not** — the old id keeps its history and never
+# joins again. Once this pack has been answered against even once, treat the ids below as frozen.
+# They are AWS's task statement numbers, so they are as stable as anything here could be.
+#
+# `group` is the exam domain. Carried to the viewer and into the brief, never interpreted.
+errorCategories:
+  # --- Domain 1: Design Solutions for Organizational Complexity (26%) -------
+  - id: d1-1-network-connectivity
+    label: { en: Architect network connectivity strategies, nl: Architect network connectivity strategies }
+    group: { en: 'Domain 1: Organizational Complexity', nl: 'Domein 1: Organisatorische complexiteit' }
+  - id: d1-2-security-controls
+    label: { en: Prescribe security controls, nl: Prescribe security controls }
+    group: { en: 'Domain 1: Organizational Complexity', nl: 'Domein 1: Organisatorische complexiteit' }
+  - id: d1-3-reliable-resilient
+    label: { en: Design reliable and resilient architectures, nl: Design reliable and resilient architectures }
+    group: { en: 'Domain 1: Organizational Complexity', nl: 'Domein 1: Organisatorische complexiteit' }
+  - id: d1-4-multi-account
+    label: { en: Design a multi-account AWS environment, nl: Design a multi-account AWS environment }
+    group: { en: 'Domain 1: Organizational Complexity', nl: 'Domein 1: Organisatorische complexiteit' }
+  - id: d1-5-cost-visibility
+    label: { en: Determine cost optimization and visibility strategies, nl: Determine cost optimization and visibility strategies }
+    group: { en: 'Domain 1: Organizational Complexity', nl: 'Domein 1: Organisatorische complexiteit' }
+
+  # --- Domain 2: Design for New Solutions (29%) -----------------------------
+  - id: d2-1-deployment-strategy
+    label: { en: Design a deployment strategy to meet business requirements, nl: Design a deployment strategy to meet business requirements }
+    group: { en: 'Domain 2: New Solutions', nl: 'Domein 2: Nieuwe oplossingen' }
+  - id: d2-2-business-continuity
+    label: { en: Design a solution to ensure business continuity, nl: Design a solution to ensure business continuity }
+    group: { en: 'Domain 2: New Solutions', nl: 'Domein 2: Nieuwe oplossingen' }
+  - id: d2-3-security-controls
+    label: { en: Determine security controls based on requirements, nl: Determine security controls based on requirements }
+    group: { en: 'Domain 2: New Solutions', nl: 'Domein 2: Nieuwe oplossingen' }
+  - id: d2-4-reliability
+    label: { en: Design a strategy to meet reliability requirements, nl: Design a strategy to meet reliability requirements }
+    group: { en: 'Domain 2: New Solutions', nl: 'Domein 2: Nieuwe oplossingen' }
+  - id: d2-5-performance
+    label: { en: Design a solution to meet performance objectives, nl: Design a solution to meet performance objectives }
+    group: { en: 'Domain 2: New Solutions', nl: 'Domein 2: Nieuwe oplossingen' }
+  - id: d2-6-cost-optimization
+    label: { en: Determine a cost optimization strategy to meet solution goals, nl: Determine a cost optimization strategy to meet solution goals }
+    group: { en: 'Domain 2: New Solutions', nl: 'Domein 2: Nieuwe oplossingen' }
+
+  # --- Domain 3: Continuous Improvement for Existing Solutions (25%) --------
+  - id: d3-1-operational-excellence
+    label: { en: Determine a strategy to improve overall operational excellence, nl: Determine a strategy to improve overall operational excellence }
+    group: { en: 'Domain 3: Continuous Improvement', nl: 'Domein 3: Continue verbetering' }
+  - id: d3-2-improve-security
+    label: { en: Determine a strategy to improve security, nl: Determine a strategy to improve security }
+    group: { en: 'Domain 3: Continuous Improvement', nl: 'Domein 3: Continue verbetering' }
+  - id: d3-3-improve-performance
+    label: { en: Determine a strategy to improve performance, nl: Determine a strategy to improve performance }
+    group: { en: 'Domain 3: Continuous Improvement', nl: 'Domein 3: Continue verbetering' }
+  - id: d3-4-improve-reliability
+    label: { en: Determine a strategy to improve reliability, nl: Determine a strategy to improve reliability }
+    group: { en: 'Domain 3: Continuous Improvement', nl: 'Domein 3: Continue verbetering' }
+  - id: d3-5-cost-opportunities
+    label: { en: Identify opportunities for cost optimizations, nl: Identify opportunities for cost optimizations }
+    group: { en: 'Domain 3: Continuous Improvement', nl: 'Domein 3: Continue verbetering' }
+
+  # --- Domain 4: Accelerate Workload Migration and Modernization (20%) ------
+  - id: d4-1-select-workloads
+    label: { en: Select existing workloads and processes for potential migration, nl: Select existing workloads and processes for potential migration }
+    group: { en: 'Domain 4: Migration and Modernization', nl: 'Domein 4: Migratie en modernisering' }
+  - id: d4-2-migration-approach
+    label: { en: Determine the optimal migration approach for existing workloads, nl: Determine the optimal migration approach for existing workloads }
+    group: { en: 'Domain 4: Migration and Modernization', nl: 'Domein 4: Migratie en modernisering' }
+  - id: d4-3-new-architecture
+    label: { en: Determine a new architecture for existing workloads, nl: Determine a new architecture for existing workloads }
+    group: { en: 'Domain 4: Migration and Modernization', nl: 'Domein 4: Migratie en modernisering' }
+  - id: d4-4-modernization
+    label: { en: Determine opportunities for modernization and enhancements, nl: Determine opportunities for modernization and enhancements }
+    group: { en: 'Domain 4: Migration and Modernization', nl: 'Domein 4: Migratie en modernisering' }
+
+# How this pack presents itself past the landing page (ADR-0009). Declared here, resolved by the
+# viewer against its own registries — nothing in the runtime branches on which pack this is.
+presentation:
+  palette: blue
+  icon: cloud
+  tagline:
+    nl: Twintig vragen per keer, gericht op wat je nog mist.
+    en: Twenty questions at a time, aimed at what you still miss.
+  # This pack opts *out* of the two language drills and the lesson surface: it has no vocabulary and
+  # no word-order sentences, and its blocks are question banks rather than reading material. Naming
+  # the surfaces is how a pack says so — omitting the key would offer all of them.
+  surfaces: [quiz, progress]
+
+# No `matchArticles:` — nothing here is matched as free text. An mcq is graded by set equality
+# against its own key, so tolerant matching has nothing to be tolerant about (ADR-0014).
+#
+# No `sectionMap:` — this pack's blocks are published through the coach API rather than parsed out of
+# markdown headings, so there is no heading map to override.

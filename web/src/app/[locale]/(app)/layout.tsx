@@ -41,7 +41,11 @@ async function railPacks(): Promise<{ packs: RailPack[]; palettes: Record<string
         packId: entry.pack.packId,
         currentBlockId: entry.currentBlock?.blockId ?? null,
         surfaces: entry.pack.presentation?.surfaces,
-        decks: { terms: entry.decks.terms.total, wordOrder: entry.decks.wordOrder.total },
+        decks: {
+          terms: entry.decks.terms.total,
+          wordOrder: entry.decks.wordOrder.total,
+          quiz: entry.decks.quiz.total,
+        },
       })),
       palettes: Object.fromEntries(packs.map((entry) => [entry.pack.packId, entry.pack.presentation?.palette])),
     };

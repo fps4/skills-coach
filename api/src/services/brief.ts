@@ -26,9 +26,11 @@ import { blockProgress, type BlockProgress } from '../domain/progression.js';
 import { rampPosition, type RampPosition } from '../domain/ramp.js';
 import { postBlockReviewSchema, type PostBlockReviewInput } from '../domain/schemas.js';
 import type { Block, BlockReview, ErrorLogEntry, LocalizedText, PackManifest, Ratings } from '../domain/types.js';
+import type { CategoryBreakdown, QuizScore } from '../domain/quiz.js';
 import { getBlock, getPack } from './content.js';
 import { listErrorLog } from './corrections.js';
 import { blockReviewIdFor, errorLogIdFor, type ServiceContext } from './context.js';
+import { packBreakdown } from './quiz.js';
 import { blockSubmissionState } from './submissions.js';
 
 /**
@@ -162,6 +164,14 @@ export interface NextBlockBriefPayload {
     retire: string[];
     top: ErrorLogEntry[];
     review: BlockReview | null;
+    /**
+     * Quiz accuracy per category, weakest first, across every sitting in the pack (ADR-0014).
+     *
+     * The error log already says *which* categories keep costing the learner marks; this says how
+     * close to right they are getting on each — a category at 20% and one at 70% both read as
+     * `recurring`, and they do not want the same next block.
+     */
+    quiz: { byCategory: CategoryBreakdown[]; sessions: number; score: QuizScore };
   };
   /** (2) The next rung on the ramp. */
   nextBlock: {
@@ -218,6 +228,7 @@ export async function buildBrief(
       retire: retireCategories(entries),
       top: topRecurring(entries),
       review,
+      quiz: await packBreakdown(ctx, learnerId, block.packId),
     },
     nextBlock: {
       order: block.order + 1,

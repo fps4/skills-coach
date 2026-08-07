@@ -12,13 +12,14 @@
  */
 
 import { conflict, invalid, notFound } from '../http/errors.js';
-import { applyOccurrences, tallyCategories, type OccurrenceInput } from '../domain/error-log.js';
+import { tallyCategories } from '../domain/error-log.js';
 import { postCorrectionSchema, type PostCorrectionInput } from '../domain/schemas.js';
 import type { Correction, ErrorLogEntry } from '../domain/types.js';
 import type { CorrectionDoc, ErrorLogDoc } from '../db/collections.js';
 import { getBlock, getPack } from './content.js';
+import { groupByCategory, recordOccurrences } from './error-log.js';
 import { getSubmission } from './submissions.js';
-import { errorLogIdFor, newEventId, type ServiceContext } from './context.js';
+import { newEventId, type ServiceContext } from './context.js';
 
 const toCorrection = (doc: CorrectionDoc): Correction => {
   const { _id, ...rest } = doc;
@@ -79,52 +80,15 @@ export async function postCorrection(
   );
 
   const block = await getBlock(ctx, submission.blockId);
-  const errorLog = await applyToErrorLog(ctx, {
+  const errorLog = await recordOccurrences(ctx, {
     learnerId: submission.learnerId,
     packId: submission.packId,
     blockOrder: block.order,
-    lessonRef: submission.lessonId,
-    items: parsed.items,
+    byCategory: groupByCategory(parsed.items, submission.lessonId),
     now,
   });
 
   return { correction: toCorrection(doc), errorLog };
-}
-
-interface ApplyInput {
-  learnerId: string;
-  packId: string;
-  blockOrder: number;
-  lessonRef: string;
-  items: { original: string; corrected: string; categories: string[] }[];
-  now: Date;
-}
-
-/** Fold a correction's items into per-category occurrences and write the resulting entries back. */
-async function applyToErrorLog(ctx: ServiceContext, input: ApplyInput): Promise<ErrorLogEntry[]> {
-  const byCategory = new Map<string, OccurrenceInput[]>();
-  for (const item of input.items) {
-    for (const category of item.categories) {
-      const occurrences = byCategory.get(category) ?? [];
-      occurrences.push({ wrong: item.original, right: item.corrected, lessonRef: input.lessonRef });
-      byCategory.set(category, occurrences);
-    }
-  }
-
-  const updated: ErrorLogEntry[] = [];
-  for (const [category, occurrences] of byCategory) {
-    const id = errorLogIdFor(input.learnerId, input.packId, category);
-    const existing = await ctx.store.collections.errorLog.findOne({ _id: id });
-    const entry = applyOccurrences(existing ? toEntry(existing) : undefined, category, occurrences, {
-      learnerId: input.learnerId,
-      packId: input.packId,
-      blockOrder: input.blockOrder,
-      now: input.now,
-    });
-    await ctx.store.collections.errorLog.replaceOne({ _id: id }, entry, { upsert: true });
-    updated.push(entry);
-  }
-  return updated;
 }
 
 export async function getCorrection(ctx: ServiceContext, submissionId: string): Promise<Correction> {

@@ -77,6 +77,10 @@ export async function ensureIndexes(db: Db, auditRetentionDays: number): Promise
 
   await c.blockReviews.createIndex({ blockId: 1, learnerId: 1 }, { unique: true, name: 'block_review_unique' });
 
+  // A learner's sittings, newest first — what the results screen and the brief both read.
+  await c.quizSessions.createIndex({ learnerId: 1, startedAt: -1 }, { name: 'quiz_by_learner' });
+  await c.quizSessions.createIndex({ learnerId: 1, blockId: 1, startedAt: -1 }, { name: 'quiz_by_block' });
+
   // Retention rather than pruning logic — the whole point of the TTL index.
   await c.auditEvents.createIndex(
     { at: 1 },

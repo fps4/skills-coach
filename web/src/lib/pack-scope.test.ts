@@ -62,7 +62,7 @@ describe('resolvePalette', () => {
 
 describe('surfaces', () => {
   it('offers every surface by default — a pack opts out, never in', () => {
-    expect(DEFAULT_SURFACES).toEqual(['lessons', 'drills:terms', 'drills:word-order', 'progress']);
+    expect(DEFAULT_SURFACES).toEqual(['lessons', 'drills:terms', 'drills:word-order', 'quiz', 'progress']);
     expect(Object.keys(SURFACES).sort()).toEqual([...DEFAULT_SURFACES].sort());
   });
 
@@ -70,18 +70,27 @@ describe('surfaces', () => {
     const context = {
       locale: 'nl',
       currentBlockId: 'demo.b1',
-      decks: { terms: 20, wordOrder: 0 },
+      decks: { terms: 20, wordOrder: 0, quiz: 20 },
     };
 
     expect(SURFACES['drills:terms'].href(context)).toBe('/nl/drills/words?blockId=demo.b1');
     expect(SURFACES['drills:word-order'].href(context)).toBeNull();
+    expect(SURFACES.quiz.href(context)).toBe('/nl/quiz?blockId=demo.b1');
+  });
+
+  // A language pack has no questions and a certification pack has no word-order sentences; both
+  // disable the surface they do not fill rather than hiding it.
+  it('disables the quiz for a pack with no questions', () => {
+    const context = { locale: 'nl', currentBlockId: 'demo.b1', decks: { terms: 20, wordOrder: 20, quiz: 0 } };
+    expect(SURFACES.quiz.href(context)).toBeNull();
   });
 
   it('disables everything block-scoped before the learner has a block', () => {
-    const context = { locale: 'nl', currentBlockId: null, decks: { terms: 20, wordOrder: 20 } };
+    const context = { locale: 'nl', currentBlockId: null, decks: { terms: 20, wordOrder: 20, quiz: 20 } };
 
     expect(SURFACES.lessons.href(context)).toBeNull();
     expect(SURFACES['drills:terms'].href(context)).toBeNull();
+    expect(SURFACES.quiz.href(context)).toBeNull();
     // Progress is not block-scoped, so it stays reachable.
     expect(SURFACES.progress.href(context)).toBe('/nl/progress');
   });

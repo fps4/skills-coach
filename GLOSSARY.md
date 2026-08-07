@@ -28,8 +28,21 @@ array of typed **sections**.
 own way; `write` sections are what produce a submission.
 
 **Drill item** — one practisable atom, held in a deck separate from lesson prose so it can be
-scheduled independently. Two kinds today: `term` (a word or phrase with its translation and an
-example) and `word-order` (a sentence, its correct chunk order, a translation and a grammar tip).
+scheduled independently. Three kinds today: `term` (a word or phrase with its translation and an
+example), `word-order` (a sentence, its correct chunk order, a translation and a grammar tip), and
+`mcq` (a question, its options, its answer key, an explanation, and the error categories it tests).
+
+**Answer key** — the `correct` options an `mcq` carries. Held on the server and revealed only after
+the learner commits. Because the key is authored in advance, a wrong answer records an error-log
+occurrence with no coach involved — see
+[ADR-0014](docs/architecture/decisions/0014-an-authored-answer-key-may-write-the-error-log.md).
+
+**Multiple response** — an `mcq` whose key names more than one option. Scored all-or-nothing: every
+correct option and no incorrect one. There is no partial credit and no override.
+
+**Sitting** *(a quiz session)* — a fixed set of questions answered through in one go, in one of two
+modes. `practice` grades each answer as it is given; `exam` withholds every verdict until the end.
+Its score and per-category breakdown are derived on read, never stored.
 
 **Own word** — a `term` item a learner added themselves rather than one that arrived with the pack.
 It practises identically and lives in the same deck, but only its owner can see it and a republish of
@@ -71,8 +84,10 @@ categories, explanation}`, a category tally, and advisory ratings. The runtime d
 changes from it; the coach never writes counters directly.
 
 **Error category** — a stable, pack-declared label for a kind of mistake (the Dutch pack uses
-`woordvolgorde-bijzin`, `perfectum/imperfectum`, and so on). Categories are the join key between
-correction, drilling and next-block generation, so they must stay stable across a pack's life.
+`woordvolgorde-bijzin`, `perfectum/imperfectum`, and so on; the AWS pack uses the exam guide's twenty
+task statements). Categories are the join key between correction, drilling, quiz questions and
+next-block generation, so they must stay stable across a pack's life. A category may declare a free
+`group` label — an exam domain, say — which the viewer groups by and the runtime never interprets.
 
 **Error log** *(Dutch pack: "foutenlog")* — per learner, per category: examples, first and last seen,
 a count, and a status of `new` → `recurring` → `improving` → `mastered`. This is the memory that

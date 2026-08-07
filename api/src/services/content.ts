@@ -13,7 +13,7 @@
 import { conflict, notFound } from '../http/errors.js';
 import { packManifestSchema, publishBlockSchema } from '../domain/schemas.js';
 import type { PackManifestInput, PublishBlockInput } from '../domain/schemas.js';
-import type { Block, DrillItem, Lesson, PackManifest } from '../domain/types.js';
+import type { Block, DrillItem, DrillKind, Lesson, PackManifest } from '../domain/types.js';
 import { withoutId, type BlockDoc, type DrillItemDoc, type LessonDoc, type PackDoc } from '../db/collections.js';
 import { usableAlternative } from '../domain/word-order.js';
 import { blockIdFor, drillIdFor, lessonIdFor, type ServiceContext } from './context.js';
@@ -77,7 +77,7 @@ export interface DrillQuery {
   blockId?: string;
   packId?: string;
   lessonOrder?: number;
-  kind?: 'term' | 'word-order';
+  kind?: DrillKind;
   /**
    * Whose deck this is. The pack's own items are always included; this adds the words *this* learner
    * added themselves. Omitting it yields pack content only — which is what every coach-side caller
@@ -162,6 +162,18 @@ export async function publishBlock(
   );
   if (unknownFocus.length > 0) {
     throw conflict(`block focus references categories the pack does not declare: ${unknownFocus.join(', ')}`);
+  }
+
+  // A question's categories are the join key that makes a wrong answer reach the error log
+  // (ADR-0014), so an invented one is the same silent break an invented correction category would
+  // be — and it is rejected the same way, at the edge, with the declared list in the message.
+  const unknownTags = [
+    ...new Set(parsed.drillItems.flatMap((item) => (item.payload.kind === 'mcq' ? item.payload.categories : []))),
+  ].filter((id) => !known.has(id));
+  if (unknownTags.length > 0) {
+    throw conflict(
+      `question categories the pack does not declare: ${unknownTags.join(', ')} — declared: ${[...known].sort().join(', ')}`,
+    );
   }
 
   const blockId = blockIdFor(packId, parsed.order);

@@ -58,7 +58,7 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
   const context = {
     locale,
     currentBlockId: active?.currentBlockId ?? null,
-    decks: active?.decks ?? { terms: 0, wordOrder: 0 },
+    decks: active?.decks ?? { terms: 0, wordOrder: 0, quiz: 0 },
   };
 
   // A pack the learner has not opened yet is not in `packs`, so its surfaces fall back to the full

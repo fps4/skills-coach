@@ -57,6 +57,11 @@ reach another's work.
 | GET | `/drills` | `drill:practice` | Due items as **prompts**. Requires `blockId` or `packId` |
 | POST | `/drills/:drillItemId/attempts` | `drill:practice` | Grade an attempt |
 | POST | `/drills/reset` | `drill:practice` | Clear progress for a scope. Refuses an unscoped reset |
+| POST | `/quiz/sessions` | `drill:practice` | Start a sitting → `201` |
+| GET | `/quiz/sessions` | `drill:practice` | Own sittings, newest first. `?packId`, `?blockId`, `?limit` |
+| GET | `/quiz/sessions/:id` | `drill:practice` | Results and full review. `403` for another learner's |
+| POST | `/quiz/sessions/:id/answers` | `drill:practice` | Answer one question |
+| POST | `/quiz/sessions/:id/finish` | `drill:practice` | Close the sitting. Idempotent |
 | POST | `/blocks/:blockId/terms` | `drill:curate` | Add a word of your own to this block's deck → `201` |
 | GET | `/blocks/:blockId/terms` | `drill:curate` | The words you added to this block |
 | DELETE | `/terms/:drillItemId` | `drill:curate` | Remove one of your words, and its progress → `204` |
@@ -64,7 +69,7 @@ reach another's work.
 
 ### `GET /drills`
 
-`?blockId` · `?packId` · `?lessonOrder` · `?kind=term|word-order` · `?stage=1|2` · `?limit`
+`?blockId` · `?packId` · `?lessonOrder` · `?kind=term|word-order|mcq` · `?stage=1|2` · `?limit`
 
 Returns `{ items: DueItem[], summary: DeckSummary }`, ordered least-practised first.
 
@@ -87,6 +92,10 @@ commits. An integration test asserts this.
 A `word-order` prompt carries `bank` (chunks, deterministically shuffled), `leadCue` (which chunk
 must lead, when the item drills two orders) and `tip`.
 
+An `mcq` prompt carries `options` (deterministically shuffled, and **carrying no marker of which are
+correct**), `choose` (how many to select) and `multiple`. It has one stage — a question has no
+reverse direction.
+
 ### `POST /drills/:drillItemId/attempts`
 
 ```jsonc
@@ -103,6 +112,50 @@ Returns the verdict, the expected answer, `acceptedAlso` (every form that would 
 
 `otherValidOrder: true` with `correct: false` means the learner built the *other* correct order —
 good material, wrong round. Requesting stage 2 before stage 1 is cleared is a `400`.
+
+### `POST /quiz/sessions`
+
+```jsonc
+{ "blockId": "aws-sap-c02.b1", "mode": "practice", "size": 20, "limitSeconds": 2880 }
+```
+
+Assembles a sitting from the block's `mcq` items, weighted by what the learner keeps getting wrong:
+questions testing a `recurring` category first, then least-practised, then id. Mastered items are
+excluded. The order is **fixed at start**, so reloading resumes the same sitting rather than
+assembling a fresh one from evidence that has since moved.
+
+`mode` is the learner's choice, not the pack's. `practice` returns a verdict with each answer;
+`exam` returns `result: null` until the sitting is finished. `limitSeconds` is advisory — the clock
+runs out and says so, and nothing is voided.
+
+`404` when the block has no questions; `400` when every question in it is mastered.
+
+### `POST /quiz/sessions/:id/answers`
+
+```jsonc
+{ "drillItemId": "aws-sap-c02.b1.d.4f1c9a02", "chosen": ["b", "d"] }
+```
+
+Graded by the same path as any other drill attempt, so the sitting moves the same drill state and —
+on a miss — writes the same error-log occurrence a coach's correction would
+([ADR-0014](../architecture/decisions/0014-an-authored-answer-key-may-write-the-error-log.md)).
+
+Scoring is **set equality**: for a multiple-response question every correct option must be selected
+and no incorrect one. No partial credit, and no `override` — tolerant matching exists because free
+text cannot be enumerated, and a list can be. An empty `chosen` is a deliberate skip and is graded
+wrong, as the exam does.
+
+Returns `{ session, result }`, where `result` is `null` in exam mode and otherwise carries `correct`,
+`expected`, `correctRefs`, `explanation`, `distractors` and `sourceRefs`. Answering the same question
+twice, or one not in this sitting, is a `400`.
+
+### `POST /quiz/sessions/:id/finish`
+
+Returns `{ session, score, byCategory, complete, review }`. `score` and `byCategory` are computed on
+read and never stored. `review` is every question asked with its key and explanation — in exam mode
+this is the first point at which any of it is revealed.
+
+Idempotent: finishing twice keeps the first `finishedAt`.
 
 ### `POST /blocks/:blockId/terms`
 
@@ -131,7 +184,7 @@ The only way content and corrections enter the system
 | POST | `/packs` | `pack:publish` | Upsert a pack manifest |
 | POST | `/packs/:packId/blocks` | `pack:publish` | Publish a block with lessons and drills → `201` |
 | POST | `/blocks/:blockId/archive` | `pack:publish` | Archive a block |
-| GET | `/blocks/:blockId` | `lesson:read` | Block with full lessons |
+| GET | `/blocks/:blockId` | `lesson:read` | Block with full lessons and its drill deck |
 | GET | `/submissions` | `submission:read-all` | The work queue. `?status=pending` first-in-first-out |
 | GET | `/submissions/:id` | `submission:read-all` | Submission, correction and the lesson it answers |
 | POST | `/submissions/:id/correction` | `correction:write` | Post a correction → `201` |
@@ -145,6 +198,35 @@ The only way content and corrections enter the system
 Idempotent. Identifiers are derived from position and content, so republishing a block updates it in
 place and a drill item whose text is unchanged **keeps its learner progress**. Vocabulary sections
 also contribute `term` drills, so an author never writes a word twice.
+
+An `mcq` drill item carries its own answer key:
+
+```jsonc
+{
+  "payload": {
+    "kind": "mcq",
+    "stem": "A company runs a regulated workload in two Regions and must meet an RPO of five minutes…",
+    "options": [
+      { "ref": "a", "text": "Amazon S3 Cross-Region Replication" },
+      { "ref": "b", "text": "Amazon Aurora global database" }
+    ],
+    "correct": ["b"],                       // more than one ⇒ multiple response, all-or-nothing
+    "explanation": "An Aurora global database replicates with sub-second typical lag.",
+    "distractors": [{ "ref": "a", "why": "S3 CRR replicates objects, not the transactional store." }],
+    "categories": ["d1-3-reliable-resilient"],   // pack-declared ids — the join key
+    "sourceRefs": ["https://docs.aws.amazon.com/…"]
+  }
+}
+```
+
+Two ways this fails the publish, both deliberately loud rather than degrading:
+
+- `correct` naming an option the question does not define, or every option being correct → `400`.
+  Unlike a malformed word-order alternative, a broken key would silently mark every learner wrong
+  forever.
+- `categories` naming an id the pack does not declare → `409`, with the declared list in the
+  message. Same rule as a correction's categories, and for the same reason: an invented one would
+  accumulate its own history and never join anything.
 
 Returns counts, including `ignoredAlternatives` — alternative word orders dropped because they were
 not permutations of the same chunks. An authoring typo degrades an item to single-order rather than

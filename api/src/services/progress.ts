@@ -13,7 +13,9 @@ import { getBlock, getPack, listBlocks } from './content.js';
 import { listErrorLog } from './corrections.js';
 import { deckSummary } from './drills.js';
 import { getEnrollment, listEnrollments } from './learners.js';
+import { packBreakdown } from './quiz.js';
 import { blockSubmissionState } from './submissions.js';
+import type { CategoryBreakdown, QuizScore } from '../domain/quiz.js';
 import type { ServiceContext } from './context.js';
 
 export interface PackProgress {
@@ -21,7 +23,9 @@ export interface PackProgress {
   currentBlock: Block | null;
   blockProgress: BlockProgress | null;
   blocks: { block: Block; progress: BlockProgress }[];
-  decks: { terms: DeckSummary; wordOrder: DeckSummary };
+  decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary };
+  /** Per-category accuracy across every sitting. Advisory, derived on read (ADR-0014). */
+  quiz: { byCategory: CategoryBreakdown[]; sessions: number; score: QuizScore };
   errorLog: {
     entries: ErrorLogEntry[];
     redrill: string[];
@@ -58,7 +62,9 @@ export async function packProgress(ctx: ServiceContext, learnerId: string, packI
     decks: {
       terms: await deckSummary(ctx, learnerId, { packId, kind: 'term' }),
       wordOrder: await deckSummary(ctx, learnerId, { packId, kind: 'word-order' }),
+      quiz: await deckSummary(ctx, learnerId, { packId, kind: 'mcq' }),
     },
+    quiz: await packBreakdown(ctx, learnerId, packId),
     errorLog: {
       entries,
       redrill: redrillCategories(entries),
@@ -91,6 +97,7 @@ export async function progressForBlock(ctx: ServiceContext, learnerId: string, b
     decks: {
       terms: await deckSummary(ctx, learnerId, { blockId, kind: 'term' }),
       wordOrder: await deckSummary(ctx, learnerId, { blockId, kind: 'word-order' }),
+      quiz: await deckSummary(ctx, learnerId, { blockId, kind: 'mcq' }),
     },
   };
 }

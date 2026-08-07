@@ -15,10 +15,12 @@ import {
   type DrillProgress,
   type DeckSummary,
 } from '../domain/drill-progress.js';
+import { optionsText } from '../domain/mcq.js';
 import type { PostAttemptInput } from '../domain/schemas.js';
-import type { DrillItem, PackManifest, Stage } from '../domain/types.js';
+import type { DrillItem, DrillKind, McqPayload, PackManifest, Stage } from '../domain/types.js';
 import type { DrillStateDoc } from '../db/collections.js';
-import { getDrillItem, getPack, listDrillItems } from './content.js';
+import { getBlock, getDrillItem, getPack, listDrillItems } from './content.js';
+import { recordOccurrences } from './error-log.js';
 import { drillStateIdFor, newEventId, type ServiceContext } from './context.js';
 
 const stripState = (doc: DrillStateDoc): DrillProgress => {
@@ -60,7 +62,7 @@ export interface NextItemsQuery {
   blockId?: string;
   packId?: string;
   lessonOrder?: number;
-  kind?: 'term' | 'word-order';
+  kind?: DrillKind;
   /** Which direction to practise. Items not sitting at this stage are skipped. */
   stage?: Stage;
   limit?: number;
@@ -185,7 +187,47 @@ export async function recordAttempt(
     at: now,
   });
 
+  if (item.payload.kind === 'mcq' && !result.correct) {
+    await recordMcqMiss(ctx, learnerId, item.payload, item.blockId, input.given, now);
+  }
+
   return { ...result, drillItemId };
+}
+
+/**
+ * A wrong answer against a published key is an error-log occurrence (ADR-0014).
+ *
+ * The judgement was made when the question was authored — which option is right, and which
+ * categories it tests — so nothing is being decided here. This folds one attempt into the same
+ * shape a correction produces and hands it to the same writer.
+ *
+ * Only misses are recorded. The error log is a record of what went wrong, and a category that
+ * counted its successes too would need a second, different set of status rules to mean anything.
+ */
+async function recordMcqMiss(
+  ctx: ServiceContext,
+  learnerId: string,
+  payload: McqPayload,
+  blockId: string,
+  given: string | string[],
+  now: Date,
+): Promise<void> {
+  const block = await getBlock(ctx, blockId);
+  const chosen = Array.isArray(given) ? given : [given];
+
+  const occurrence = {
+    wrong: optionsText(payload, chosen),
+    right: optionsText(payload, payload.correct),
+    lessonRef: blockId,
+  };
+
+  await recordOccurrences(ctx, {
+    learnerId,
+    packId: block.packId,
+    blockOrder: block.order,
+    byCategory: new Map(payload.categories.map((category) => [category, [occurrence]])),
+    now,
+  });
 }
 
 /** Reset progress for a scope, mirroring the original trainers' per-deck Reset button. */
@@ -204,7 +246,7 @@ export async function resetProgress(
 export async function deckSummary(
   ctx: ServiceContext,
   learnerId: string,
-  scope: { blockId?: string; packId?: string; kind?: 'term' | 'word-order' },
+  scope: { blockId?: string; packId?: string; kind?: DrillKind },
 ): Promise<DeckSummary> {
   const items = await listDrillItems(ctx, { ...scope, learnerId });
   const progressById = await loadProgress(

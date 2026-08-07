@@ -184,10 +184,40 @@ When driving this with a language model, the shape that holds up:
 That last instruction matters more than it looks. A model asked to correct will find something to
 correct, and inflated counts distort what gets re-drilled.
 
+## The loop for a pack that quizzes
+
+A pack whose blocks are question banks rather than lessons runs the same loop with one step removed:
+there is no correction, because the judgement was authored into each question's key
+([ADR-0014](../architecture/decisions/0014-an-authored-answer-key-may-write-the-error-log.md)).
+
+1. The learner takes a sitting. Every wrong answer records an error-log occurrence against the
+   categories that question tags, with no coach involved.
+2. `GET /coach/v1/blocks/:id/brief` carries the error log **and** `evidence.quiz` — per-category
+   accuracy, weakest first. The error log says which categories keep costing marks; the accuracy
+   says how close to right the learner is on each, which a status alone cannot.
+3. Author block N+1 against `suggestions.redrill` and the weakest rows, and publish it.
+4. **Post the block review.** This is the step it is tempting to skip, and skipping it means nothing
+   ever retires — a category only earns a clean block when a block is closed.
+
+Read the previous block with `get_block` before authoring: it returns the drill deck, and writing
+questions without seeing the ones already written is how a bank fills up with near-duplicates.
+
+A prompt that holds up for question authoring:
+
+> You are writing 20 practice questions for `<pack goal>`.
+> Here is the brief: `<brief JSON>`
+> Here are the questions already in the bank: `<drillItems JSON>`
+>
+> Author from AWS documentation only — never reproduce a real exam question. At least a third must
+> target the categories in `suggestions.redrill`. Tag every question with the task-statement ids it
+> tests, using only ids the pack declares. Every incorrect option needs a one-line `why`. Cite at
+> least one docs URL per question in `sourceRefs`. Match the `dials` for the ramp rung in the brief.
+
 ## What the coach cannot do
 
 - Set an error-log counter, or a status
 - Practise as a learner, or read a learner's drill progress
+- See a learner's own words, or their quiz sittings
 - Administer users or roles — that is identity-service's
 
 These are not gaps. They are what keeps adaptation deterministic even though its input is judgement.

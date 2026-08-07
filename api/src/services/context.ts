@@ -38,7 +38,10 @@ export const lessonIdFor = (blockId: string, order: number): string => `${blockI
  * the id travels in URLs, and it does not need to name anybody.
  */
 export function drillIdFor(blockId: string, payload: DrillPayload, learnerId?: string): string {
-  const key = payload.kind === 'term' ? payload.term : payload.sentence;
+  // The side a learner is asked to produce first. For a question that is the stem — editing an
+  // option's wording keeps the item, and with it the learner's progress on it, which is what an
+  // author fixing a typo in a distractor should get.
+  const key = payload.kind === 'term' ? payload.term : payload.kind === 'mcq' ? payload.stem : payload.sentence;
   const digest = createHash('sha256').update(`${payload.kind}|${key}`).digest('hex').slice(0, 12);
   if (!learnerId) return `${blockId}.d.${digest}`;
   const owner = createHash('sha256').update(learnerId).digest('hex').slice(0, 8);

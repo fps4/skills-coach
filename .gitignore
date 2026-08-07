@@ -27,6 +27,10 @@ content/
 packs/dutch-conversation-nl/*
 !packs/dutch-conversation-nl/pack.yaml
 
+!packs/aws-sap-c02/
+packs/aws-sap-c02/*
+!packs/aws-sap-c02/pack.yaml
+
 # Tooling caches
 .cache/
 coverage/

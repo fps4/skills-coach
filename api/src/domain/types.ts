@@ -57,6 +57,12 @@ export interface RampStep {
 export interface ErrorCategoryDef {
   id: string;
   label?: LocalizedText;
+  /**
+   * A free label the pack groups its categories under, e.g. an exam domain. Carried to the viewer
+   * and into the brief; never interpreted here. Grouping by parsing an id would make the id's shape
+   * load-bearing, and ids are frozen once a pack has been corrected against.
+   */
+  group?: LocalizedText;
 }
 
 /** Maps a source document's headings onto section kinds, so the importer is not language-specific. */
@@ -67,7 +73,7 @@ export interface SectionMapEntry {
 }
 
 /** A surface the learner surface can render past the landing page. Closed set — see the schema. */
-export type PackSurface = 'lessons' | 'drills:terms' | 'drills:word-order' | 'progress';
+export type PackSurface = 'lessons' | 'drills:terms' | 'drills:word-order' | 'quiz' | 'progress';
 
 /**
  * How a pack presents itself, declared and never interpreted here.
@@ -247,13 +253,48 @@ export interface Lesson {
 // Drill deck
 // ---------------------------------------------------------------------------
 
-export type DrillKind = 'term' | 'word-order';
+export type DrillKind = 'term' | 'word-order' | 'mcq';
 
 export interface TermPayload {
   kind: 'term';
   term: string;
   translation: string;
   example?: string;
+}
+
+export interface McqOption {
+  /** Stable within the item. What a learner submits, and what `correct` names. */
+  ref: string;
+  text: string;
+}
+
+/**
+ * A multiple-choice question, carrying its own answer key (ADR-0014).
+ *
+ * `correct` holding more than one ref makes this a multiple-*response* question: every correct
+ * option must be selected and no incorrect one. That is the format of the exams this kind exists
+ * for, and partial credit would teach a learner that a half-right architecture passes.
+ *
+ * `categories` is what makes the item join the adaptation loop. Getting it wrong records an
+ * occurrence against each named category, exactly as a coach's correction would.
+ */
+export interface McqPayload {
+  kind: 'mcq';
+  /** The scenario. Often long — the surface is built for a paragraph, not a line. */
+  stem: string;
+  options: McqOption[];
+  /** Answer key. Never sent to the browser before the learner commits. */
+  correct: string[];
+  /** Why the right answer is right. Shown after the verdict. */
+  explanation: string;
+  /** Why each wrong option is wrong. This is where most of the teaching actually happens. */
+  distractors?: { ref: string; why: string }[];
+  /** Pack-declared error-category ids. Validated at publish — an unknown one fails it. */
+  categories: string[];
+  /** Free label, like a ramp's dials. Descriptive only; nothing branches on it. */
+  difficulty?: string;
+  /** Where the answer comes from. Keeps authoring honest and makes a disputed key checkable. */
+  sourceRefs?: string[];
 }
 
 export interface WordOrderPayload {
@@ -268,7 +309,7 @@ export interface WordOrderPayload {
   partsAlt?: string[];
 }
 
-export type DrillPayload = TermPayload | WordOrderPayload;
+export type DrillPayload = TermPayload | WordOrderPayload | McqPayload;
 
 export interface DrillItem {
   drillItemId: string;
@@ -405,6 +446,49 @@ export interface NextBlockBrief {
   redrill: string[];
   retire: string[];
   themeAndDifficulty?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Quiz sessions
+// ---------------------------------------------------------------------------
+
+/**
+ * How a sitting behaves. `practice` grades each answer as it is given; `exam` withholds every
+ * verdict until the session is finished, which is the only way to rehearse committing to an answer
+ * you cannot check.
+ */
+export type QuizMode = 'practice' | 'exam';
+
+export interface QuizAnswer {
+  drillItemId: string;
+  /** Option refs the learner selected. */
+  chosen: string[];
+  correct: boolean;
+  /** Carried so the results screen can group without re-reading every item. */
+  categories: string[];
+  at: Date;
+}
+
+/**
+ * One sitting: which items were asked, and what was answered.
+ *
+ * The score, the per-category breakdown and anything resembling readiness are **derived on read**,
+ * never stored — the same rule the error-log status follows (ADR-0014). A stored score would be a
+ * persisted judgement about a person, which is exactly what AGENTS.md forbids.
+ */
+export interface QuizSession {
+  sessionId: string;
+  learnerId: string;
+  packId: string;
+  blockId: string;
+  mode: QuizMode;
+  /** The items to ask, in order. Fixed at start so a reload does not reshuffle the sitting. */
+  itemIds: string[];
+  answers: QuizAnswer[];
+  /** Seconds the learner asked to be held to, when they chose a timed sitting. */
+  limitSeconds?: number;
+  startedAt: Date;
+  finishedAt?: Date;
 }
 
 export interface BlockReview {
