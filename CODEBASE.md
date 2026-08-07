@@ -24,8 +24,10 @@ api/src/
     types.ts           core entities and the nine section kinds
     schemas.ts         zod — the validation boundary for everything entering the system
     matching.ts        tolerant answer comparison
-    drill-progress.ts  the stage/streak/mastery machine, shared by both drill kinds
+    drill-progress.ts  the stage/streak/mastery machine, shared by all drill kinds
     word-order.ts      order checking, alternative orders, per-chunk marks
+    mcq.ts             answer keys: set-equality grading, deterministic option shuffle
+    quiz.ts            assembling a sitting from weakness, and scoring one
     grading.ts         what to ask, what counts, what the learner is told
     error-log.ts       counter and status-transition rules
     progression.ts     next lesson, block completion, answer references
@@ -35,6 +37,11 @@ api/src/
   services/          domain rules + persistence, transport-agnostic
     learner-terms.ts   the words a learner adds themselves — owned, private, and
                        untouched by a republish (ADR-0012)
+    error-log.ts       the ONE place counters are written — a coach's correction and a
+                       wrong answer against a key both go through it (ADR-0014)
+    quiz.ts            sittings: start, answer, finish. Grading delegates to drills.ts,
+                       so a question answered in a sitting and one answered outside it
+                       move identical state
   auth/              JWKS verification, role → capability map, fastify plugin
   http/              route definitions only — thin, delegating to services
   mcp/               the same coach surface as tools — `handler.ts` is transport-agnostic,
@@ -71,8 +78,11 @@ web/src/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
     app-header.tsx   sticky brand header with the accent wordmark, and sign-out
-    learner-rail.tsx your packs · lessons · the two drills · progress
+    learner-rail.tsx your packs · lessons · the two drills · the quiz · progress
     own-words.tsx    the entry form for your own words, inside the word trainer
+    quiz-runner.tsx  the practice-test surface: practice / exam modes, an optional clock
+    quiz-results.tsx score, per-category breakdown, and every question back for review
+    ui/option-list.tsx  radio or checkbox options, and the per-question strip
   middleware.ts      locale negotiation + session renewal + auth gate, before render
 ```
 

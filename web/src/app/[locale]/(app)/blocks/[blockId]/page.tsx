@@ -5,7 +5,7 @@
  */
 
 import Link from 'next/link';
-import { Check, Clock, Puzzle, Sparkles } from 'lucide-react';
+import { Check, Clock, ListChecks, Puzzle, Sparkles } from 'lucide-react';
 
 import { Meter, PageShell, Pill } from '@/components/atoms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
 interface BlockResponse {
   block: Block;
   progress: BlockProgress;
-  decks: { terms: DeckSummary; wordOrder: DeckSummary };
+  decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary };
   lessons: LessonSummary[];
 }
 
@@ -107,6 +107,13 @@ export default async function BlockPage({ params }: { params: Promise<{ locale: 
             icon={<Puzzle className="h-4 w-4 text-primary" />}
             summary={data.decks.wordOrder}
             href={`/${locale}/drills/sentences?blockId=${blockId}`}
+            dictionary={dictionary}
+          />
+          <DeckCard
+            title={dictionary.nav.quiz}
+            icon={<ListChecks className="h-4 w-4 text-primary" />}
+            summary={data.decks.quiz}
+            href={`/${locale}/quiz?blockId=${blockId}`}
             dictionary={dictionary}
           />
         </div>

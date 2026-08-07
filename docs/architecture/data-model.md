@@ -18,8 +18,12 @@ Content identifiers are **deterministic**, derived from position and content rat
 pack            demo-conversation-nl
 block           demo-conversation-nl.b1              packId + order
 lesson          demo-conversation-nl.b1.l2           blockId + order
-drill item      demo-conversation-nl.b1.d.00250fd6   blockId + hash(kind|term-or-sentence)
+drill item      demo-conversation-nl.b1.d.00250fd6   blockId + hash(kind|term|sentence|stem)
 ```
+
+For a question the hashed key is its **stem**, so rewording a distractor or fixing a typo in an
+explanation keeps the item — and the learner's progress on it. Changing the scenario itself makes a
+new question, which is the right outcome: it is one.
 
 This is what makes republishing safe. A lesson keeps its id when the block is re-imported, and a
 drill item whose text has not changed keeps the learner progress attached to it — with random ids
@@ -76,7 +80,19 @@ the learner overrode a rejection.
 | `corrections` | random | `submissionId` **unique** |
 | `errorLog` | derived | `(learnerId, packId, category)` unique |
 | `blockReviews` | derived | `(blockId, learnerId)` unique |
+| `quizSessions` | random | `(learnerId, startedAt)` · `(learnerId, blockId, startedAt)` |
 | `auditEvents` | random | `at` **TTL** · `(actor.subject, at)` |
+
+`errorLog` now has **two** writers ([ADR-0014](decisions/0014-an-authored-answer-key-may-write-the-error-log.md)):
+a coach's correction, and a wrong answer against a question's published key. Both go through
+`services/error-log.ts::recordOccurrences`, so there is one implementation of the arithmetic and not
+two that can drift.
+
+A `quizSessions` document holds which items were asked and what was answered — and **nothing that was
+derived from them**. The score, the per-category breakdown and anything resembling readiness are
+computed on read, exactly as error-log status is, so they cannot disagree with the answers behind
+them. A stored score would also be a persisted judgement about a person, which
+[`../../AGENTS.md`](../../AGENTS.md) rules out.
 
 `(status, createdAt)` is the coach's work queue, oldest first. The unique index on
 `corrections.submissionId` is what makes double-correction a `409` rather than a duplicate history.
@@ -97,7 +113,9 @@ correction — deriving it means it can never drift from what actually happened.
 - **Error-log status** — from `count` and `cleanBlocks`
 - **Block progress** — from which lessons have corrected submissions
 - **Deck summaries** — from `drillState`
-- **The next-block brief** — from the error log, the ramp and the pack goal
+- **Quiz scores and per-category accuracy** — from a sitting's answers
+- **Which questions the next sitting asks** — from the error log, in `domain/quiz.ts`
+- **The next-block brief** — from the error log, quiz accuracy, the ramp and the pack goal
 
 That list is the point of the design: everything an author needs in order to write the next block is
 computed from what happened, not maintained by hand alongside it.

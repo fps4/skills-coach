@@ -11,10 +11,12 @@ import { z } from 'zod';
 import { requireCapability } from '../auth/plugin.js';
 import { forbidden, invalid } from './errors.js';
 import {
+  answerQuizSchema,
   createLearnerTermSchema,
   createSubmissionSchema,
   patchMeSchema,
   postAttemptSchema,
+  startQuizSchema,
 } from '../domain/schemas.js';
 import type { Learner } from '../domain/types.js';
 import * as content from '../services/content.js';
@@ -22,6 +24,7 @@ import * as drills from '../services/drills.js';
 import * as learnerTerms from '../services/learner-terms.js';
 import * as learners from '../services/learners.js';
 import * as progress from '../services/progress.js';
+import * as quiz from '../services/quiz.js';
 import * as submissions from '../services/submissions.js';
 import * as audit from '../services/audit.js';
 import type { ServiceContext } from '../services/context.js';
@@ -35,7 +38,7 @@ const drillQuerySchema = z.object({
   blockId: z.string().optional(),
   packId: z.string().optional(),
   lessonOrder: z.coerce.number().int().positive().optional(),
-  kind: z.enum(['term', 'word-order']).optional(),
+  kind: z.enum(['term', 'word-order', 'mcq']).optional(),
   stage: stageSchema.optional(),
   limit: z.coerce.number().int().positive().max(100).optional(),
 });
@@ -167,6 +170,48 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const learner = await caller(request, 'drill:practice');
     const { drillItemId } = request.params as { drillItemId: string };
     return drills.recordAttempt(ctx, learner.learnerId, drillItemId, postAttemptSchema.parse(request.body));
+  });
+
+  // --- quiz sittings --------------------------------------------------------
+  //
+  // A sitting is a way of grouping drill practice, so it sits behind `drill:practice` and every
+  // route resolves the session through the calling learner — one learner cannot read another's
+  // sitting by guessing an id.
+
+  app.post('/api/v1/quiz/sessions', async (request, reply) => {
+    const learner = await caller(request, 'drill:practice');
+    const result = await quiz.startSession(ctx, learner.learnerId, startQuizSchema.parse(request.body));
+    return reply.status(201).send(result);
+  });
+
+  app.get('/api/v1/quiz/sessions', async (request) => {
+    const learner = await caller(request, 'drill:practice');
+    const scope = z
+      .object({
+        packId: z.string().optional(),
+        blockId: z.string().optional(),
+        limit: z.coerce.number().int().positive().max(100).optional(),
+      })
+      .parse(request.query);
+    return { sessions: await quiz.listSessions(ctx, learner.learnerId, scope) };
+  });
+
+  app.get('/api/v1/quiz/sessions/:sessionId', async (request) => {
+    const learner = await caller(request, 'drill:practice');
+    const { sessionId } = request.params as { sessionId: string };
+    return quiz.results(ctx, await quiz.getSession(ctx, learner.learnerId, sessionId));
+  });
+
+  app.post('/api/v1/quiz/sessions/:sessionId/answers', async (request) => {
+    const learner = await caller(request, 'drill:practice');
+    const { sessionId } = request.params as { sessionId: string };
+    return quiz.answer(ctx, learner.learnerId, sessionId, answerQuizSchema.parse(request.body));
+  });
+
+  app.post('/api/v1/quiz/sessions/:sessionId/finish', async (request) => {
+    const learner = await caller(request, 'drill:practice');
+    const { sessionId } = request.params as { sessionId: string };
+    return quiz.finish(ctx, learner.learnerId, sessionId);
   });
 
   // --- the learner's own words ----------------------------------------------

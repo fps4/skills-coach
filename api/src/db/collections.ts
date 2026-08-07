@@ -20,6 +20,7 @@ import type {
   Learner,
   Lesson,
   PackManifest,
+  QuizSession,
   Submission,
 } from '../domain/types.js';
 import type { DrillProgress } from '../domain/drill-progress.js';
@@ -37,6 +38,7 @@ export const COLLECTIONS = {
   corrections: 'corrections',
   errorLog: 'errorLog',
   blockReviews: 'blockReviews',
+  quizSessions: 'quizSessions',
   auditEvents: 'auditEvents',
 } as const;
 
@@ -51,6 +53,8 @@ export type SubmissionDoc = Omit<Submission, 'submissionId'> & { _id: string };
 export type CorrectionDoc = Omit<Correction, 'correctionId'> & { _id: string };
 export type ErrorLogDoc = ErrorLogEntry & { _id: string };
 export type BlockReviewDoc = BlockReview & { _id: string };
+/** A sitting is an event, so its id is random. What it *scored* is derived, never stored. */
+export type QuizSessionDoc = Omit<QuizSession, 'sessionId'> & { _id: string };
 
 /** Per learner, per drill item: the spaced-repetition state. */
 export type DrillStateDoc = DrillProgress & {
@@ -85,6 +89,7 @@ export interface Collections {
   corrections: Collection<CorrectionDoc>;
   errorLog: Collection<ErrorLogDoc>;
   blockReviews: Collection<BlockReviewDoc>;
+  quizSessions: Collection<QuizSessionDoc>;
   auditEvents: Collection<AuditEventDoc>;
 }
 
@@ -114,6 +119,7 @@ export function collections(db: Db): Collections {
     corrections: db.collection<CorrectionDoc>(COLLECTIONS.corrections),
     errorLog: db.collection<ErrorLogDoc>(COLLECTIONS.errorLog),
     blockReviews: db.collection<BlockReviewDoc>(COLLECTIONS.blockReviews),
+    quizSessions: db.collection<QuizSessionDoc>(COLLECTIONS.quizSessions),
     auditEvents: db.collection<AuditEventDoc>(COLLECTIONS.auditEvents),
   };
 }

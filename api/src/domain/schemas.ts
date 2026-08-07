@@ -110,12 +110,70 @@ export const drillPayloadSchema = z.discriminatedUnion('kind', [
     // single-order rather than failing the publish (domain/word-order.ts::usableAlternative).
     partsAlt: z.array(nonEmpty).min(2).optional(),
   }),
+  /** A question carrying its own answer key (ADR-0014). Coherence of the key is checked below. */
+  z.object({
+    kind: z.literal('mcq'),
+    stem: nonEmpty,
+    options: z.array(z.object({ ref: nonEmpty, text: nonEmpty })).min(2),
+    correct: z.array(nonEmpty).min(1),
+    explanation: nonEmpty,
+    distractors: z.array(z.object({ ref: nonEmpty, why: nonEmpty })).optional(),
+    // Checked against the pack's declared vocabulary at publish, where the manifest is in hand.
+    categories: z.array(nonEmpty).min(1),
+    difficulty: z.string().optional(),
+    sourceRefs: z.array(nonEmpty).optional(),
+  }),
 ]);
 
-export const drillItemSchema = z.object({
-  lessonOrder: z.number().int().positive().optional(),
-  payload: drillPayloadSchema,
-});
+/**
+ * The ways an mcq can be schema-valid and still broken at runtime.
+ *
+ * Unlike a word-order alternative — where a malformed `partsAlt` degrades the item to single-order
+ * rather than failing the publish — a malformed answer key is not tolerable: an item whose `correct`
+ * names an option it does not define would mark every learner wrong forever, silently.
+ *
+ * These sit above the union rather than in it because `discriminatedUnion` takes objects, and a
+ * `.refine()` is no longer one.
+ */
+function checkMcqPayload(payload: unknown, ctx: z.RefinementCtx, path: (string | number)[] = []): void {
+  if (typeof payload !== 'object' || payload === null) return;
+  const value = payload as { kind?: unknown; options?: { ref: string }[]; correct?: string[] };
+  if (value.kind !== 'mcq' || !Array.isArray(value.options) || !Array.isArray(value.correct)) return;
+
+  const refs = value.options.map((option) => option.ref);
+  if (new Set(refs).size !== refs.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [...path, 'options'],
+      message: 'option refs must be unique within a question',
+    });
+  }
+
+  const known = new Set(refs);
+  const unknown = value.correct.filter((ref) => !known.has(ref));
+  if (unknown.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [...path, 'correct'],
+      message: `correct names options this question does not define: ${unknown.join(', ')}`,
+    });
+  }
+
+  if (new Set(value.correct).size >= refs.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [...path, 'correct'],
+      message: 'a question whose every option is correct asks nothing',
+    });
+  }
+}
+
+export const drillItemSchema = z
+  .object({
+    lessonOrder: z.number().int().positive().optional(),
+    payload: drillPayloadSchema,
+  })
+  .superRefine((value, ctx) => checkMcqPayload(value.payload, ctx, ['payload']));
 
 // ---------------------------------------------------------------------------
 // Pack manifest
@@ -140,7 +198,7 @@ export const sectionKindSchema = z.enum([
  * cannot render is the failure this contract exists to prevent, so a typo must fail the publish
  * rather than silently hide a rail item. Adding one is a platform change with a renderer behind it.
  */
-export const packSurfaceSchema = z.enum(['lessons', 'drills:terms', 'drills:word-order', 'progress']);
+export const packSurfaceSchema = z.enum(['lessons', 'drills:terms', 'drills:word-order', 'quiz', 'progress']);
 
 /**
  * How a pack presents itself.
@@ -199,7 +257,16 @@ export const packManifestSchema = z.object({
       .optional(),
   }),
   method: packMethodSchema.optional(),
-  errorCategories: z.array(z.object({ id: nonEmpty, label: localizedTextSchema.optional() })).min(1),
+  errorCategories: z
+    .array(
+      z.object({
+        id: nonEmpty,
+        label: localizedTextSchema.optional(),
+        // A free grouping label, e.g. an exam domain. Carried, never interpreted.
+        group: localizedTextSchema.optional(),
+      }),
+    )
+    .min(1),
   sectionMap: z.array(z.object({ match: nonEmpty, kind: sectionKindSchema })).optional(),
   matchArticles: z.record(z.array(z.string())).optional(),
   presentation: packPresentationSchema.optional(),
@@ -283,6 +350,32 @@ export const createLearnerTermSchema = z.object({
   example: z.string().trim().max(500).optional(),
 });
 
+/**
+ * Starting a sitting.
+ *
+ * `mode` is the learner's, not the pack's: rehearsing under exam conditions and learning from
+ * immediate feedback are two different uses of the same bank, and which one someone needs today is
+ * not something a manifest can know.
+ */
+export const startQuizSchema = z.object({
+  blockId: nonEmpty,
+  mode: z.enum(['practice', 'exam']).default('practice'),
+  size: z.number().int().positive().max(75).optional(),
+  /** A clock the learner asked to be held to. Advisory — nothing is voided when it runs out. */
+  limitSeconds: z
+    .number()
+    .int()
+    .positive()
+    .max(4 * 60 * 60)
+    .optional(),
+});
+
+export const answerQuizSchema = z.object({
+  drillItemId: nonEmpty,
+  /** Option refs. An empty array is a deliberate skip, and is graded as wrong — as the exam does. */
+  chosen: z.array(nonEmpty).default([]),
+});
+
 export const patchMeSchema = z.object({
   uiLanguage: localeSchema.optional(),
   displayName: z.string().max(120).optional(),
@@ -296,3 +389,5 @@ export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
 export type CreateLearnerTermInput = z.infer<typeof createLearnerTermSchema>;
 export type PostAttemptInput = z.infer<typeof postAttemptSchema>;
 export type PatchMeInput = z.infer<typeof patchMeSchema>;
+export type StartQuizInput = z.infer<typeof startQuizSchema>;
+export type AnswerQuizInput = z.infer<typeof answerQuizSchema>;

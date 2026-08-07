@@ -73,12 +73,20 @@ export const TOOLS: ToolDef[] = [
 
   tool({
     name: 'get_block',
-    description: 'One block with its lessons, as published.',
+    description:
+      'One block with its lessons and its drill deck, as published. The deck is included because authoring the ' +
+      'next block without seeing the questions already written is how a bank fills up with duplicates.',
     capability: 'lesson:read',
     input: blockRef,
     readOnly: true,
+    // No `learnerId` on the drill query, so this returns pack content only — a learner's own words
+    // are never on the coach surface (ADR-0012).
     run: async (ctx, { blockId }) => ({
-      result: { block: await content.getBlock(ctx, blockId), lessons: await content.listLessons(ctx, blockId) },
+      result: {
+        block: await content.getBlock(ctx, blockId),
+        lessons: await content.listLessons(ctx, blockId),
+        drillItems: await content.listDrillItems(ctx, { blockId }),
+      },
     }),
   }),
 

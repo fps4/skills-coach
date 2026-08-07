@@ -8,7 +8,7 @@
  * Everything here is advisory: a sequencing signal, never a grade.
  */
 
-import { BarChart3, Puzzle, Sparkles } from 'lucide-react';
+import { BarChart3, ListChecks, Puzzle, Sparkles } from 'lucide-react';
 
 import { Meter, PageShell, Pill, Stat } from '@/components/atoms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,8 +91,40 @@ export default async function ProgressPage({ params }: { params: Promise<{ local
               <CardContent>
                 <DeckRow label={t.words} summary={entry.decks.terms} dictionary={dictionary} />
                 <DeckRow label={t.sentences} summary={entry.decks.wordOrder} dictionary={dictionary} />
+                <DeckRow label={dictionary.nav.quiz} summary={entry.decks.quiz} dictionary={dictionary} />
               </CardContent>
             </Card>
+
+            {/* Only for packs that actually quiz. Advisory throughout — see ADR-0014. */}
+            {entry.quiz.sessions > 0 ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ListChecks className="h-4 w-4 text-primary" />
+                    {dictionary.quiz.byDomain}
+                  </CardTitle>
+                  <p className="max-w-prose text-sm text-muted-foreground">{dictionary.quiz.scoreHint}</p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {entry.quiz.byCategory.map((row) => (
+                    <div key={row.category} className="space-y-1.5">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-4 text-sm">
+                        {/* Pack-authored, so rendered as written (ADR-0005). */}
+                        <span className="min-w-0 break-words font-medium">{row.category}</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {row.correct}/{row.asked}
+                        </span>
+                      </div>
+                      <Meter
+                        value={row.correct}
+                        total={row.asked}
+                        tone={row.accuracy >= 0.7 ? 'success' : row.accuracy >= 0.4 ? 'primary' : 'muted'}
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ) : null}
 
             <Card>
               <CardHeader className="pb-3">

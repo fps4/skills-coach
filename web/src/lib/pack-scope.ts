@@ -19,8 +19,11 @@ import {
   MessageCircle,
   Sparkles,
   BarChart3,
+  Cloud,
   Dumbbell,
+  ListChecks,
   Puzzle,
+  ShieldCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -44,11 +47,12 @@ export const PACK_HEADER = 'x-sc-pack';
  * the pack's. Declaring surfaces is how a pack opts *out* of one, which is why omitting the key
  * means all of them.
  */
-export const DEFAULT_SURFACES: PackSurface[] = ['lessons', 'drills:terms', 'drills:word-order', 'progress'];
+export const DEFAULT_SURFACES: PackSurface[] = ['lessons', 'drills:terms', 'drills:word-order', 'quiz', 'progress'];
 
 export interface DeckTotals {
   terms: number;
   wordOrder: number;
+  quiz: number;
 }
 
 export interface SurfaceContext {
@@ -102,6 +106,14 @@ export const SURFACES: Record<PackSurface, SurfaceDef> = {
     href: ({ locale, currentBlockId, decks }) =>
       currentBlockId && decks.wordOrder > 0 ? `/${locale}/drills/sentences?blockId=${currentBlockId}` : null,
   },
+  quiz: {
+    icon: ListChecks,
+    labelKey: 'quiz',
+    sub: true,
+    packScoped: true,
+    href: ({ locale, currentBlockId, decks }) =>
+      currentBlockId && decks.quiz > 0 ? `/${locale}/quiz?blockId=${currentBlockId}` : null,
+  },
   progress: {
     icon: BarChart3,
     labelKey: 'progress',
@@ -134,6 +146,9 @@ const PACK_ICONS: Record<string, LucideIcon> = {
   briefcase: Briefcase,
   languages: Languages,
   sparkles: Sparkles,
+  cloud: Cloud,
+  'shield-check': ShieldCheck,
+  'list-checks': ListChecks,
 };
 
 export function packIcon(key: string | undefined): LucideIcon {
@@ -156,7 +171,8 @@ export function packIdFromUrl(pathname: string, search?: URLSearchParams | null)
 
   if (head === 'packs' && tail) return tail;
   if ((head === 'blocks' || head === 'lessons') && tail) return packIdFromEntityId(tail);
-  if (head === 'drills') {
+  // Both of these name their block in the query rather than the path, so that is where the pack is.
+  if (head === 'drills' || head === 'quiz') {
     const blockId = search?.get('blockId');
     return blockId ? packIdFromEntityId(blockId) : null;
   }

@@ -30,7 +30,7 @@ export interface Framework {
 }
 
 /** A surface this app can render for a pack. The api validates against the same closed set. */
-export type PackSurface = 'lessons' | 'drills:terms' | 'drills:word-order' | 'progress';
+export type PackSurface = 'lessons' | 'drills:terms' | 'drills:word-order' | 'quiz' | 'progress';
 
 /**
  * How a pack asks to be presented. Declared by the pack, resolved here.
@@ -53,7 +53,7 @@ export interface Pack {
   translationLanguage: string;
   goal?: LocalizedText;
   framework: Framework;
-  errorCategories: { id: string; label?: LocalizedText }[];
+  errorCategories: { id: string; label?: LocalizedText; group?: LocalizedText }[];
   presentation?: PackPresentation;
 }
 
@@ -176,9 +176,17 @@ export interface DrillProgress {
   correct: number;
 }
 
+export interface McqOption {
+  ref: string;
+  text: string;
+}
+
 export type DrillPrompt =
   | { kind: 'term'; stage: Stage; prompt: string; hint?: string }
-  | { kind: 'word-order'; stage: Stage; prompt: string; bank: string[]; leadCue?: string; tip?: string };
+  | { kind: 'word-order'; stage: Stage; prompt: string; bank: string[]; leadCue?: string; tip?: string }
+  // No answer key here on purpose: the browser learns which option is right only after the learner
+  // has committed to one. See ADR-0014.
+  | { kind: 'mcq'; stage: Stage; prompt: string; options: McqOption[]; choose: number; multiple: boolean };
 
 export interface DueItem {
   drillItemId: string;
@@ -213,6 +221,86 @@ export interface AttemptResult {
   progress: DrillProgress;
 }
 
+// --- quiz sittings ---------------------------------------------------------
+
+export type QuizMode = 'practice' | 'exam';
+
+export interface QuizAnswer {
+  drillItemId: string;
+  chosen: string[];
+  correct: boolean;
+  categories: string[];
+  at: string;
+}
+
+export interface QuizSession {
+  sessionId: string;
+  packId: string;
+  blockId: string;
+  mode: QuizMode;
+  itemIds: string[];
+  answers: QuizAnswer[];
+  limitSeconds?: number;
+  startedAt: string;
+  finishedAt?: string;
+}
+
+export interface QuizScore {
+  asked: number;
+  answered: number;
+  correct: number;
+  accuracy: number | null;
+}
+
+export interface CategoryBreakdown {
+  category: string;
+  asked: number;
+  correct: number;
+  accuracy: number;
+}
+
+export interface QuizSessionView {
+  session: QuizSession;
+  score: QuizScore;
+  current: { drillItemId: string; prompt: DrillPrompt; index: number } | null;
+}
+
+/** The verdict for one answer. Null in exam mode — it arrives with the results instead. */
+export interface QuizAnswerResult {
+  correct: boolean;
+  expected: string;
+  correctRefs: string[];
+  explanation?: string;
+  distractors?: { ref: string; why: string }[];
+  sourceRefs?: string[];
+}
+
+export interface QuizAnswerOutcome {
+  session: QuizSessionView;
+  result: QuizAnswerResult | null;
+}
+
+export interface QuizReviewItem {
+  drillItemId: string;
+  stem: string;
+  options: McqOption[];
+  chosen: string[];
+  correctRefs: string[];
+  correct: boolean;
+  explanation: string;
+  distractors?: { ref: string; why: string }[];
+  categories: string[];
+  sourceRefs?: string[];
+}
+
+export interface QuizResults {
+  session: QuizSession;
+  score: QuizScore;
+  byCategory: CategoryBreakdown[];
+  complete: boolean;
+  review: QuizReviewItem[];
+}
+
 // --- composed responses ----------------------------------------------------
 
 export interface PackProgress {
@@ -220,7 +308,8 @@ export interface PackProgress {
   currentBlock: Block | null;
   blockProgress: BlockProgress | null;
   blocks: { block: Block; progress: BlockProgress }[];
-  decks: { terms: DeckSummary; wordOrder: DeckSummary };
+  decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary };
+  quiz: { byCategory: CategoryBreakdown[]; sessions: number; score: QuizScore };
   errorLog: {
     entries: ErrorLogEntry[];
     redrill: string[];
