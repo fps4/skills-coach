@@ -67,7 +67,7 @@ async function main(): Promise<void> {
   };
 
   const config = loadConfig();
-  const store = await connect(config.mongoUri, config.mongoDb);
+  const store = await connect(config.mongoUri, config.mongoDb, config.mongoCredentials);
 
   try {
     const pack = await store.collections.packs.findOne({ _id: args.packId });

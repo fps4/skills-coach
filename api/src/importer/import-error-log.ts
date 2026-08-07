@@ -76,7 +76,10 @@ async function main(): Promise<void> {
   }
 
   const config = loadConfig();
-  const store = await connect(config.mongoUri, config.mongoDb);
+  // Credentials go alongside the URI, exactly as `index.ts` connects. Omitting them works against a
+  // laptop's unauthenticated MongoDB and fails against every deployed one with "Command find
+  // requires authentication" — which is precisely where a migration tool is needed.
+  const store = await connect(config.mongoUri, config.mongoDb, config.mongoCredentials);
 
   try {
     const pack = await store.collections.packs.findOne({ _id: args.packId });
