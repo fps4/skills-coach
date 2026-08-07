@@ -120,7 +120,10 @@ export async function handleRpc(
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
         instructions:
-          'The coach surface of Skills Coach. Read a brief before authoring a block, and correct submissions by ' +
+          'The coach surface of Skills Coach. Read a brief before authoring a block — it carries the pack’s ' +
+          'teaching method, the next rung on the ramp, and the learner’s own domain profile, which is what the ' +
+          'block should be about. A pack holds only the methodology; the subject matter comes from the learner. ' +
+          'Publish a block with that learner’s id, or everyone in the pack will see it. Correct submissions by ' +
           'naming the pack’s declared error categories — the runtime derives every counter from those.',
       });
     }

@@ -5,6 +5,16 @@
 # written around one learner's real work, and they stay out of the tree; `.gitignore` un-ignores this
 # one file and nothing else in this directory.
 #
+# This file is the **methodology, and only the methodology**. What a lesson is *about* is not here
+# and is not a property of the program: it comes from the learner's own profile in the database
+# (ADR-0015), and a block is published under their id. That is what lets one Dutch B1→B2 program
+# serve several people, each with texts about their own working world, without a second copy of the
+# fifteen error-category ids below. Before this, the domain arrived implicitly through whoever the
+# first learner happened to be, and a second learner meant forking the whole file.
+#
+# So: nothing in here should be true of one learner and false of another. If you find yourself
+# wanting to write one in, it belongs in `set_learner_profile` instead.
+#
 # The runtime never branches on which pack it is serving (ADR-0004), so everything skill-specific
 # enters here or in a block. Import the two halves together — manifest from the tree, blocks from
 # wherever they are authored:
@@ -69,7 +79,7 @@ framework:
       dials:
         textLength: ~280 words
         sentences: relative clauses, conditionals, indirect speech
-        vocabulary: abstract and professional, plus the learner's own domain
+        vocabulary: abstract and professional, plus the domain named in the learner's profile
         grammar: passive voice, conditionals, indirect speech
         connectors: hoewel, terwijl, zodat, ondanks
         questions: inference, and defending an opinion
@@ -141,7 +151,7 @@ method:
     newTermsPerLesson: 8–12, as chunks with article and one collocation — "de vergadering bijwonen", not "vergadering"
     recycleFromPriorBlock: at least a third of the previous block's drill items reappear in this block's texts
     grammarPerLesson: one structure carries a lesson; a second may be revised, but not introduced
-    writePrompt: must make every category in evidence.redrill unavoidable, and must sit in the learner's own working world
+    writePrompt: must make every category in evidence.redrill unavoidable, and must sit in the working world the learner's profile describes — never a domain invented for the exercise, and never one borrowed from another learner's block
     milestone: what the block's six lessons work backwards from; testable in one sitting
 
   # Dutch-specific ordering. These are the places where teaching in the obvious order reliably fails.

@@ -44,7 +44,15 @@ export async function connect(uri: string, dbName: string, credentials?: MongoCr
 export async function ensureIndexes(db: Db, auditRetentionDays: number): Promise<void> {
   const c = collections(db);
 
-  await c.blocks.createIndex({ packId: 1, order: 1 }, { unique: true, name: 'block_order_unique' });
+  // A block's position is (pack, owner, order): a pack-wide block 1 and one learner's block 1 are
+  // different blocks, and two learners' block 1s are too (ADR-0015). A missing `learnerId` indexes
+  // as null, which is what lets the pack-wide and owned forms coexist under one unique key.
+  //
+  // Superseded `block_order_unique` on (packId, order). A key change cannot reuse a name, so the new
+  // index goes up under a new one and the old is dropped — the only place this codebase does
+  // anything a migration runner would, and it stays idempotent.
+  await c.blocks.createIndex({ packId: 1, learnerId: 1, order: 1 }, { unique: true, name: 'block_position_unique' });
+  await dropIfExists(c.blocks, 'block_order_unique');
   await c.blocks.createIndex({ packId: 1, status: 1 }, { name: 'block_by_status' });
 
   await c.lessons.createIndex({ blockId: 1, order: 1 }, { unique: true, name: 'lesson_order_unique' });
@@ -52,7 +60,8 @@ export async function ensureIndexes(db: Db, auditRetentionDays: number): Promise
 
   await c.drillItems.createIndex({ blockId: 1, lessonOrder: 1 }, { name: 'drill_by_block_lesson' });
   await c.drillItems.createIndex({ packId: 1 }, { name: 'drill_by_pack' });
-  // Sparse: only a learner's own words carry an owner, and the pack's items far outnumber them.
+  // Sparse: an owner is carried by a learner's own words and by the content of a block written for
+  // them, and pack-wide items still far outnumber both.
   await c.drillItems.createIndex({ learnerId: 1, blockId: 1 }, { sparse: true, name: 'drill_by_owner' });
 
   // The token's `sub` is the only identity we keep, so it must map to exactly one learner.
@@ -87,6 +96,22 @@ export async function ensureIndexes(db: Db, auditRetentionDays: number): Promise
     { name: 'audit_ttl', expireAfterSeconds: auditRetentionDays * 24 * 60 * 60 },
   );
   await c.auditEvents.createIndex({ 'actor.subject': 1, at: -1 }, { name: 'audit_by_actor' });
+}
+
+/**
+ * Drop an index that a later version replaced, tolerating its absence.
+ *
+ * Booting a fresh database has nothing to drop, and booting an upgraded one drops it once — either
+ * way this is safe to run on every start, which is what keeps `ensureIndexes` the whole of the
+ * migration story.
+ */
+async function dropIfExists(
+  collection: { indexExists(name: string): Promise<boolean>; dropIndex(name: string): Promise<unknown> },
+  name: string,
+): Promise<void> {
+  if (await collection.indexExists(name).catch(() => false)) {
+    await collection.dropIndex(name).catch(() => undefined);
+  }
 }
 
 /** Drop everything. Test support only — never called by the application. */

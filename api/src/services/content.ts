@@ -10,6 +10,7 @@
  * contains. A publish interrupted halfway is fixed by publishing again.
  */
 
+import type { Filter } from 'mongodb';
 import { conflict, notFound } from '../http/errors.js';
 import { packManifestSchema, publishBlockSchema } from '../domain/schemas.js';
 import type { PackManifestInput, PublishBlockInput } from '../domain/schemas.js';
@@ -50,8 +51,24 @@ export async function getPack(ctx: ServiceContext, packId: string): Promise<Pack
   return toPack(doc);
 }
 
-export async function listBlocks(ctx: ServiceContext, packId: string, includeDrafts = false): Promise<Block[]> {
-  const filter = includeDrafts ? { packId } : { packId, status: 'published' as const };
+export interface BlockQuery {
+  /**
+   * Whose blocks these are. The pack's own blocks are always included; this adds the ones written
+   * for *this* learner. Omitting it yields pack content only — the same default as `listDrillItems`,
+   * for the same reason: a coach-side caller that forgets a filter must not spill one learner's
+   * material into another's surface (ADR-0015).
+   */
+  learnerId?: string;
+  includeDrafts?: boolean;
+}
+
+export async function listBlocks(ctx: ServiceContext, packId: string, query: BlockQuery = {}): Promise<Block[]> {
+  const filter: Record<string, unknown> = { packId };
+  if (!query.includeDrafts) filter.status = 'published';
+  filter.$or = query.learnerId
+    ? [{ learnerId: { $exists: false } }, { learnerId: query.learnerId }]
+    : [{ learnerId: { $exists: false } }];
+
   const docs = await ctx.store.collections.blocks.find(filter).sort({ order: 1 }).toArray();
   return docs.map(toBlock);
 }
@@ -60,6 +77,23 @@ export async function getBlock(ctx: ServiceContext, blockId: string): Promise<Bl
   const doc = await ctx.store.collections.blocks.findOne({ _id: blockId });
   if (!doc) throw notFound(`block ${blockId}`);
   return toBlock(doc);
+}
+
+/** A block is this learner's to read when the pack owns it, or when they do. */
+export const blockVisibleTo = (block: Block, learnerId: string): boolean =>
+  block.learnerId === undefined || block.learnerId === learnerId;
+
+/**
+ * A block, or a `404` if it belongs to somebody else.
+ *
+ * Ownership is checked on the way in, not only on the way out (ADR-0012 rule 4, ADR-0015): reading
+ * another learner's material by guessing an id is a not-found, because whether it exists is not the
+ * caller's business.
+ */
+export async function getBlockFor(ctx: ServiceContext, blockId: string, learnerId: string): Promise<Block> {
+  const block = await getBlock(ctx, blockId);
+  if (!blockVisibleTo(block, learnerId)) throw notFound(`block ${blockId}`);
+  return block;
 }
 
 export async function listLessons(ctx: ServiceContext, blockId: string): Promise<Lesson[]> {
@@ -72,6 +106,29 @@ export async function getLesson(ctx: ServiceContext, lessonId: string): Promise<
   if (!doc) throw notFound(`lesson ${lessonId}`);
   return toLesson(doc);
 }
+
+/** A lesson, gated on the block that holds it — a lesson has no owner of its own. */
+export async function getLessonFor(ctx: ServiceContext, lessonId: string, learnerId: string): Promise<Lesson> {
+  const lesson = await getLesson(ctx, lessonId);
+  await getBlockFor(ctx, lesson.blockId, learnerId);
+  return lesson;
+}
+
+/**
+ * Query fragments for a drill item's provenance, tolerating documents written before `origin`
+ * existed — back then only a learner's own words carried a `learnerId`, so the old field answers the
+ * old question exactly. The runtime equivalent is `drillOrigin` in `domain/types.ts`; these are the
+ * same rule expressed where Mongo can use it.
+ *
+ * Each contributes an `$or`, so a filter may spread one of them and no more.
+ */
+export const FROM_PACK: Filter<DrillItemDoc> = {
+  $or: [{ origin: 'pack' }, { origin: { $exists: false }, learnerId: { $exists: false } }],
+};
+
+export const FROM_LEARNER: Filter<DrillItemDoc> = {
+  $or: [{ origin: 'learner' }, { origin: { $exists: false }, learnerId: { $exists: true } }],
+};
 
 export interface DrillQuery {
   blockId?: string;
@@ -176,8 +233,20 @@ export async function publishBlock(
     );
   }
 
-  const blockId = blockIdFor(packId, parsed.order);
-  const existing = await ctx.store.collections.blocks.findOne({ _id: blockId });
+  // Position is (pack, owner, order): a pack-wide block 1 and one learner's block 1 are different
+  // blocks, and two learners' block 1s are too.
+  const owner = parsed.learnerId;
+  const existing = await ctx.store.collections.blocks.findOne({
+    packId,
+    order: parsed.order,
+    ...(owner ? { learnerId: owner } : { learnerId: { $exists: false } }),
+  });
+
+  // Reuse whatever id the block already has rather than recomputing it. Lesson, drill-item,
+  // submission and review identifiers all hang off a block id, so minting a new one for a block
+  // that exists would orphan every streak attached to it — including for blocks published before
+  // ownership existed, which keep their unnamespaced ids forever (ADR-0015).
+  const blockId = existing?._id ?? blockIdFor(packId, parsed.order, owner);
 
   // A slug change on an existing block would break inbound links for no benefit.
   if (existing && existing.slug !== parsed.slug) {
@@ -200,6 +269,9 @@ export async function publishBlock(
     version: (existing?.version ?? 0) + 1,
     lessonCount: parsed.lessons.length,
     publishedAt: parsed.status === 'published' ? now : existing?.publishedAt,
+    // Spread rather than assigned, so pack-wide blocks carry no key at all and the `$exists`
+    // filters above and in `listBlocks` stay honest.
+    ...(owner ? { learnerId: owner } : {}),
   };
   await ctx.store.collections.blocks.replaceOne({ _id: blockId }, withoutId(blockDoc), { upsert: true });
 
@@ -228,16 +300,30 @@ export async function publishBlock(
     }
     await ctx.store.collections.drillItems.replaceOne(
       { _id: drillItemId },
-      { packId, blockId, lessonOrder: item.lessonOrder, payload: item.payload },
+      {
+        packId,
+        blockId,
+        lessonOrder: item.lessonOrder,
+        payload: item.payload,
+        origin: 'pack' as const,
+        // An owned block's items are only ever this learner's to see, so visibility is stamped here
+        // rather than resolved by joining back to the block on every deck read.
+        ...(owner ? { learnerId: owner } : {}),
+      },
       { upsert: true },
     );
   }
 
-  // `learnerId` guards the sweep: a republish removes what the *pack* no longer defines, and a
+  // `origin` guards the sweep: a republish removes what the *pack* no longer defines, and a
   // learner's own words were never in the payload to begin with. Without it, every publish would
   // quietly delete them and the progress attached to them (ADR-0012).
+  //
+  // It is `origin` rather than `learnerId` because the two came apart once a whole block could
+  // belong to one learner: an owned block's published items carry a `learnerId` and must still be
+  // swept. The second branch reads documents written before `origin` existed, where `learnerId`
+  // alone still answered the question (ADR-0015).
   const staleDrills = await ctx.store.collections.drillItems
-    .find({ blockId, learnerId: { $exists: false }, _id: { $nin: drillIds } })
+    .find({ blockId, _id: { $nin: drillIds }, ...FROM_PACK })
     .project<{ _id: string }>({ _id: 1 })
     .toArray();
   if (staleDrills.length > 0) {

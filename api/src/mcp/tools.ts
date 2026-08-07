@@ -17,7 +17,9 @@ import { z } from 'zod';
 
 import type { RequestAuth } from '../auth/plugin.js';
 import type { Capability } from '../auth/capabilities.js';
+import { invalid } from '../http/errors.js';
 import {
+  learnerProfileSchema,
   packManifestSchema,
   postBlockReviewSchema,
   postCorrectionSchema,
@@ -93,16 +95,32 @@ export const TOOLS: ToolDef[] = [
   tool({
     name: 'get_brief',
     description:
-      'The brief for authoring the next block: the learner’s error log and lesson record, the next rung on ' +
-      'the ramp with its dials, the program goal, and what the last review asked for. Aggregation, not generation.',
+      'The brief for authoring the next block: who it is for and the world their lessons are written about, ' +
+      'their error log and lesson record, the next rung on the ramp with its dials, the pack’s teaching ' +
+      'method, the program goal, and what the last review asked for. Aggregation, not generation. Pass ' +
+      '`blockId` for the block just finished, or `packId` and `learnerId` for a learner who has not ' +
+      'finished one — which is how you get a brief for block 1.',
     // About a person, not about content — so the capability that means "may see work that is not
     // yours", never the one every learner holds.
     capability: 'submission:read-all',
-    input: learnerScope,
+    input: z
+      .object({
+        blockId: z.string().min(1).optional(),
+        packId: z.string().min(1).optional(),
+        learnerId: z.string().min(1).optional(),
+      })
+      .refine((value) => Boolean(value.blockId || value.packId), {
+        message: 'pass blockId for the block just finished, or packId with learnerId for a first block',
+      }),
     readOnly: true,
-    run: async (ctx, { blockId, learnerId }) => ({
-      result: await brief.buildBrief(ctx, blockId, await brief.resolveLearnerId(ctx, blockId, learnerId)),
-    }),
+    run: async (ctx, { blockId, packId, learnerId }) => {
+      if (blockId) {
+        return { result: await brief.buildBrief(ctx, blockId, await brief.resolveLearnerId(ctx, blockId, learnerId)) };
+      }
+      // No block to infer a learner from, so this one has to be told who it is about.
+      if (!learnerId) throw invalid('a first-block brief needs learnerId — list_learners has the ids');
+      return { result: await brief.buildFirstBrief(ctx, packId as string, learnerId) };
+    },
   }),
 
   tool({
@@ -120,11 +138,27 @@ export const TOOLS: ToolDef[] = [
 
   tool({
     name: 'list_learners',
-    description: 'Learner ids and display names — the minimum needed to address a brief or a review to someone.',
+    description:
+      'Learner ids and display names — the minimum needed to address a brief or a review to someone, plus ' +
+      'whether each has a domain profile yet.',
     capability: 'submission:read-all',
     input: empty,
     readOnly: true,
     run: async (ctx) => ({ result: { learners: await learners.listLearnerSummaries(ctx) } }),
+  }),
+
+  tool({
+    name: 'get_learner_profile',
+    description:
+      'The working world a learner’s blocks are written about: their domain, background, target role and ' +
+      'register. What the pack’s method is to *how* a block is built, this is to what it is about.',
+    capability: 'submission:read-all',
+    input: z.object({ learnerId: z.string().min(1) }),
+    readOnly: true,
+    run: async (ctx, { learnerId }) => {
+      const learner = await learners.getLearner(ctx, learnerId);
+      return { result: { learnerId, displayName: learner.displayName, profile: learner.profile ?? null } };
+    },
   }),
 
   tool({
@@ -171,10 +205,32 @@ export const TOOLS: ToolDef[] = [
   }),
 
   tool({
+    name: 'set_learner_profile',
+    description:
+      'Set the working world a learner’s blocks are written about — domain, background, target role, register. ' +
+      'Replaces the profile wholesale. Write this before authoring their first block: it is where the subject ' +
+      'matter comes from, now that a pack carries only the methodology.',
+    // Not a new capability: this is authoring context, and it carries exactly the authority of
+    // publishing the blocks written from it.
+    capability: 'pack:publish',
+    input: z.object({ learnerId: z.string().min(1), profile: learnerProfileSchema }),
+    readOnly: false,
+    run: async (ctx, { learnerId, profile }) => {
+      const learner = await learners.setLearnerProfile(ctx, learnerId, profile);
+      return {
+        result: { learnerId, displayName: learner.displayName, profile: learner.profile },
+        audit: { action: 'learner.profile.set', resource: `learner/${learnerId}` },
+      };
+    },
+  }),
+
+  tool({
     name: 'publish_block',
     description:
       'Publish a block with its lessons and drill deck. Idempotent: republishing updates in place, and a drill ' +
-      'item whose text is unchanged keeps the learner progress attached to it.',
+      'item whose text is unchanged keeps the learner progress attached to it. Name a `learnerId` on the block ' +
+      'and only that learner sees it — which is how one pack serves several people, each with lessons written ' +
+      'around their own work.',
     capability: 'pack:publish',
     input: z.object({ packId: z.string().min(1), block: publishBlockSchema }),
     readOnly: false,

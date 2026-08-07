@@ -14,7 +14,7 @@
 import { notFound } from '../http/errors.js';
 import { createLearnerTermSchema, type CreateLearnerTermInput } from '../domain/schemas.js';
 import type { DrillItem } from '../domain/types.js';
-import { getBlock } from './content.js';
+import { FROM_LEARNER, getBlockFor } from './content.js';
 import { drillIdFor, drillStateIdFor, type ServiceContext } from './context.js';
 
 /**
@@ -32,8 +32,9 @@ export async function addTerm(
   input: CreateLearnerTermInput,
 ): Promise<DrillItem> {
   const parsed = createLearnerTermSchema.parse(input);
-  // Resolves the pack, and refuses a block that does not exist rather than orphaning the item.
-  const block = await getBlock(ctx, blockId);
+  // Resolves the pack, and refuses a block that does not exist — or belongs to somebody else —
+  // rather than orphaning the item in a deck its owner will never open.
+  const block = await getBlockFor(ctx, blockId, learnerId);
 
   const payload = {
     kind: 'term' as const,
@@ -43,16 +44,22 @@ export async function addTerm(
   };
 
   const drillItemId = drillIdFor(blockId, payload, learnerId);
-  const doc = { packId: block.packId, blockId, payload, learnerId };
+  const doc = { packId: block.packId, blockId, payload, learnerId, origin: 'learner' as const };
 
   await ctx.store.collections.drillItems.replaceOne({ _id: drillItemId }, doc, { upsert: true });
   return { ...doc, drillItemId };
 }
 
-/** Everything this learner added to this block, oldest id first — stable, so the list does not jump. */
+/**
+ * Everything this learner added to this block, oldest id first — stable, so the list does not jump.
+ *
+ * `learnerId` alone no longer separates these from published content: inside a block written for one
+ * learner, the pack's own items carry their id too (ADR-0015). `FROM_LEARNER` is what still divides
+ * the two, and without it this list would offer a learner the delete button on their own curriculum.
+ */
 export async function listTerms(ctx: ServiceContext, learnerId: string, blockId: string): Promise<DrillItem[]> {
   const docs = await ctx.store.collections.drillItems
-    .find({ blockId, learnerId, 'payload.kind': 'term' })
+    .find({ blockId, learnerId, 'payload.kind': 'term', ...FROM_LEARNER })
     .sort({ _id: 1 })
     .toArray();
   return docs.map(({ _id, ...rest }) => ({ ...rest, drillItemId: _id }));
@@ -62,10 +69,11 @@ export async function listTerms(ctx: ServiceContext, learnerId: string, blockId:
  * Remove a word, and the progress attached to it.
  *
  * Scoped to the caller's own items by the filter itself, so there is no path here to another
- * learner's word — or to a pack's. A word that is not theirs is simply not found.
+ * learner's word — or to a pack's, including the pack content inside a block written for this very
+ * learner, which `FROM_LEARNER` is what excludes. A word that is not theirs is simply not found.
  */
 export async function removeTerm(ctx: ServiceContext, learnerId: string, drillItemId: string): Promise<void> {
-  const removed = await ctx.store.collections.drillItems.deleteOne({ _id: drillItemId, learnerId });
+  const removed = await ctx.store.collections.drillItems.deleteOne({ _id: drillItemId, learnerId, ...FROM_LEARNER });
   if (removed.deletedCount === 0) throw notFound(`word ${drillItemId}`);
   await ctx.store.collections.drillState.deleteOne({ _id: drillStateIdFor(learnerId, drillItemId) });
 }

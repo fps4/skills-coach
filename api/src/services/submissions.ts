@@ -10,7 +10,7 @@ import { createSubmissionSchema, type CreateSubmissionInput } from '../domain/sc
 import { hasContent, unknownAnswerRefs } from '../domain/progression.js';
 import type { Correction, Submission, SubmissionStatus } from '../domain/types.js';
 import type { CorrectionDoc, SubmissionDoc } from '../db/collections.js';
-import { getLesson } from './content.js';
+import { getLessonFor } from './content.js';
 import { enroll, setPosition } from './learners.js';
 import { newEventId, type ServiceContext } from './context.js';
 
@@ -36,7 +36,9 @@ export async function createSubmission(
   input: CreateSubmissionInput,
 ): Promise<CreateSubmissionResult> {
   const parsed = createSubmissionSchema.parse(input);
-  const lesson = await getLesson(ctx, lessonId);
+  // Gated on the block's owner: work submitted against somebody else's lesson would file evidence
+  // against their programme and enrol the writer in a block they cannot open (ADR-0015).
+  const lesson = await getLessonFor(ctx, lessonId, learnerId);
 
   if (!hasContent(parsed.answers)) {
     throw invalid('a submission needs at least one non-empty answer');

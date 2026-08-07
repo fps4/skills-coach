@@ -225,7 +225,10 @@ describeIfMongo('mcp', () => {
      */
     it('offers a tool for every coach route', async () => {
       const source = await readFile(new URL('../../src/http/coach.ts', import.meta.url), 'utf8');
-      const routes = [...source.matchAll(/app\.(get|post)\('(\/coach\/v1[^']*)'/g)].map(
+      // Every verb Fastify exposes, not just the two the coach API happened to use when this was
+      // written — a route added under a third one would otherwise be invisible to the check that
+      // exists to notice exactly that.
+      const routes = [...source.matchAll(/app\.(get|post|put|patch|delete)\('(\/coach\/v1[^']*)'/g)].map(
         (match) => `${match[1]?.toUpperCase()} ${match[2]}`,
       );
 
@@ -240,8 +243,11 @@ describeIfMongo('mcp', () => {
         'POST /coach/v1/submissions/:submissionId/correction': 'post_correction',
         'POST /coach/v1/blocks/:blockId/review': 'post_block_review',
         'GET /coach/v1/blocks/:blockId/brief': 'get_brief',
+        'GET /coach/v1/packs/:packId/brief': 'get_brief',
         'GET /coach/v1/blocks/:blockId/review': 'get_block_review',
         'GET /coach/v1/learners': 'list_learners',
+        'GET /coach/v1/learners/:learnerId/profile': 'get_learner_profile',
+        'PUT /coach/v1/learners/:learnerId/profile': 'set_learner_profile',
       };
 
       expect(routes.length).toBeGreaterThan(0);

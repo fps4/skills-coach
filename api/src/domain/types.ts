@@ -154,6 +154,16 @@ export interface Block {
   version: number;
   lessonCount: number;
   publishedAt?: Date;
+  /**
+   * Who this block was written for. Absent means the pack owns it — it is part of the programme
+   * itself and every learner working the pack gets it, which is what a demo or template pack is.
+   * Present means it was authored around one person's working world and only they ever see it
+   * (ADR-0015).
+   *
+   * This is what lets a pack hold the *methodology* — the ramp, the method, the error vocabulary —
+   * while the domain a lesson is written about comes from the learner's own profile.
+   */
+  learnerId?: string;
 }
 
 export type SectionKind =
@@ -319,12 +329,33 @@ export interface DrillItem {
   lessonOrder?: number;
   payload: DrillPayload;
   /**
-   * Who owns this item. Absent means the pack does — it came from a publish and every learner
-   * working the block gets it. Present means one learner added it themselves, and only they ever
-   * see it (ADR-0012).
+   * Who sees this item. Absent means everyone working the block does. Present means only that
+   * learner — either because they added the word themselves (ADR-0012) or because the block it
+   * belongs to was written for them (ADR-0015).
    */
   learnerId?: string;
+  /**
+   * Where it came from, which is a different question from who sees it — and the two came apart
+   * once a whole block could belong to one learner (ADR-0015). `pack` means a publish produced it,
+   * so a republish may sweep it away; `learner` means a person added it, so nothing published may
+   * ever touch it.
+   *
+   * Absent on documents written before the distinction existed, where `learnerId` still carried
+   * both meanings; read it through `drillOrigin` rather than directly.
+   */
+  origin?: DrillOrigin;
 }
+
+export type DrillOrigin = 'pack' | 'learner';
+
+/**
+ * A drill item's provenance, tolerating documents written before `origin` existed.
+ *
+ * Back then only a learner's own words carried a `learnerId`, so the old field answers the old
+ * question exactly. New writes always set `origin`, so this fallback only ever sees history.
+ */
+export const drillOrigin = (item: Pick<DrillItem, 'origin' | 'learnerId'>): DrillOrigin =>
+  item.origin ?? (item.learnerId ? 'learner' : 'pack');
 
 // ---------------------------------------------------------------------------
 // Learner state
@@ -338,6 +369,33 @@ export interface Learner {
   displayName?: string;
   uiLanguage: Locale;
   createdAt: Date;
+  profile?: LearnerProfile;
+}
+
+/**
+ * The working world a learner's lessons are written about (ADR-0015).
+ *
+ * Every field is free text and every field is optional, for the same reason a ramp's `dials` are:
+ * the runtime carries this to whoever authors the next block and interprets none of it (ADR-0001).
+ * A pack says how hard the next block should be and how it should be built; this says what it should
+ * be *about*.
+ *
+ * Not identity. Identity-service owns who someone is (ADR-0002); this is what they do all day, which
+ * identity-service has no reason to know and an author cannot write a lesson without.
+ */
+export interface LearnerProfile {
+  /** The field they work in — "retail leadership and L&D", "integration architecture". */
+  domain?: string;
+  /** Career, employers, projects, concrete numbers worth writing a text around. */
+  background?: string;
+  /** What they are working towards, when it is narrower than the pack's goal. */
+  targetRole?: string;
+  /** Which register their world actually uses, where a pack teaches more than one. */
+  register?: string;
+  /** Subjects to keep out of their material. */
+  avoid?: string;
+  /** Anything else an author should know. */
+  notes?: string;
 }
 
 export interface Enrollment {

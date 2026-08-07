@@ -25,7 +25,23 @@ export function createContext(store: Store, config: Config, now: () => Date = ()
   return { store, config, now };
 }
 
-export const blockIdFor = (packId: string, order: number): string => `${packId}.b${order}`;
+/** Eight hex characters of the owner, so an id can be scoped to a person without naming one. */
+const ownerTag = (learnerId: string): string => createHash('sha256').update(learnerId).digest('hex').slice(0, 8);
+
+/**
+ * A block belongs to a pack and, once blocks are written per person (ADR-0015), to a learner. Two
+ * learners each having a block 1 in the same pack must not collide on one document, so the owner is
+ * namespaced into the id — the same device `drillIdFor` already uses, and hashed for the same
+ * reason: the id travels in URLs and does not need to name anybody.
+ *
+ * Blocks published before ownership existed keep the unnamespaced form. Nothing rewrites them:
+ * lesson, drill-item, submission and review identifiers all derive from a block id, so changing one
+ * would orphan the learner progress hanging off it. `publishBlock` reuses whatever `_id` a block
+ * already has rather than recomputing it.
+ */
+export const blockIdFor = (packId: string, order: number, learnerId?: string): string =>
+  learnerId ? `${packId}.u${ownerTag(learnerId)}.b${order}` : `${packId}.b${order}`;
+
 export const lessonIdFor = (blockId: string, order: number): string => `${blockId}.l${order}`;
 
 /**
@@ -44,8 +60,7 @@ export function drillIdFor(blockId: string, payload: DrillPayload, learnerId?: s
   const key = payload.kind === 'term' ? payload.term : payload.kind === 'mcq' ? payload.stem : payload.sentence;
   const digest = createHash('sha256').update(`${payload.kind}|${key}`).digest('hex').slice(0, 12);
   if (!learnerId) return `${blockId}.d.${digest}`;
-  const owner = createHash('sha256').update(learnerId).digest('hex').slice(0, 8);
-  return `${blockId}.u${owner}.${digest}`;
+  return `${blockId}.u${ownerTag(learnerId)}.${digest}`;
 }
 
 export const enrollmentIdFor = (learnerId: string, packId: string): string => `${learnerId}:${packId}`;

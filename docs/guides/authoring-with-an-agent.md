@@ -62,12 +62,14 @@ to check first — not the client.
 
 ```
 get_brief { blockId: "<the block just finished>" }
+get_brief { packId: "<pack>", learnerId: "<learner>" }   ← for their first block
 ```
 
 It assembles what you would otherwise have to go and find:
 
 | Field | Is |
 |---|---|
+| `learner.profile` | the working world this block is **about** — domain, background, target role |
 | `evidence.errorLog`, `evidence.lessons` | how the learner actually did |
 | `evidence.redrill` | categories at 3+ occurrences — these **must** come back as practice |
 | `evidence.retire` | categories with two clean blocks — stop drilling these |
@@ -85,11 +87,28 @@ how many new terms a lesson carries, how much of the last block to recycle, and 
 for topics that fail when taught in the obvious order. It is carried verbatim for the same reason.
 A pack that declares none leaves you working from the dials alone.
 
+**`learner.profile` is what it is about.** A pack holds only the methodology; the subject matter is
+this person's ([ADR-0015](../architecture/decisions/0015-a-block-may-be-owned-by-a-learner.md)). Two
+learners on the same rung of the same ramp get texts about entirely different working worlds, and
+that is the point — a text about somebody else's job is a text they will read once and never reuse a
+word of.
+
+If the profile is empty, **stop and write one** with `set_learner_profile` before authoring. Guessing
+a domain and building six lessons on the guess is the expensive way to find out you were wrong.
+
+**Block 1 has a brief too.** Pass `packId` and `learnerId` instead of a `blockId` and you get the same
+payload with the evidence half empty: the goal, the method, the ramp's first rung and the profile.
+There is no evidence yet — that is the point of asking, not a reason not to.
+
 ### 2. Write the block
 
-A block is `{ order, slug, title, level?, theme?, focus?, milestone?, lessons[], drillItems[] }`.
+A block is `{ order, slug, title, level?, theme?, focus?, milestone?, learnerId?, lessons[], drillItems[] }`.
 
-- **`order`** — the next integer. `blockId` is derived as `<packId>.b<order>`.
+- **`learnerId`** — who it is for. **Set it.** Omit it and the block belongs to the pack, which means
+  every learner in that pack sees lessons written about one person's job. Omitting it is right for a
+  demo or template pack and wrong for everything else.
+- **`order`** — the next integer *for that learner*. Two learners each have a block 1.
+  `blockId` is derived as `<packId>.u<owner>.b<order>`, or `<packId>.b<order>` when the pack owns it.
 - **`slug`** — lower-case, hyphenated, and **permanent**. Republishing a block under a different
   slug is a `409`: the old one is already in links people have.
 - **`focus`** — optional tags. Anything of the form `category:<id>` is checked against the pack's
@@ -204,9 +223,12 @@ Then go back to `get_brief` for the next one.
 > Here is the brief: `<get_brief output>`
 > Here are the pack's declared error categories: `<ids from list_packs>`
 >
-> Write the block as a `publish_block` payload. Six lessons. Honour every dial in
+> Write the block as a `publish_block` payload, with `learnerId` set to `brief.learner.learnerId`.
+> Six lessons. Honour every dial in
 > `nextBlock.ramp.dials` — text length, sentence complexity, grammar load — and build every lesson
-> to the arc and rules in `pack.method`. Build practice for
+> to the arc and rules in `pack.method`. Every text, example and write prompt sits in the working
+> world in `learner.profile`; do not invent a domain, and do not borrow one from an example block.
+> Build practice for
 > every category in `evidence.redrill`. Do not drill anything in `evidence.retire`.
 > Use only the nine section kinds. Every lesson must contain one `write` or `questions` section, or
 > it generates no evidence. Word-order `partsAlt` must be a permutation of the same chunks.
@@ -222,4 +244,5 @@ Refusals come back as tool errors you can read, not transport failures. The comm
 | `block focus references categories the pack does not declare` | a `category:` tag has a typo |
 | `category … is not declared by pack …` | a correction used an invented category id |
 | `several learners have work in this pack` | pass `learnerId` explicitly |
+| `a first-block brief needs learnerId` | `packId` alone has no block to infer a learner from |
 | `this submission has already been corrected` | someone corrected it first |

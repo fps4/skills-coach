@@ -62,7 +62,7 @@ describe('the tool list is what the caller can actually run', () => {
     const response = await send({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, caller('pack:publish'));
     const names = (response?.result as { tools: { name: string }[] }).tools.map((tool) => tool.name);
 
-    expect(names.sort()).toEqual(['archive_block', 'publish_block', 'upsert_pack']);
+    expect(names.sort()).toEqual(['archive_block', 'publish_block', 'set_learner_profile', 'upsert_pack']);
   });
 
   it('shows nothing to a caller with nothing', async () => {

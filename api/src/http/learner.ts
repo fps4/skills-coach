@@ -77,7 +77,7 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const learner = await caller(request, 'lesson:read');
     const { packId } = request.params as { packId: string };
     const pack = await content.getPack(ctx, packId);
-    const blocks = await content.listBlocks(ctx, packId);
+    const blocks = await content.listBlocks(ctx, packId, { learnerId: learner.learnerId });
 
     // Opening a pack is what enrols a learner in it — there is nothing to sign up for.
     await learners.enroll(ctx, learner.learnerId, packId, blocks[0]?.blockId);
@@ -85,14 +85,16 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
   });
 
   app.get('/api/v1/packs/:packId/blocks', async (request) => {
-    await caller(request, 'lesson:read');
+    const learner = await caller(request, 'lesson:read');
     const { packId } = request.params as { packId: string };
-    return { blocks: await content.listBlocks(ctx, packId) };
+    return { blocks: await content.listBlocks(ctx, packId, { learnerId: learner.learnerId }) };
   });
 
   app.get('/api/v1/blocks/:blockId', async (request) => {
     const learner = await caller(request, 'lesson:read');
     const { blockId } = request.params as { blockId: string };
+    // A block written for somebody else is a 404, not a 403 (ADR-0015).
+    await content.getBlockFor(ctx, blockId, learner.learnerId);
     const lessons = await content.listLessons(ctx, blockId);
     const state = await progress.progressForBlock(ctx, learner.learnerId, blockId);
     return {
@@ -105,7 +107,7 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
   app.get('/api/v1/lessons/:lessonId', async (request) => {
     const learner = await caller(request, 'lesson:read');
     const { lessonId } = request.params as { lessonId: string };
-    const lesson = await content.getLesson(ctx, lessonId);
+    const lesson = await content.getLessonFor(ctx, lessonId, learner.learnerId);
     const mine = await submissions.listSubmissions(ctx, { learnerId: learner.learnerId, lessonId });
     return { lesson, submissions: mine };
   });
