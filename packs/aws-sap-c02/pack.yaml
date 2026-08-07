@@ -18,6 +18,11 @@
 # exam questions are confidential and must never enter this pack.** Every question is authored from
 # AWS documentation and carries `sourceRefs` pointing at the docs it was derived from — which is
 # both the honesty check and what makes a disputed answer key resolvable. See `method.rules`.
+#
+# `content/` beside this file is a local mirror of that guide — the four domain pages, the
+# technologies-and-concepts list, and the in-scope and out-of-scope service lists. It is content, so
+# `.gitignore` keeps it out of the tree, and it is the author's reference rather than the runtime's:
+# nothing reads it but whoever writes a block. It is what `method.rules.inScopeOnly` refers to.
 
 packId: aws-sap-c02
 
@@ -51,6 +56,32 @@ goal:
 # ignores that trains the wrong proportions.
 #
 # Blocks are not weeks. Miss a day and you take the next block's questions, not a later one's.
+#
+# ---------------------------------------------------------------------------
+# Coverage and emphasis are different layers, and only one of them is authored
+# ---------------------------------------------------------------------------
+#
+# Every rung below covers all four domains. No rung teaches one domain at a time — see the note
+# above `method.principles` for why that shape was removed rather than kept for the early blocks.
+#
+# What makes that affordable is that "what a block contains" and "what a learner is asked" are not
+# the same thing:
+#
+#   the bank    — the questions an author publishes into block N. `bankSize` below. Its job is
+#                 COVERAGE: every one of the twenty task statements appears, so nothing goes a whole
+#                 block unexamined.
+#   the sitting — the questions the runtime actually serves, `DEFAULT_QUIZ_SIZE` of them, chosen
+#                 from the bank by `domain/quiz.ts::selectQuizItems`. Its job is EMPHASIS: it sorts
+#                 by the status of the categories a question tests, so recurring weaknesses come
+#                 first and mastered items are dropped entirely.
+#
+# So the adaptation the ramp has to describe is only the *between-block* half. The within-block half
+# is already deterministic and already built (ADR-0014), reading the same error log the author reads.
+# A dial that tried to restate it would be a second opinion about weakness beside the first.
+#
+# A bank of thirty against a sitting of twenty is deliberate slack: it is what lets the runtime skew
+# a sitting toward weak areas and still have something to serve, and what lets a re-sitting surface
+# the ten a learner has not seen — `attempts` is the second sort key, so unseen questions rise.
 framework:
   id: sap-c02-readiness
   levels: [foundations, domain-competent, exam-ready, exam-fit]
@@ -59,26 +90,37 @@ framework:
     - fromBlock: 1
       toBlock: 4
       level: foundations
-      phase: One domain at a time
+      phase: All four domains, one requirement at a time
       dials:
         scenarioLength: 60–100 words — one requirement, stated plainly
         servicesPerQuestion: one or two, and named explicitly
         distractorSubtlety: wrong options are wrong on service capability, not on nuance
         multiResponseShare: none — single answer only while the vocabulary is still settling
-        domainMix: one domain per block, in guide order
-        milestone: 80% on a 20-question set drawn from a single domain
+        bankSize: 30 questions
+        coverage: all twenty task statements, at least one question each — the floor, before any weighting
+        emphasis: >-
+          the ten questions above the floor go to the weakest task statements in the brief. Block 1
+          has no evidence to read, so spread them by exam weight instead and let block 2 be the first
+          adaptive one.
+        domainMix: exam-weighted — 8 / 9 / 7 / 6 questions of thirty, against 26 / 29 / 25 / 20
+        milestone: 80% over a sitting, and no task statement left unseen across the four blocks
 
     - fromBlock: 5
       toBlock: 12
       level: domain-competent
-      phase: Trade-offs within a domain
+      phase: Trade-offs, still one domain per question
       dials:
         scenarioLength: 120–180 words — requirements plus a constraint that rules options out
         servicesPerQuestion: three or four, some implied rather than named
         distractorSubtlety: every option would work; only one meets the stated constraint
         multiResponseShare: about one question in five
-        domainMix: weighted to the exam — 26 / 29 / 25 / 20 across a block
-        milestone: 75% on a mixed 20-question set with no domain below half
+        bankSize: 30 questions
+        coverage: all twenty task statements, at least one question each
+        emphasis: >-
+          the ten above the floor go to the weakest task statements in the brief, at most three on
+          any one — a fourth would be a batch, and batches teach the block rather than the content.
+        domainMix: exam-weighted — 8 / 9 / 7 / 6 of thirty, and no domain more than two off that
+        milestone: 75% over a sitting, with no domain below 60%
 
     - fromBlock: 13
       toBlock: 20
@@ -89,8 +131,16 @@ framework:
         servicesPerQuestion: four or more, across domains
         distractorSubtlety: options differ on operational overhead and cost, not on whether they work
         multiResponseShare: about one question in four
-        domainMix: exam-weighted, and no question tests only one task statement
-        milestone: 75% on a timed 20-question set at exam pace
+        bankSize: 30 questions
+        coverage: >-
+          all twenty task statements, and no question tests only one — a cross-domain question counts
+          toward the floor for every statement it tags, which is what makes twenty reachable in thirty
+          questions this long.
+        emphasis: >-
+          the ten above the floor go to the weakest task statements, at most two on any one. Pair a
+          weak statement with a strong one in the same scenario rather than drilling it alone.
+        domainMix: exam-weighted — 8 / 9 / 7 / 6 of thirty, and no domain more than one off that
+        milestone: 75% at exam pace, about two minutes a question, with no domain below 65%
 
     - fromBlock: 21
       toBlock: 30
@@ -101,7 +151,16 @@ framework:
         servicesPerQuestion: unconstrained
         distractorSubtlety: as the exam — the "most cost-effective" and "least operational overhead" split
         multiResponseShare: about one question in four
-        domainMix: exam-weighted
+        bankSize: >-
+          75 questions — a whole form, matching the exam's own count. This is the one rung where the
+          bank and the sitting are the same size, so start the session with `size` set to 75 rather
+          than letting it default to twenty. A rehearsal that served the weakest twenty would not be
+          a rehearsal.
+        coverage: all twenty task statements, and none below three questions
+        emphasis: >-
+          at most a quarter of the form skewed toward weak statements; the rest exam-weighted. The
+          point of this rung is to sit the exam as it is, not as the learner would prefer it.
+        domainMix: exam-weighted — 19 / 22 / 19 / 15 of seventy-five
         milestone: 75% on a 75-question timed sitting, and no task statement left unseen
 
 # ---------------------------------------------------------------------------
@@ -110,6 +169,42 @@ framework:
 #
 # The ramp sets the difficulty. This sets the construction. Both are carried into the brief verbatim
 # and neither is interpreted (ADR-0001) — the author is the one who acts on them.
+#
+# ---------------------------------------------------------------------------
+# Why every block covers every domain
+# ---------------------------------------------------------------------------
+#
+# The earlier shape of this pack gave blocks 1–4 one domain each. It was removed rather than kept as
+# a gentle on-ramp, on two grounds:
+#
+# 1. **Blocked practice flatters itself.** When every question in a block comes from one domain, the
+#    learner stops deciding *which* body of knowledge applies and only decides within it. That is the
+#    easier half of the task and not the half the exam tests — an SAP-C02 stem never says which domain
+#    it belongs to. Mixed practice reliably scores worse during a block and better afterwards
+#    (Rohrer & Taylor 2007; Dunlosky et al. 2013 rate interleaved practice as genuinely useful and
+#    practice testing and distributed practice as the two highest-utility techniques there are).
+# 2. **It starves the adaptation loop.** A single-domain block writes error-log occurrences against
+#    one domain's categories and nothing against the other three, so the next brief cannot tell a
+#    strong domain from an unexamined one. Four blocks in, the ranking the whole pack turns on is
+#    built from a quarter of the syllabus at a time.
+#
+# What the early rungs ramp instead is difficulty — scenario length, how many services a question
+# spans, how subtle the distractors are. Coverage is flat from block 1 and difficulty is what climbs.
+#
+# The spacing this design needs is structural rather than scheduled: because the coverage floor puts
+# every task statement in every bank, a statement the learner got right last block is met again this
+# block anyway, at a gap of one block rather than never. There is no scheduler and no forgetting
+# curve here, for the same reason the platform's method has none — see `docs/guides/teaching-method.md`.
+#
+# Sources, so this is checkable rather than house theory:
+#   Dunlosky, Rawson, Marsh, Nathan & Willingham (2013), "Improving Students' Learning With Effective
+#     Learning Techniques", Psychological Science in the Public Interest 14(1).
+#   Roediger & Karpicke (2006), "Test-Enhanced Learning" — retrieval beats re-reading.
+#   Rohrer & Taylor (2007) — interleaving depresses in-session performance and improves transfer.
+#   Haladyna, Downing & Rodriguez (2002), "A Review of Multiple-Choice Item-Writing Guidelines for
+#     Classroom Assessment", Applied Measurement in Education 15(3) — the 31 validated item rules.
+#   NBME Item-Writing Guide, "Constructing Written Test Questions" — the vignette form, and the
+#     cover-the-options test that `method.rules.coverTheOptions` states.
 method:
   principles:
     - >-
@@ -129,24 +224,76 @@ method:
       Connect, a compliance boundary. A scenario with no binding constraint has several right answers.
     - >-
       Weak task statements come back interleaved, not batched. A block that gives each weak area its
-      own run of five questions teaches the pattern of the block, not the content.
+      own run of five questions teaches the pattern of the block, not the content. Shuffle the bank
+      so consecutive questions rarely share a domain — the learner should have to work out which body
+      of knowledge applies, because the exam will not tell them.
     - >-
       Every question names the task statements it tests. That tag is the only thing connecting a
       wrong answer to what gets asked next block (ADR-0014), so an untagged question is invisible.
+    - >-
+      A stem is answerable before the options are read. Cover them and the question should still pose
+      a definite problem; if it only makes sense once the four options frame it, it is a recognition
+      task wearing a scenario. This is the standard vignette test and it is what separates a
+      Professional-level item from a lookup.
+    - >-
+      Coverage is not the same as attention. Every block's bank touches all twenty task statements,
+      but the sitting the learner is served is skewed to their weak ones by the runtime. Write the
+      bank for coverage and let the selection do the emphasis — do not pre-skew the bank as well, or
+      the skew is applied twice and the strong areas stop being checked at all.
 
   # The shape of one block. Lessons are optional here in a way they are not for a language pack:
   # the practice test is the sitting, and prose exists to explain what the last one exposed.
+  #
+  # The prose is scoped to the weak statements even though the bank is not. A block covers twenty
+  # task statements and explains three — a review that toured all twenty would be the exam guide
+  # read aloud, and the learner already has that.
   lessonArc:
-    - review — what the previous sitting got wrong, as prose, before any new questions
-    - concept — the service comparison or trade-off the weak task statements turn on
+    - review — what the previous sitting got wrong, grouped by task statement, before any new questions
+    - concept — the two or three trade-offs the weakest statements turn on, not a tour of the domain
     - worked example — one scenario reasoned through in full, including why each distractor fails
-    - practice test — the twenty questions, which is where the evidence actually comes from
+    - practice test — the block's bank, which is where the evidence actually comes from
 
   rules:
-    questionsPerBlock: 20–30, so a sitting has room to select from rather than exhausting the block
-    redrillShare: at least a third of a block's questions target categories in evidence.redrill
+    bankComposition: >-
+      the rung's `bankSize` splits into a coverage floor — one question per task statement, twenty in
+      all — and a surplus that goes to the weak ones. At thirty that is 20 + 10; the floor is what
+      makes a block a full syllabus pass and the surplus is what makes it adaptive.
+    redrillShare: >-
+      the surplus is the re-drill share, so at a bank of thirty a third of the block targets
+      categories in evidence.redrill. Rank them by evidence.quiz accuracy, weakest first, and break
+      ties toward the category with the higher error-log count.
+    domainDrift: >-
+      a domain's share may sit up to two questions off the exam weighting to make room for emphasis,
+      never further. A block that drifts more than that has become a domain block again.
+    spacedReturn: >-
+      a statement that recovers keeps its one floor question rather than dropping to none. The gap
+      between meeting it again is one block, always, and that is the whole spacing mechanism.
+    inScopeOnly: >-
+      questions test only services on the guide's in-scope list, and never one on the out-of-scope
+      list — see `content/sap-02-in-scope-services.md` and `content/sap-02-out-of-scope-services.md`.
+      An out-of-scope service may still appear as a distractor if a candidate would plausibly reach
+      for it.
+    emergingTopics: >-
+      the guide's emerging topics are unscored pretest content, so they do not get bank slots. A
+      learner has a finite number of questions and none should be spent on something that cannot
+      affect the result.
     sourceRefs: every question cites at least one docs.aws.amazon.com or AWS whitepaper URL
     distractorNotes: one `why` per incorrect option, no exceptions
+    coverTheOptions: >-
+      cover the options and the stem must still ask something answerable. A stem that does not is
+      rewritten, not re-optioned.
+    homogeneousOptions: >-
+      all options belong to one category and run to roughly one length. The longest option being
+      correct is the oldest tell there is, and a learner who finds it stops reading the scenario.
+    noAllOrNoneOfTheAbove: >-
+      never "all of the above" or "none of the above". Both are answerable by partial knowledge and
+      neither appears on the exam.
+    clueing: >-
+      no word from the stem repeats in the key alone, and no option is grammatically ruled out by the
+      stem's phrasing. Vary which position the key sits in across a block.
+    negativeStems: >-
+      avoid "which is NOT"; when the question genuinely needs it, put the negative in capitals as the
+      exam does.
     multiResponse: state the count in the stem ("Choose TWO"), as the exam does
     stemVoice: third person, present tense, a company with a stated requirement — the exam's register
     neverReuse: a question already in an earlier block is not republished into a later one; the
@@ -154,6 +301,12 @@ method:
     milestone: what the block's questions work backwards from; testable in one sitting
 
   # Where teaching these in the obvious order reliably fails.
+  #
+  # These are orderings *within* a thread, not orderings of blocks. When one domain owned a block the
+  # two were the same thing; now that every block covers everything, a thread runs across blocks and
+  # the constraint is on which question comes before which — the first Transit Gateway question in
+  # the pack must fall after the first peering one, whatever blocks they land in. Reading the previous
+  # bank with `get_block` before authoring is how an author knows where a thread has got to.
   sequencing:
     organizations: >-
       Accounts and OUs before SCPs. A learner who meets an SCP before they can picture the OU tree
