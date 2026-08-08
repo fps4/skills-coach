@@ -16,6 +16,7 @@ import {
   createSubmissionSchema,
   patchMeSchema,
   postAttemptSchema,
+  setReadSchema,
   startQuizSchema,
 } from '../domain/schemas.js';
 import type { Learner } from '../domain/types.js';
@@ -25,6 +26,7 @@ import * as learnerTerms from '../services/learner-terms.js';
 import * as learners from '../services/learners.js';
 import * as progress from '../services/progress.js';
 import * as quiz from '../services/quiz.js';
+import * as reading from '../services/reading.js';
 import * as submissions from '../services/submissions.js';
 import * as audit from '../services/audit.js';
 import type { ServiceContext } from '../services/context.js';
@@ -41,6 +43,36 @@ const drillQuerySchema = z.object({
   kind: z.enum(['term', 'word-order', 'mcq']).optional(),
   stage: stageSchema.optional(),
   limit: z.coerce.number().int().positive().max(100).optional(),
+});
+
+/**
+ * The library's two filters, plus which language to be served in.
+ *
+ * `labels` arrives comma-separated because it is a URL, and `unread` defaults to true because that
+ * is what the surface defaults to — the query string and the screen say the same thing, so a
+ * bookmarked link reproduces what the learner was looking at.
+ *
+ * `language` is optional: absent, the learner's own interface language is used. It is a parameter
+ * at all because reading is the one surface where language selects *content* (ADR-0017), and the
+ * caller — a page rendered under `/en/…` — knows that better than the stored profile does.
+ */
+const readingQuerySchema = z.object({
+  labels: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value
+        ? value
+            .split(',')
+            .map((label) => label.trim())
+            .filter(Boolean)
+        : undefined,
+    ),
+  unread: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value !== 'false'),
+  language: z.string().min(2).max(35).optional(),
 });
 
 export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext): void {
@@ -110,6 +142,39 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const lesson = await content.getLessonFor(ctx, lessonId, learner.learnerId);
     const mine = await submissions.listSubmissions(ctx, { learnerId: learner.learnerId, lessonId });
     return { lesson, submissions: mine };
+  });
+
+  // --- reading --------------------------------------------------------------
+  //
+  // A learner's own library (ADR-0017). Every route resolves through the calling learner, so there
+  // is no path here to material loaded for somebody else — one learner's reading list is not
+  // another's, and an id is not a permission.
+
+  app.get('/api/v1/packs/:packId/reading', async (request) => {
+    const learner = await caller(request, 'lesson:read');
+    const { packId } = request.params as { packId: string };
+    const { labels, unread, language } = readingQuerySchema.parse(request.query);
+    return reading.library(
+      ctx,
+      learner.learnerId,
+      packId,
+      { labels, unreadOnly: unread },
+      language ?? learner.uiLanguage,
+    );
+  });
+
+  app.get('/api/v1/reading/:articleId', async (request) => {
+    const learner = await caller(request, 'lesson:read');
+    const { articleId } = request.params as { articleId: string };
+    const { language } = readingQuerySchema.parse(request.query);
+    return { article: await reading.getArticle(ctx, learner.learnerId, articleId, language ?? learner.uiLanguage) };
+  });
+
+  app.post('/api/v1/reading/:articleId/read', async (request) => {
+    const learner = await caller(request, 'reading:track');
+    const { articleId } = request.params as { articleId: string };
+    const { read } = setReadSchema.parse(request.body ?? {});
+    return reading.setRead(ctx, learner.learnerId, articleId, read);
   });
 
   // --- submissions ----------------------------------------------------------

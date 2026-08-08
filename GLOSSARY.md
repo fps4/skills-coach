@@ -48,9 +48,23 @@ Its score and per-category breakdown are derived on read, never stored.
 It practises identically and lives in the same deck, but only its owner can see it and a republish of
 the block never removes it. See [ADR-0012](docs/architecture/decisions/0012-a-learner-may-add-to-their-own-deck.md).
 
+**Article** — a piece of long-form reading loaded into **one learner's** library. Not part of a
+pack's curriculum: it is the learner's own domain brought into the pack, so nobody else ever sees it.
+An article is **parallel text** — one **variant** per language — and is identified by its slug, so
+re-loading it corrects it in place. See
+[ADR-0017](docs/architecture/decisions/0017-reading-is-personalized-parallel-text.md).
+
+**Variant** — one language's rendering of an article: a language tag, a title, and markdown. Which
+variant a learner sees is decided by the interface language, falling back to the pack's content
+language. This is the *only* place in the product where the language switch changes material.
+
+**Label** — a free string an article carries, chosen by whoever loaded it. The library filters and
+groups by labels; the runtime never interprets one, exactly as it never interprets a ramp's dials.
+
 **Content language** — the language a pack's material is written in. Distinct from **UI language**,
 the language of the interface chrome. A Dutch pack renders as Dutch whether the interface is set to
 Dutch or English. See [ADR-0005](docs/architecture/decisions/0005-ui-language-vs-content-language.md).
+The one narrowing of this is an article's variants, above.
 
 ## Learner state
 
@@ -62,6 +76,11 @@ Coach stores no credentials.
 
 **Drill state** — per learner, per drill item: which **stage** they are on, their current **streak**,
 and whether the item is **mastered**. This is the spaced-repetition state.
+
+**Reading state** — per learner, per article: that they marked it read, and when. Kept apart from the
+article for the reason drill state is kept apart from the drill item — content gets re-loaded, and a
+corrected translation must not arrive as something unread. Reversible: read is a filter the learner
+sets, never a measurement of them.
 
 **Stage** — a direction of practice for one drill item. Stage 2 is gated behind mastering stage 1.
 For `term` items: stage 1 is content-language → translation, stage 2 the reverse (which drills

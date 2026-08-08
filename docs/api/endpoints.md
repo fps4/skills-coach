@@ -17,7 +17,7 @@ Every request carries `Authorization: Bearer <token>` issued by identity-service
 
 | Role | Capabilities |
 |---|---|
-| `learner` | `lesson:read` `drill:practice` `submission:write` `progress:read` |
+| `learner` | `lesson:read` `drill:practice` `drill:curate` `reading:track` `submission:write` `progress:read` |
 | `coach` | `lesson:read` `pack:publish` `submission:read-all` `correction:write` `review:write` |
 
 An unrecognised role grants nothing and is logged. An absent `roles` claim is treated as `learner`.
@@ -65,6 +65,9 @@ reach another's work.
 | POST | `/blocks/:blockId/terms` | `drill:curate` | Add a word of your own to this block's deck → `201` |
 | GET | `/blocks/:blockId/terms` | `drill:curate` | The words you added to this block |
 | DELETE | `/terms/:drillItemId` | `drill:curate` | Remove one of your words, and its progress → `204` |
+| GET | `/packs/:packId/reading` | `lesson:read` | Your reading library for this pack. `?labels`, `?unread`, `?language` |
+| GET | `/reading/:articleId` | `lesson:read` | One article, in the resolved language. `?language` |
+| POST | `/reading/:articleId/read` | `reading:track` | `{ read: boolean }` — mark read, or put it back |
 | GET | `/progress` | `progress:read` | Overview, or one pack with `?packId` |
 
 ### `GET /drills`
@@ -173,6 +176,45 @@ another learner cannot list it, practise it or delete it even knowing its id, an
 on the coach surface. **A republish of the block never deletes it**; the publish sweep only removes
 what the pack itself no longer defines.
 
+### `GET /packs/:packId/reading`
+
+`?labels=a,b` · `?unread=true|false` · `?language=nl`
+
+The learner's own library ([ADR-0017](../architecture/decisions/0017-reading-is-personalized-parallel-text.md)).
+
+```jsonc
+{
+  "articles": [{
+    "articleId": "dutch-conversation-nl.r8f14e45f.multi-region-failover",
+    "slug": "multi-region-failover",
+    "labels": ["netwerken", "aws"],
+    "source": { "url": "https://aws.amazon.com/blogs/…", "site": "AWS Architecture Blog" },
+    "addedAt": "2026-08-08T09:00:00.000Z",
+    "readAt": null,
+    "language": "nl",
+    "title": "Failover over meerdere regio's",
+    "inRequestedLanguage": true,
+    "languages": ["nl", "en"]
+  }],
+  "labels": [{ "label": "netwerken", "total": 6, "unread": 4 }],
+  "counts": { "total": 12, "unread": 9 }
+}
+```
+
+Three things this contract commits to:
+
+- **Unread by default.** `unread=false` brings read articles back; nothing is ever deleted by being
+  read. `POST /reading/:articleId/read` with `{ "read": false }` puts one back.
+- **`labels` narrows** — an article must carry *every* label named. The facets describe the whole
+  library rather than the filtered view, so a filter always shows its own way out.
+- **The api resolves the language, not the surface.** `language` (defaulting to the learner's
+  `uiLanguage`) picks the variant: exact tag, then same base language, then the pack's
+  `contentLanguage`, then whatever exists. `inRequestedLanguage: false` says it fell back, so the
+  surface can tell the learner instead of silently changing language on them.
+
+`GET /reading/:articleId` returns the same shape plus `body` — the markdown of the resolved variant.
+Another learner's article is a `404`, not a `403`: to them it does not exist.
+
 ## Coach API — `/coach/v1`
 
 The only way content and corrections enter the system
@@ -184,6 +226,9 @@ The only way content and corrections enter the system
 | POST | `/packs` | `pack:publish` | Upsert a pack manifest |
 | POST | `/packs/:packId/blocks` | `pack:publish` | Publish a block with lessons and drills → `201` |
 | POST | `/blocks/:blockId/archive` | `pack:publish` | Archive a block |
+| POST | `/packs/:packId/reading` | `pack:publish` | Load articles into one learner's library → `201` |
+| GET | `/packs/:packId/reading` | `submission:read-all` | What a learner has been given. `?learnerId` required |
+| DELETE | `/reading/:articleId` | `pack:publish` | Remove an article and its read mark. `?learnerId` → `204` |
 | GET | `/blocks/:blockId` | `lesson:read` | Block with full lessons and its drill deck |
 | GET | `/submissions` | `submission:read-all` | The work queue. `?status=pending` first-in-first-out |
 | GET | `/submissions/:id` | `submission:read-all` | Submission, correction and the lesson it answers |
@@ -234,6 +279,39 @@ failing the publish, but it is always reported.
 
 A `focus` entry of the form `category:<id>` must name a category the pack declares, or the publish
 is a `409`.
+
+### `POST /coach/v1/packs/:packId/reading`
+
+```jsonc
+{
+  "learnerId": "…",
+  "articles": [{
+    "slug": "multi-region-failover",
+    "labels": ["netwerken", "aws"],
+    "bodies": [
+      { "language": "nl", "title": "Failover over meerdere regio's", "body": "# …markdown…", "summary": "…" },
+      { "language": "en", "title": "Multi-region failover", "body": "# …markdown…" }
+    ],
+    "source": { "url": "https://aws.amazon.com/blogs/…", "site": "AWS Architecture Blog", "publishedAt": "2026-07-22" },
+    "estimatedMinutes": 11
+  }]
+}
+```
+
+Returns `{ added, updated, articleIds }` — not the articles, which the caller just sent.
+
+**The learner is named once, for the batch.** Reading is personalized, and an owner field per
+article is one typo away from filing somebody else's reading in a learner's library.
+
+**Idempotent by slug**, as publishing a block is idempotent by position: re-loading a slug replaces
+that article in place and leaves the learner's read mark and its position in the library alone. That
+is how a bad translation gets corrected — load it again, rather than delete and re-add.
+
+Two variants in the same language is a `400`: resolution is by language, so the second could never
+be reached and would silently vanish. A pack that does not exist is a `404`.
+
+`source.url` is not decoration. This surface carries material the product did not write, and where a
+piece came from travels with it and is shown next to it.
 
 ### `POST /coach/v1/submissions/:id/correction`
 
@@ -305,6 +383,9 @@ Streamable HTTP, JSON responses, no session. Mounted only when `MCP_RESOURCE_URL
 | `upsert_pack` | `pack:publish` | `POST /coach/v1/packs` |
 | `publish_block` | `pack:publish` | `POST /coach/v1/packs/:packId/blocks` |
 | `archive_block` | `pack:publish` | `POST /coach/v1/blocks/:blockId/archive` |
+| `list_reading` | `submission:read-all` | `GET /coach/v1/packs/:packId/reading` |
+| `upsert_reading` | `pack:publish` | `POST /coach/v1/packs/:packId/reading` |
+| `remove_reading` | `pack:publish` | `DELETE /coach/v1/reading/:articleId` |
 | `post_correction` | `correction:write` | `POST /coach/v1/submissions/:id/correction` |
 | `post_block_review` | `review:write` | `POST /coach/v1/blocks/:blockId/review` |
 

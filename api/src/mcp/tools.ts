@@ -19,6 +19,7 @@ import type { RequestAuth } from '../auth/plugin.js';
 import type { Capability } from '../auth/capabilities.js';
 import { invalid } from '../http/errors.js';
 import {
+  articleSchema,
   learnerProfileSchema,
   packManifestSchema,
   postBlockReviewSchema,
@@ -29,6 +30,7 @@ import * as brief from '../services/brief.js';
 import * as content from '../services/content.js';
 import * as corrections from '../services/corrections.js';
 import * as learners from '../services/learners.js';
+import * as reading from '../services/reading.js';
 import * as submissions from '../services/submissions.js';
 import type { ServiceContext } from '../services/context.js';
 
@@ -248,6 +250,70 @@ export const TOOLS: ToolDef[] = [
             ignoredAlternatives: result.ignoredAlternatives,
           },
         },
+      };
+    },
+  }),
+
+  tool({
+    name: 'list_reading',
+    description:
+      'What reading material a learner already has in a pack: titles, labels, source and whether they have read it. ' +
+      'Read this before loading more — the library is idempotent by slug, so knowing what is there is what keeps a ' +
+      'second scrape of the same source from arriving as new material.',
+    capability: 'submission:read-all',
+    input: z.object({ packId: z.string().min(1), learnerId: z.string().min(1) }),
+    readOnly: true,
+    run: async (ctx, { packId, learnerId }) => ({
+      result: { articles: await reading.listForCoach(ctx, packId, learnerId) },
+    }),
+  }),
+
+  tool({
+    name: 'upsert_reading',
+    description:
+      'Load reading articles into ONE learner’s library. Reading material is personalized: it is the learner’s own ' +
+      'domain brought into the pack, and nobody else ever sees it. Each article carries one variant per language — ' +
+      'the interface language switch is what flips between them, so an article with a single variant cannot be ' +
+      'flipped. Idempotent by slug: re-loading a slug replaces that article in place and leaves the learner’s read ' +
+      'mark and its position in the library alone, which is how a translation gets corrected. Always carry ' +
+      '`source.url` for material that is not yours.',
+    capability: 'pack:publish',
+    input: z.object({
+      packId: z.string().min(1),
+      learnerId: z.string().min(1),
+      articles: z.array(articleSchema).min(1).max(50),
+    }),
+    readOnly: false,
+    run: async (ctx, { packId, learnerId, articles }) => {
+      const result = await reading.upsertArticles(ctx, packId, learnerId, articles);
+      return {
+        // Deliberately not the articles: the caller just sent them, and echoing forty translated
+        // posts back through a tool result is tokens spent on nothing.
+        result: {
+          added: result.added,
+          updated: result.updated,
+          articleIds: result.articles.map((article) => article.articleId),
+        },
+        audit: {
+          action: 'reading.upsert',
+          resource: `pack/${packId}`,
+          meta: { learnerId, added: result.added, updated: result.updated },
+        },
+      };
+    },
+  }),
+
+  tool({
+    name: 'remove_reading',
+    description: 'Take an article out of a learner’s library, and the read mark with it.',
+    capability: 'pack:publish',
+    input: z.object({ articleId: z.string().min(1), learnerId: z.string().min(1) }),
+    readOnly: false,
+    run: async (ctx, { articleId, learnerId }) => {
+      await reading.removeArticle(ctx, learnerId, articleId);
+      return {
+        result: { removed: articleId },
+        audit: { action: 'reading.remove', resource: `article/${articleId}`, meta: { learnerId } },
       };
     },
   }),

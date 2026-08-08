@@ -22,6 +22,7 @@ import {
   Cloud,
   Dumbbell,
   ListChecks,
+  Newspaper,
   Puzzle,
   ShieldCheck,
 } from 'lucide-react';
@@ -47,7 +48,7 @@ export const PACK_HEADER = 'x-sc-pack';
  * the pack's. Declaring surfaces is how a pack opts *out* of one, which is why omitting the key
  * means all of them.
  */
-export const DEFAULT_SURFACES: PackSurface[] = ['lessons', 'drills:terms', 'drills:word-order', 'quiz', 'progress'];
+export const DEFAULT_SURFACES: PackSurface[] = ['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz', 'progress'];
 
 export interface DeckTotals {
   terms: number;
@@ -59,6 +60,10 @@ export interface SurfaceContext {
   locale: string;
   currentBlockId: string | null;
   decks: DeckTotals;
+  /** The pack in scope, for surfaces that belong to a pack but not to a block. */
+  packId: string | null;
+  /** How many articles are in the learner's library for this pack (ADR-0017). */
+  reading: number;
 }
 
 export interface SurfaceDef {
@@ -88,6 +93,21 @@ export const SURFACES: Record<PackSurface, SurfaceDef> = {
     labelKey: 'lessons',
     packScoped: true,
     href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/blocks/${currentBlockId}` : null),
+  },
+  /**
+   * The learner's own library (ADR-0017).
+   *
+   * A sub-surface of lessons, and pack-scoped but **not** block-scoped: reading material is loaded
+   * against a pack rather than against whichever block is open, so it does not come and go as the
+   * learner moves through the program. Empty disables rather than hides, like the decks — a library
+   * nobody has loaded anything into yet is offered, it is simply not stocked.
+   */
+  reading: {
+    icon: Newspaper,
+    labelKey: 'reading',
+    sub: true,
+    packScoped: true,
+    href: ({ locale, packId, reading }) => (packId && reading > 0 ? `/${locale}/reading?packId=${packId}` : null),
   },
   'drills:terms': {
     icon: Sparkles,
@@ -171,6 +191,9 @@ export function packIdFromUrl(pathname: string, search?: URLSearchParams | null)
 
   if (head === 'packs' && tail) return tail;
   if ((head === 'blocks' || head === 'lessons') && tail) return packIdFromEntityId(tail);
+  // An article is `${packId}.r…`, so a URL naming one already carries its pack; the library itself
+  // names the pack directly, because it belongs to no block.
+  if (head === 'reading') return tail ? packIdFromEntityId(tail) : (search?.get('packId') ?? null);
   // Both of these name their block in the query rather than the path, so that is where the pack is.
   if (head === 'drills' || head === 'quiz') {
     const blockId = search?.get('blockId');
