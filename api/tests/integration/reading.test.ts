@@ -112,6 +112,27 @@ describeIfMongo('the reading library', () => {
     expect(response.statusCode).toBe(400);
   });
 
+  it('serves an article whose slug is long, rather than 414ing before the handler', async () => {
+    // Fastify caps a route parameter at 100 characters by default, and an article id carries the
+    // source article's own slug — a real one ran to 112 and the router answered 414 before auth or
+    // any handler saw it. Long enough here to cross that default, so lowering it again fails.
+    const slug =
+      'accelerate-amazon-s3-replication-with-automated-s3-batch-operations-parallelization-and-cross-region-copy';
+    await load([bilingual(slug)]);
+
+    const articleId = (await library()).json().articles[0].articleId as string;
+    expect(articleId.length).toBeGreaterThan(100);
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/api/v1/reading/${articleId}`,
+      headers: auth('learner-token'),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().article.slug).toBe(slug);
+  });
+
   // --- privacy --------------------------------------------------------------
 
   it('hides one learner’s library from another, by id as well as by list', async () => {

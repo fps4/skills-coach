@@ -37,6 +37,13 @@ export async function buildApp(options: BuildOptions): Promise<FastifyInstance> 
     // browser. Trusting the proxy is what makes client IPs in the log meaningful.
     trustProxy: true,
     bodyLimit: 2 * 1024 * 1024,
+    // Fastify defaults this to 100 characters, and an article id is `packId.hash.slug` where the
+    // slug is the source article's own — `accelerate-amazon-s3-replication-with-automated-s3-batch-
+    // operations-parallelizat` is 112 and entirely ordinary for a blog. Over the limit the router
+    // stops matching the route and answers 414 before auth or any handler runs, so the article is
+    // not merely unreadable, it is unreachable. Raised rather than shortening the id: the id is
+    // readable on purpose, and it is already in learners' read marks and their bookmarks.
+    maxParamLength: 512,
   });
 
   registerErrorHandler(app);

@@ -28,7 +28,17 @@ export default function ErrorBoundary({ error, reset }: { error: Error & { diges
           <div className="mt-4 flex gap-2">
             <Button onClick={reset}>Try again</Button>
             <Button variant="outline" asChild>
-              <a href="./login">Sign in</a>
+              {/* Root-relative, not `./login`: this boundary catches pages at any depth, and a
+                  relative href resolves against whichever one threw — from an article that is
+                  `/nl/reading/login`, which is a valid article route and 404s. The middleware
+                  puts the locale back on a bare `/login`.
+
+                  A plain anchor rather than `<Link>`, which is what the rule below wants: the
+                  render already failed here, so a full document load is the point — it rebuilds
+                  the tree instead of navigating within the one that just threw. The same reason
+                  `quiz-runner.tsx` reaches for `window.location.assign` on a lapsed session. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a href="/login">Sign in</a>
             </Button>
           </div>
         </CardContent>
