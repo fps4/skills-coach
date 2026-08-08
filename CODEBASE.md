@@ -63,22 +63,29 @@ capability gate and writing the same audit trail, not a fork.
 ## `web/` — the learner surface
 
 ```
+web/content/wiki/    the reference library — 28 markdown guides, committed (ADR-0016)
+
 web/src/
   app/[locale]/      all routes live under a locale segment (`nl` | `en`)
     layout.tsx         the document: <html lang>, theme and palette. No chrome.
     (app)/             everything that needs a session — header, rail, content
                        `(app)/page.tsx` is the landing surface: one tile per pack, started
                        ones first, then the rest of the published catalogue
+                       `(app)/wiki/` is the reference library: a filtered tile grid, and
+                       one route per guide rendering its markdown server-side
     (auth)/            everything that does not — the centred sign-in surface
   i18n/              typed dictionaries + the locale negotiator
   lib/               api (server) / api-client (browser) / auth (server-only) / session (shared)
     refresh.ts       spending the rotating refresh token — middleware and route handler only (ADR-0011)
     theme/palettes   the hue axis — a palette is data, not code
+    wiki-labels.ts   the wiki's topic/format taxonomy and its filter predicate — pure, unit-tested
+    wiki.ts          reading and validating the corpus off disk, server-only (ADR-0016)
   components/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
     app-header.tsx   sticky brand header with the accent wordmark, and sign-out
-    learner-rail.tsx your packs · lessons · the two drills · the quiz · progress
+    learner-rail.tsx your packs · the wiki · lessons · the two drills · the quiz · progress
+    wiki-filters.tsx the chip rows and search box — writes the query string, filters nothing
     own-words.tsx    the entry form for your own words, inside the word trainer
     quiz-runner.tsx  the practice-test surface: practice / exam modes, an optional clock
     quiz-results.tsx score, per-category breakdown, and every question back for review
