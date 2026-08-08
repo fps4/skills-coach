@@ -1,0 +1,120 @@
+name: load-reading
+
+# Loads a directory of prepared parallel-text articles into one learner's reading library (ADR-0017)
+# on the ds1 deployment.
+#
+# The counterpart to publish-pack, and it exists for the same reason: the write needs a coach token,
+# and the client secret that mints one lives here, in Actions. A person loading a library otherwise
+# has to hold that secret themselves, which is the one thing worth avoiding — the runner mints the
+# token, uses it, and it never leaves the job.
+#
+# The articles themselves are not in this repository and never will be (ADR-0006): they are scraped,
+# translated and proofread somewhere else, and forty of them are a megabyte and a half of prose that
+# has nothing to do with the code. So this takes a *host path* on ds1 and mounts it read-only, the
+# way import:reading is written to be used.
+#
+# Manually dispatched, always, and dry by default. Loading is idempotent — an article is upserted by
+# slug, keeping the learner's read mark and its place in the library — but it is still a write to a
+# live deployment, and those happen because someone asked.
+#
+# Runs on the ds1 runner because the api binds to loopback there; from anywhere else it is
+# unreachable.
+
+on:
+  workflow_dispatch:
+    inputs:
+      learner:
+        description: "Learner id whose library to load — list_learners has it"
+        type: string
+        required: true
+      source_dir:
+        description: "Directory on the ds1 host holding <slug>.<lang>.md files"
+        type: string
+        required: true
+        default: /home/fgurbanov/reading-load
+      pack:
+        description: "Pack the library belongs to"
+        type: string
+        required: true
+        default: dutch-conversation-nl
+      only:
+        description: "Load a single slug, leaving the rest of the library alone"
+        type: string
+        required: false
+      dry_run:
+        description: "Parse and report, load nothing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-reading
+  cancel-in-progress: false
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+
+jobs:
+  load:
+    runs-on: [self-hosted, ds1]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse a source directory that holds no articles
+        env:
+          SOURCE_DIR: ${{ inputs.source_dir }}
+        run: |
+          # Checked through a container rather than with `test -d`: this runner is itself
+          # containerized and talks to the host's Docker daemon, so a host path does not exist in
+          # the runner's own filesystem — but it does resolve in a mount. Docker would happily
+          # *create* a missing bind source as an empty directory, so the count is the real check.
+          # node:20-bookworm-slim rather than something smaller because ci.Dockerfile builds FROM
+          # it in the next step — the guard costs no image this job was not already going to hold.
+          COUNT=$(docker run --rm -v "$SOURCE_DIR":/load:ro node:20-bookworm-slim \
+            sh -c 'ls /load/*.md 2>/dev/null | wc -l')
+          echo "$SOURCE_DIR holds $COUNT markdown file(s)"
+          test "$COUNT" -gt 0 || { echo "nothing to load from $SOURCE_DIR"; exit 1; }
+
+      - name: Build the CI image
+        run: docker build -t sc-reading:${{ github.run_id }} -f infra/docker/ci.Dockerfile .
+
+      - name: Mint a coach token
+        id: token
+        env:
+          CLIENT_SECRET: ${{ secrets.COACH_CLIENT_SECRET }}
+        run: |
+          test -n "$CLIENT_SECRET" || { echo "COACH_CLIENT_SECRET is not set"; exit 1; }
+          TOKEN=$(curl -sS -X POST https://auth.fps4.nl/oauth2/token \
+            -H 'content-type: application/json' \
+            -d "{\"grant_type\":\"client_credentials\",\"client_id\":\"skills-coach-coach\",\"client_secret\":\"$CLIENT_SECRET\"}" \
+            | jq -r '.access_token // .accessToken')
+          test -n "$TOKEN" -a "$TOKEN" != "null" || { echo "no access token in the response"; exit 1; }
+          # Masked before it is written anywhere, so a later step cannot echo it into the log.
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Load the library
+        env:
+          SOURCE_DIR: ${{ inputs.source_dir }}
+        run: |
+          # `--network host` so the container reaches the api on the host's loopback, which is the
+          # only interface it listens on. The source is mounted read-only: this job publishes what
+          # someone else prepared and is never the thing that edits it.
+          docker run --rm --network host \
+            -v "$SOURCE_DIR":/load:ro \
+            -e COACH_API_URL=http://127.0.0.1:8010 \
+            -e COACH_API_TOKEN='${{ steps.token.outputs.token }}' \
+            sc-reading:${{ github.run_id }} \
+            bash -lc "cd api && npm run import:reading -- \
+              --source /load \
+              --pack ${{ inputs.pack }} \
+              --learner ${{ inputs.learner }} \
+              ${{ inputs.only && format('--only {0}', inputs.only) || '' }} \
+              ${{ inputs.dry_run && '--dry-run' || '' }}"
+
+      - name: Cleanup
+        if: always()
+        run: docker rmi "sc-reading:${{ github.run_id }}" 2>/dev/null || true
