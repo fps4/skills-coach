@@ -30,7 +30,7 @@ export interface Framework {
 }
 
 /** A surface this app can render for a pack. The api validates against the same closed set. */
-export type PackSurface = 'lessons' | 'drills:terms' | 'drills:word-order' | 'quiz' | 'progress';
+export type PackSurface = 'lessons' | 'reading' | 'drills:terms' | 'drills:word-order' | 'quiz' | 'progress';
 
 /**
  * How a pack asks to be presented. Declared by the pack, resolved here.
@@ -123,6 +123,55 @@ export interface LessonSummary {
 
 export interface Lesson extends LessonSummary {
   sections: Section[];
+}
+
+// --- reading ---------------------------------------------------------------
+
+/**
+ * An article in the learner's own library (ADR-0017).
+ *
+ * `language` is the variant they are being *shown* — the api resolves it, so the list and the
+ * article itself cannot disagree — and `inRequestedLanguage` is false when the article had no
+ * variant in the interface language and fell back to the one the pack teaches.
+ */
+export interface ArticleSummary {
+  articleId: string;
+  packId: string;
+  slug: string;
+  labels: string[];
+  source?: { url?: string; site?: string; author?: string; publishedAt?: string };
+  estimatedMinutes?: number;
+  addedAt: string;
+  /** Null means unread. */
+  readAt: string | null;
+  language: string;
+  title: string;
+  summary?: string;
+  inRequestedLanguage: boolean;
+  languages: string[];
+}
+
+/** The article with the markdown of the resolved variant. */
+export interface Article extends ArticleSummary {
+  body: string;
+}
+
+export interface LabelFacet {
+  label: string;
+  total: number;
+  unread: number;
+}
+
+export interface ReadingCounts {
+  total: number;
+  unread: number;
+}
+
+export interface Library {
+  articles: ArticleSummary[];
+  /** Every label in the library, not merely the filtered subset — a filter must show its way out. */
+  labels: LabelFacet[];
+  counts: ReadingCounts;
 }
 
 // --- the coaching loop -----------------------------------------------------
@@ -309,6 +358,7 @@ export interface PackProgress {
   blockProgress: BlockProgress | null;
   blocks: { block: Block; progress: BlockProgress }[];
   decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary };
+  reading: ReadingCounts;
   quiz: { byCategory: CategoryBreakdown[]; sessions: number; score: QuizScore };
   errorLog: {
     entries: ErrorLogEntry[];

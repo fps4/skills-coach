@@ -8,7 +8,7 @@ COMPOSE := docker compose -f infra/docker/compose.yml -p skills-coach
 PACK    ?= packs/demo-conversation-nl
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev up down logs ps seed import import-errorlog validate test test-unit lint format typecheck check clean
+.PHONY: help install dev up down logs ps seed import import-errorlog import-reading validate test test-unit lint format typecheck check clean
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -54,6 +54,9 @@ import: ## Import a pack from a local directory: make import PACK=/path/to/pack
 
 import-errorlog: ## Backfill a learner's error log: make import-errorlog SOURCE=... LEARNER=...
 	cd api && npm run import:errorlog -- --source $(SOURCE) --learner $(LEARNER)
+
+import-reading: ## Load a reading library: make import-reading SOURCE=... PACKID=... LEARNER=...
+	cd api && npm run import:reading -- --source $(SOURCE) --pack $(PACKID) --learner $(LEARNER)
 
 validate: ## Parse and lint every pack manifest in the tree
 	cd api && npm run validate:manifests

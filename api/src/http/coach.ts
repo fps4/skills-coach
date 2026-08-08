@@ -17,12 +17,14 @@ import {
   postBlockReviewSchema,
   postCorrectionSchema,
   publishBlockSchema,
+  upsertReadingSchema,
 } from '../domain/schemas.js';
 import * as audit from '../services/audit.js';
 import * as brief from '../services/brief.js';
 import * as content from '../services/content.js';
 import * as corrections from '../services/corrections.js';
 import * as learners from '../services/learners.js';
+import * as reading from '../services/reading.js';
 import * as submissions from '../services/submissions.js';
 import type { ServiceContext } from '../services/context.js';
 
@@ -93,6 +95,64 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
     requireCapability(request, 'lesson:read');
     const { blockId } = request.params as { blockId: string };
     return { block: await content.getBlock(ctx, blockId), lessons: await content.listLessons(ctx, blockId) };
+  });
+
+  // --- reading --------------------------------------------------------------
+
+  /**
+   * Load reading material into one learner's library (ADR-0017).
+   *
+   * Idempotent by slug, like publishing a block: loading the same slug again replaces the article
+   * and leaves whether the learner had read it alone, so a corrected translation is a re-load
+   * rather than a delete and an add.
+   *
+   * `pack:publish`, because this writes content into the product. That it is content for one person
+   * does not make it less of a publish — it makes it a publish that needs saying whose.
+   */
+  app.post('/coach/v1/packs/:packId/reading', async (request, reply) => {
+    const auth = requireCapability(request, 'pack:publish');
+    const { packId } = request.params as { packId: string };
+    const { learnerId, articles } = upsertReadingSchema.parse(request.body);
+    const result = await reading.upsertArticles(ctx, packId, learnerId, articles);
+
+    await audit.record(ctx, {
+      principal: auth.principal,
+      action: 'reading.upsert',
+      resource: `pack/${packId}`,
+      meta: { ...HTTP, learnerId, added: result.added, updated: result.updated },
+    });
+
+    // The articles themselves are not echoed: the caller just sent them, and a response carrying
+    // forty translated blog posts back is bytes nobody reads.
+    return reply.status(201).send({
+      added: result.added,
+      updated: result.updated,
+      articleIds: result.articles.map((article) => article.articleId),
+    });
+  });
+
+  /** What a learner has been given, titles and labels only. About a person, so gated as one. */
+  app.get('/coach/v1/packs/:packId/reading', async (request) => {
+    requireCapability(request, 'submission:read-all');
+    const { packId } = request.params as { packId: string };
+    const { learnerId } = z.object({ learnerId: z.string().min(1) }).parse(request.query);
+    return { articles: await reading.listForCoach(ctx, packId, learnerId) };
+  });
+
+  app.delete('/coach/v1/reading/:articleId', async (request, reply) => {
+    const auth = requireCapability(request, 'pack:publish');
+    const { articleId } = request.params as { articleId: string };
+    const { learnerId } = z.object({ learnerId: z.string().min(1) }).parse(request.query);
+    await reading.removeArticle(ctx, learnerId, articleId);
+
+    await audit.record(ctx, {
+      principal: auth.principal,
+      action: 'reading.remove',
+      resource: `article/${articleId}`,
+      meta: { ...HTTP, learnerId },
+    });
+
+    return reply.status(204).send();
   });
 
   // --- the work queue -------------------------------------------------------

@@ -10,6 +10,7 @@
 
 import type { Collection, Db } from 'mongodb';
 import type {
+  Article,
   Attempt,
   Block,
   BlockReview,
@@ -21,6 +22,7 @@ import type {
   Lesson,
   PackManifest,
   QuizSession,
+  ReadingState,
   Submission,
 } from '../domain/types.js';
 import type { DrillProgress } from '../domain/drill-progress.js';
@@ -39,6 +41,8 @@ export const COLLECTIONS = {
   errorLog: 'errorLog',
   blockReviews: 'blockReviews',
   quizSessions: 'quizSessions',
+  articles: 'articles',
+  readingState: 'readingState',
   auditEvents: 'auditEvents',
 } as const;
 
@@ -55,6 +59,9 @@ export type ErrorLogDoc = ErrorLogEntry & { _id: string };
 export type BlockReviewDoc = BlockReview & { _id: string };
 /** A sitting is an event, so its id is random. What it *scored* is derived, never stored. */
 export type QuizSessionDoc = Omit<QuizSession, 'sessionId'> & { _id: string };
+export type ArticleDoc = Omit<Article, 'articleId'> & { _id: string };
+/** Per learner, per article. Present means read — there is no "unread" row to write (ADR-0017). */
+export type ReadingStateDoc = ReadingState & { _id: string };
 
 /** Per learner, per drill item: the spaced-repetition state. */
 export type DrillStateDoc = DrillProgress & {
@@ -90,6 +97,8 @@ export interface Collections {
   errorLog: Collection<ErrorLogDoc>;
   blockReviews: Collection<BlockReviewDoc>;
   quizSessions: Collection<QuizSessionDoc>;
+  articles: Collection<ArticleDoc>;
+  readingState: Collection<ReadingStateDoc>;
   auditEvents: Collection<AuditEventDoc>;
 }
 
@@ -120,6 +129,8 @@ export function collections(db: Db): Collections {
     errorLog: db.collection<ErrorLogDoc>(COLLECTIONS.errorLog),
     blockReviews: db.collection<BlockReviewDoc>(COLLECTIONS.blockReviews),
     quizSessions: db.collection<QuizSessionDoc>(COLLECTIONS.quizSessions),
+    articles: db.collection<ArticleDoc>(COLLECTIONS.articles),
+    readingState: db.collection<ReadingStateDoc>(COLLECTIONS.readingState),
     auditEvents: db.collection<AuditEventDoc>(COLLECTIONS.auditEvents),
   };
 }

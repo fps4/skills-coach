@@ -176,6 +176,91 @@ export const drillItemSchema = z
   .superRefine((value, ctx) => checkMcqPayload(value.payload, ctx, ['payload']));
 
 // ---------------------------------------------------------------------------
+// Reading
+// ---------------------------------------------------------------------------
+
+/**
+ * A BCP-47 language tag, loosely checked.
+ *
+ * Loose on purpose: the runtime matches tags against each other and never interprets one
+ * (`domain/reading.ts`), so the only thing worth refusing here is something that plainly is not a
+ * tag — a title, a whole sentence, an empty string — because that is what silently costs an article
+ * its second language.
+ */
+const languageTagSchema = nonEmpty
+  .max(35)
+  .regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/, 'language must be a BCP-47 tag, e.g. nl or en-GB');
+
+/**
+ * One language's rendering of an article.
+ *
+ * `body` is markdown and is **never parsed here**. The viewer renders it, which is the same
+ * division the rest of the contract keeps: the runtime carries content, the surface presents it.
+ * The size cap is a sanity bound on a single document, not an editorial one — a long-form technical
+ * article runs to tens of thousands of characters and is exactly what this is for.
+ */
+export const articleBodySchema = z.object({
+  language: languageTagSchema,
+  title: nonEmpty.max(300),
+  body: nonEmpty.max(400_000),
+  summary: z.string().trim().max(1_000).optional(),
+});
+
+/**
+ * An article as it is loaded (ADR-0017).
+ *
+ * `slug` is the identity: re-loading the same slug for the same learner updates the article in
+ * place, so a corrected translation replaces the old one and does not arrive as a second copy. It
+ * carries no dot, because the article id is `${packId}.r${owner}.${slug}` and the pack is read back
+ * off the first one.
+ *
+ * `source` is not decoration. This surface exists to carry material the learner did not write and
+ * we do not own, so where a piece came from travels with it and is shown next to it.
+ */
+export const articleSchema = z
+  .object({
+    slug: nonEmpty.max(120).regex(/^[a-z0-9][a-z0-9-]*$/, 'slug must be lower-case slug-like, with no dots'),
+    labels: z.array(nonEmpty.max(60)).max(24).default([]),
+    bodies: z.array(articleBodySchema).min(1).max(8),
+    source: z
+      .object({
+        url: z.string().url().max(2_000).optional(),
+        site: z.string().trim().max(200).optional(),
+        author: z.string().trim().max(200).optional(),
+        publishedAt: z.coerce.date().optional(),
+      })
+      .optional(),
+    estimatedMinutes: z.number().int().positive().max(600).optional(),
+  })
+  .superRefine((value, ctx) => {
+    // Two variants in one language means one of them is unreachable: resolution is by language, so
+    // the second could never be picked and the learner would silently lose it.
+    const tags = value.bodies.map((entry) => entry.language.toLocaleLowerCase());
+    if (new Set(tags).size !== tags.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['bodies'],
+        message: 'an article cannot carry two variants in the same language',
+      });
+    }
+  });
+
+/**
+ * Loading reading material for one learner.
+ *
+ * The learner is named once, for the whole batch, rather than per article: reading is personalized
+ * (ADR-0017), and an endpoint where the owner is a per-item field is one typo away from filing
+ * someone else's article in a learner's library.
+ */
+export const upsertReadingSchema = z.object({
+  learnerId: nonEmpty,
+  articles: z.array(articleSchema).min(1).max(50),
+});
+
+/** Marking an article read, or putting it back. */
+export const setReadSchema = z.object({ read: z.boolean().default(true) });
+
+// ---------------------------------------------------------------------------
 // Pack manifest
 // ---------------------------------------------------------------------------
 
@@ -198,7 +283,14 @@ export const sectionKindSchema = z.enum([
  * cannot render is the failure this contract exists to prevent, so a typo must fail the publish
  * rather than silently hide a rail item. Adding one is a platform change with a renderer behind it.
  */
-export const packSurfaceSchema = z.enum(['lessons', 'drills:terms', 'drills:word-order', 'quiz', 'progress']);
+export const packSurfaceSchema = z.enum([
+  'lessons',
+  'reading',
+  'drills:terms',
+  'drills:word-order',
+  'quiz',
+  'progress',
+]);
 
 /**
  * How a pack presents itself.
@@ -405,6 +497,9 @@ export const patchMeSchema = z.object({
 
 export type PackManifestInput = z.infer<typeof packManifestSchema>;
 export type PublishBlockInput = z.infer<typeof publishBlockSchema>;
+export type ArticleInput = z.infer<typeof articleSchema>;
+export type UpsertReadingInput = z.infer<typeof upsertReadingSchema>;
+export type SetReadInput = z.infer<typeof setReadSchema>;
 export type PostCorrectionInput = z.infer<typeof postCorrectionSchema>;
 export type PostBlockReviewInput = z.infer<typeof postBlockReviewSchema>;
 export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;

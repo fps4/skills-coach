@@ -12,6 +12,16 @@ import { DEFAULT_SURFACES, SURFACES, packIcon, packIdFromUrl, resolvePalette, vi
 
 const search = (query: string) => new URLSearchParams(query);
 
+/** A rail context, with the parts a test does not care about defaulted. */
+const context = (overrides: Partial<Parameters<(typeof SURFACES)['lessons']['href']>[0]> = {}) => ({
+  locale: 'nl',
+  currentBlockId: 'demo.b1',
+  packId: 'demo',
+  decks: { terms: 20, wordOrder: 20, quiz: 20 },
+  reading: 0,
+  ...overrides,
+});
+
 describe('packIdFromUrl', () => {
   it('reads it straight off a pack URL', () => {
     expect(packIdFromUrl('/nl/packs/dutch-conversation-nl')).toBe('dutch-conversation-nl');
@@ -25,6 +35,12 @@ describe('packIdFromUrl', () => {
   it('takes it from the drill query, which is where a drill carries its block', () => {
     expect(packIdFromUrl('/nl/drills/words', search('blockId=demo-conversation-nl.b1'))).toBe('demo-conversation-nl');
     expect(packIdFromUrl('/nl/drills/sentences', search(''))).toBeNull();
+  });
+
+  it('reads it off the reading library’s query, and off an article id', () => {
+    expect(packIdFromUrl('/nl/reading', search('packId=demo-conversation-nl'))).toBe('demo-conversation-nl');
+    expect(packIdFromUrl('/nl/reading/demo-conversation-nl.rab12cd34.failover')).toBe('demo-conversation-nl');
+    expect(packIdFromUrl('/nl/reading', search(''))).toBeNull();
   });
 
   it('returns null where the URL names no pack — those surfaces stay generic', () => {
@@ -62,37 +78,40 @@ describe('resolvePalette', () => {
 
 describe('surfaces', () => {
   it('offers every surface by default — a pack opts out, never in', () => {
-    expect(DEFAULT_SURFACES).toEqual(['lessons', 'drills:terms', 'drills:word-order', 'quiz', 'progress']);
+    expect(DEFAULT_SURFACES).toEqual(['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz', 'progress']);
     expect(Object.keys(SURFACES).sort()).toEqual([...DEFAULT_SURFACES].sort());
   });
 
   it('disables a drill whose deck is empty rather than hiding it', () => {
-    const context = {
-      locale: 'nl',
-      currentBlockId: 'demo.b1',
-      decks: { terms: 20, wordOrder: 0, quiz: 20 },
-    };
+    const empty = context({ decks: { terms: 20, wordOrder: 0, quiz: 20 } });
 
-    expect(SURFACES['drills:terms'].href(context)).toBe('/nl/drills/words?blockId=demo.b1');
-    expect(SURFACES['drills:word-order'].href(context)).toBeNull();
-    expect(SURFACES.quiz.href(context)).toBe('/nl/quiz?blockId=demo.b1');
+    expect(SURFACES['drills:terms'].href(empty)).toBe('/nl/drills/words?blockId=demo.b1');
+    expect(SURFACES['drills:word-order'].href(empty)).toBeNull();
+    expect(SURFACES.quiz.href(empty)).toBe('/nl/quiz?blockId=demo.b1');
   });
 
   // A language pack has no questions and a certification pack has no word-order sentences; both
   // disable the surface they do not fill rather than hiding it.
   it('disables the quiz for a pack with no questions', () => {
-    const context = { locale: 'nl', currentBlockId: 'demo.b1', decks: { terms: 20, wordOrder: 20, quiz: 0 } };
-    expect(SURFACES.quiz.href(context)).toBeNull();
+    expect(SURFACES.quiz.href(context({ decks: { terms: 20, wordOrder: 20, quiz: 0 } }))).toBeNull();
   });
 
   it('disables everything block-scoped before the learner has a block', () => {
-    const context = { locale: 'nl', currentBlockId: null, decks: { terms: 20, wordOrder: 20, quiz: 20 } };
+    const noBlock = context({ currentBlockId: null });
 
-    expect(SURFACES.lessons.href(context)).toBeNull();
-    expect(SURFACES['drills:terms'].href(context)).toBeNull();
-    expect(SURFACES.quiz.href(context)).toBeNull();
+    expect(SURFACES.lessons.href(noBlock)).toBeNull();
+    expect(SURFACES['drills:terms'].href(noBlock)).toBeNull();
+    expect(SURFACES.quiz.href(noBlock)).toBeNull();
     // Progress is not block-scoped, so it stays reachable.
-    expect(SURFACES.progress.href(context)).toBe('/nl/progress');
+    expect(SURFACES.progress.href(noBlock)).toBe('/nl/progress');
+  });
+
+  // Reading belongs to a pack, not to a block (ADR-0017): it survives having no current block, and
+  // is disabled by an empty library rather than by where the learner is in the program.
+  it('keeps reading reachable without a block, and disables it when the library is empty', () => {
+    expect(SURFACES.reading.href(context({ currentBlockId: null, reading: 4 }))).toBe('/nl/reading?packId=demo');
+    expect(SURFACES.reading.href(context({ reading: 0 }))).toBeNull();
+    expect(SURFACES.reading.href(context({ packId: null, reading: 4 }))).toBeNull();
   });
 });
 

@@ -63,6 +63,25 @@ export function drillIdFor(blockId: string, payload: DrillPayload, learnerId?: s
   return `${blockId}.u${ownerTag(learnerId)}.${digest}`;
 }
 
+/**
+ * An article's identity is its slug, namespaced by who it was loaded for (ADR-0017).
+ *
+ * The slug rather than a content digest, deliberately: reading material gets *revised* — a
+ * translation corrected, a summary rewritten — and every one of those must land on the article the
+ * learner already has, keeping its place in the library and whether they had read it. A digest
+ * would turn each correction into a second article and quietly mark it unread.
+ *
+ * The owner is hashed rather than embedded, exactly as a learner's own drill item is: the id
+ * travels in URLs and does not need to name anybody. The pack leads, so the surface can read the
+ * pack back off an article id the way it does off a block id.
+ */
+export function articleIdFor(packId: string, learnerId: string, slug: string): string {
+  const owner = createHash('sha256').update(learnerId).digest('hex').slice(0, 8);
+  return `${packId}.r${owner}.${slug}`;
+}
+
+export const readingStateIdFor = (learnerId: string, articleId: string): string => `${learnerId}:${articleId}`;
+
 export const enrollmentIdFor = (learnerId: string, packId: string): string => `${learnerId}:${packId}`;
 export const drillStateIdFor = (learnerId: string, drillItemId: string): string => `${learnerId}:${drillItemId}`;
 export const errorLogIdFor = (learnerId: string, packId: string, category: string): string =>

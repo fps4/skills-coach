@@ -62,7 +62,14 @@ describe('the tool list is what the caller can actually run', () => {
     const response = await send({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, caller('pack:publish'));
     const names = (response?.result as { tools: { name: string }[] }).tools.map((tool) => tool.name);
 
-    expect(names.sort()).toEqual(['archive_block', 'publish_block', 'set_learner_profile', 'upsert_pack']);
+    expect(names.sort()).toEqual([
+      'archive_block',
+      'publish_block',
+      'remove_reading',
+      'set_learner_profile',
+      'upsert_pack',
+      'upsert_reading',
+    ]);
   });
 
   it('shows nothing to a caller with nothing', async () => {
@@ -121,7 +128,13 @@ describe('the gate', () => {
 describe('the catalogue', () => {
   it('never exposes a learner capability', async () => {
     // A coach credential cannot practise, and the MCP must not become the way around that.
-    const learnerOnly: Capability[] = ['drill:practice', 'submission:write', 'progress:read'];
+    const learnerOnly: Capability[] = [
+      'drill:practice',
+      'drill:curate',
+      'reading:track',
+      'submission:write',
+      'progress:read',
+    ];
 
     for (const tool of TOOLS) {
       expect(learnerOnly).not.toContain(tool.capability);

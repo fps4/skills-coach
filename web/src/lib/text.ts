@@ -15,6 +15,19 @@ export function pickTitle(title: TitleText | undefined, locale: Locale): string 
   return title[locale] ?? title[locale === 'nl' ? 'en' : 'nl'] ?? '';
 }
 
+/**
+ * Roughly how long a piece of text takes to read.
+ *
+ * The fallback for a reading article whose loader did not say (ADR-0017), counted from the variant
+ * actually on screen — a translation runs longer than its original, and should report its own
+ * length rather than the other one's. Approximate on purpose: it renders as "9 min", and the cost of
+ * being exact is parsing prose.
+ */
+export function readingMinutes(source: string, wordsPerMinute = 200): number {
+  const words = source.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / wordsPerMinute));
+}
+
 export function formatDate(iso: string | undefined, locale: Locale): string {
   if (!iso) return '';
   return new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', {

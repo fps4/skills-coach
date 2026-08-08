@@ -168,6 +168,63 @@ learner progress attached to them.
 **Only the current block need exist.** Generating whole phases in advance locks in a difficulty
 guess and ignores what actually happened — which is the thing this loop exists to avoid.
 
+## Loading reading material
+
+Separate from the four-step loop, and deliberately: a block is a taught unit, and volume of input is
+not one. A learner reads far more than six lessons a month, on subjects nobody is going to
+hand-author. That is what the reading library is for
+([ADR-0017](../architecture/decisions/0017-reading-is-personalized-parallel-text.md)).
+
+An article is **parallel text**: the same piece in the language being learned and in its original,
+with the interface language switch flipping between them. So the job is scrape → convert to markdown
+→ translate → load, and only the last step touches this API.
+
+Files on disk, one per article *per language*:
+
+```
+articles/
+  multi-region-failover.nl.md
+  multi-region-failover.en.md
+```
+
+Each with frontmatter and then markdown:
+
+```markdown
+---
+title: Failover over meerdere regio's
+summary: Hoe je een uitval van een hele regio opvangt.
+labels: [netwerken, aws]
+source:
+  url: https://aws.amazon.com/blogs/architecture/…
+  site: AWS Architecture Blog
+  publishedAt: 2026-07-22
+estimatedMinutes: 11
+---
+
+Een organisatie die op één regio draait, …
+```
+
+Then:
+
+```sh
+cd api && npm run import:reading -- \
+  --source ~/reading/aws --pack dutch-conversation-nl --learner "$LEARNER" --dry-run
+```
+
+`--dry-run` reports what it found, which single-language articles the switch will not flip, and which
+carry no source url. Drop it to load. Or do the same through the `upsert_reading` MCP tool, which is
+the same service function behind the same capability.
+
+Four things to get right:
+
+- **Name the learner.** Reading is personalized; there is no "everyone" here.
+- **Keep the slug stable.** Loading a slug again replaces that article in place and keeps the
+  learner's read mark and its position in the library — which is how a bad translation gets fixed.
+  A new slug is a new article, arriving unread at the top.
+- **Carry `source.url`.** This surface holds material the product did not write.
+- **Translate, do not summarize.** A parallel text only works when the two sides say the same thing;
+  a Dutch précis beside an English original teaches the learner to read the English.
+
 ## A prompt that works
 
 When driving this with a language model, the shape that holds up:

@@ -31,6 +31,8 @@ export interface RailPack {
   currentBlockId: string | null;
   surfaces?: PackSurface[];
   decks: DeckTotals;
+  /** How many articles sit in this learner's library for the pack (ADR-0017). */
+  reading: number;
 }
 
 interface Props {
@@ -59,6 +61,8 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
     locale,
     currentBlockId: active?.currentBlockId ?? null,
     decks: active?.decks ?? { terms: 0, wordOrder: 0, quiz: 0 },
+    packId: scoped,
+    reading: active?.reading ?? 0,
   };
 
   // A pack the learner has not opened yet is not in `packs`, so its surfaces fall back to the full

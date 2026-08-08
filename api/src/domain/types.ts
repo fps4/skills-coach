@@ -73,7 +73,7 @@ export interface SectionMapEntry {
 }
 
 /** A surface the learner surface can render past the landing page. Closed set — see the schema. */
-export type PackSurface = 'lessons' | 'drills:terms' | 'drills:word-order' | 'quiz' | 'progress';
+export type PackSurface = 'lessons' | 'reading' | 'drills:terms' | 'drills:word-order' | 'quiz' | 'progress';
 
 /**
  * How a pack presents itself, declared and never interpreted here.
@@ -257,6 +257,77 @@ export interface Lesson {
   estimatedMinutes?: number;
   focus?: string;
   sections: Section[];
+}
+
+// ---------------------------------------------------------------------------
+// Reading
+// ---------------------------------------------------------------------------
+
+/**
+ * One language's rendering of an article (ADR-0017).
+ *
+ * An article is a **parallel text**: the same piece, authored in more than one language, and the
+ * learner flips between them. That is why the language lives on the variant rather than on the
+ * article — the article is the thing, a variant is one way of reading it.
+ *
+ * `language` is a BCP-47 tag, matched against the interface locale and the pack's content language.
+ * Nothing here assumes those are `nl` and `en`; a pack teaching Portuguese from Spanish resolves by
+ * exactly the same rule.
+ */
+export interface ArticleBody {
+  language: string;
+  title: string;
+  /** Markdown. Rendered by the viewer — the runtime never parses it. */
+  body: string;
+  /** One or two lines shown in the library list, before the learner opens it. */
+  summary?: string;
+}
+
+/** Where an article came from. Kept on every article: material this is not ours carries its origin. */
+export interface ArticleSource {
+  url?: string;
+  /** The publication, e.g. 'AWS Architecture Blog'. */
+  site?: string;
+  author?: string;
+  publishedAt?: Date;
+}
+
+/**
+ * A reading article: long-form material loaded *for one learner* (ADR-0017).
+ *
+ * Unlike a block, this is not the pack's curriculum — it is the learner's own domain, brought in
+ * because reading about work you actually do is what makes the language stick. So it carries a
+ * `learnerId` the way a learner's own drill item does (ADR-0012), and nobody else ever sees it.
+ *
+ * `labels` are free strings the loader chooses. The runtime groups and filters by them and never
+ * interprets one, exactly as it carries a ramp's dials without reading them.
+ */
+export interface Article {
+  articleId: string;
+  packId: string;
+  learnerId: string;
+  /** Stable within a pack and learner. Re-loading the same slug updates the article in place. */
+  slug: string;
+  labels: string[];
+  /** At least one. Ordered as supplied; resolution is by language, never by position. */
+  bodies: ArticleBody[];
+  source?: ArticleSource;
+  estimatedMinutes?: number;
+  addedAt: Date;
+}
+
+/**
+ * That a learner has read an article.
+ *
+ * Kept apart from the article itself, exactly as drill state is kept apart from the drill item: an
+ * article is content and may be re-loaded, and re-loading a corrected translation must not silently
+ * mark it unread again.
+ */
+export interface ReadingState {
+  learnerId: string;
+  articleId: string;
+  packId: string;
+  readAt: Date;
 }
 
 // ---------------------------------------------------------------------------

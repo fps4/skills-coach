@@ -27,6 +27,7 @@ api/src/
     drill-progress.ts  the stage/streak/mastery machine, shared by all drill kinds
     word-order.ts      order checking, alternative orders, per-chunk marks
     mcq.ts             answer keys: set-equality grading, deterministic option shuffle
+    reading.ts         which language variant a learner is shown, and the library's two filters
     quiz.ts            assembling a sitting from weakness, and scoring one
     grading.ts         what to ask, what counts, what the learner is told
     error-log.ts       counter and status-transition rules
@@ -39,6 +40,8 @@ api/src/
                        untouched by a republish (ADR-0012)
     error-log.ts       the ONE place counters are written — a coach's correction and a
                        wrong answer against a key both go through it (ADR-0014)
+    reading.ts         a learner's own library of articles: parallel text, loaded for one
+                       person, and read state kept apart from the content (ADR-0017)
     quiz.ts            sittings: start, answer, finish. Grading delegates to drills.ts,
                        so a question answered in a sitting and one answered outside it
                        move identical state
@@ -49,6 +52,8 @@ api/src/
   importer/          local markdown/CSV → pack payload → coach API
                      (also `validate-manifests.ts`, the linter CI runs over every
                       committed `packs/*/pack.yaml` — ADR-0008)
+                     `reading-source.ts` / `import-reading.ts` are the same idea for a
+                      library: `<slug>.<lang>.md` files → articles → coach API
 ```
 
 **The important line is `domain/`.** Everything that decides whether an answer is right, whether a
@@ -87,6 +92,7 @@ web/src/
     learner-rail.tsx your packs · the wiki · lessons · the two drills · the quiz · progress
     wiki-filters.tsx the chip rows and search box — writes the query string, filters nothing
     own-words.tsx    the entry form for your own words, inside the word trainer
+    read-toggle.tsx  marking an article read, and putting it back. Never inferred from scrolling
     quiz-runner.tsx  the practice-test surface: practice / exam modes, an optional clock
     quiz-results.tsx score, per-category breakdown, and every question back for review
     ui/option-list.tsx  radio or checkbox options, and the per-question strip

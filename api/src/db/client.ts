@@ -90,6 +90,14 @@ export async function ensureIndexes(db: Db, auditRetentionDays: number): Promise
   await c.quizSessions.createIndex({ learnerId: 1, startedAt: -1 }, { name: 'quiz_by_learner' });
   await c.quizSessions.createIndex({ learnerId: 1, blockId: 1, startedAt: -1 }, { name: 'quiz_by_block' });
 
+  // A learner's library, newest first — the order the reading surface lists in. Every read of it is
+  // already scoped to one learner, so the owner leads the key.
+  await c.articles.createIndex({ learnerId: 1, packId: 1, addedAt: -1 }, { name: 'article_by_owner' });
+  await c.articles.createIndex({ learnerId: 1, labels: 1 }, { name: 'article_by_label' });
+
+  await c.readingState.createIndex({ learnerId: 1, articleId: 1 }, { unique: true, name: 'reading_state_unique' });
+  await c.readingState.createIndex({ learnerId: 1, packId: 1 }, { name: 'reading_state_by_pack' });
+
   // Retention rather than pruning logic — the whole point of the TTL index.
   await c.auditEvents.createIndex(
     { at: 1 },
