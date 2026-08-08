@@ -2,3 +2,7 @@
 node_modules
 package-lock.json
 next-env.d.ts
+
+# The wiki corpus is authored prose, not source. Prettier would reflow paragraphs and rewrite the
+# GFM tables, producing a diff nobody wrote and losing the line breaks the author chose.
+content/wiki

@@ -15,7 +15,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, Library } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -72,6 +72,17 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
     >
       <RailItem href={home} icon={<LayoutGrid className="h-4 w-4" />} active={isActive(home, true)}>
         {t.home}
+      </RailItem>
+
+      {/*
+        The wiki is the platform's, not a pack's — which is why it sits up here with Home rather than
+        in `SURFACES`. Putting it in that registry would add a key to the pack contract
+        (`api/src/domain/types.ts`) that means nothing to a pack and that no pack could opt out of,
+        since non-pack-scoped surfaces always render. ADR-0009 is about what a *pack* declares; this
+        is furniture.
+      */}
+      <RailItem href={`/${locale}/wiki`} icon={<Library className="h-4 w-4" />} active={isActive(`/${locale}/wiki`)}>
+        {t.wiki}
       </RailItem>
 
       {group(offered).map((run, index) => {

@@ -17,6 +17,14 @@ packs/*
 !packs/demo-*/
 content/
 
+# The wiki is the one committed library — public, impersonal reference guides (ADR-0016). The rule
+# above matches a `content/` directory at any depth, so `web/content/` needs the same three-line
+# dance the named packs below use: re-include the directory so git walks it, ignore everything in
+# it again, then un-ignore the one subdirectory that ships. Last match wins.
+!web/content/
+web/content/*
+!web/content/wiki/
+
 # A pack's MANIFEST is product; its blocks are content (ADR-0008). Granted per pack, by name, so
 # the default outcome of dropping a pack into the tree is still that all of it stays out.
 #
