@@ -39,6 +39,16 @@ packs/dutch-conversation-nl/*
 packs/aws-sap-c02/*
 !packs/aws-sap-c02/pack.yaml
 
+# A reading library is content twice over (ADR-0017): somebody else's articles, kept for one
+# learner. The per-pack stanzas above already exclude it — but only while their three lines stay in
+# that order, which the comment above warns about. This does not depend on that ordering, and it
+# applies to a pack added later whose stanza nobody has written yet.
+#
+# Keeping a local copy under `packs/<pack>/reading/` is a reasonable thing to want: the loader reads
+# that shape directly and is idempotent by slug, so it is what you reload from after a restore. This
+# line is what makes keeping it there safe.
+packs/*/reading/
+
 # Tooling caches
 .cache/
 coverage/
