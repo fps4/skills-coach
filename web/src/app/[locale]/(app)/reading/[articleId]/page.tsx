@@ -93,7 +93,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ locale
       </article>
 
       <div className="space-y-3 border-t border-border pt-5">
-        <ReadToggle articleId={article.articleId} readAt={article.readAt} dictionary={dictionary} />
+        <ReadToggle articleId={article.articleId} readAt={article.readAt} library={library} dictionary={dictionary} />
         {article.source?.url ? (
           <p>
             <a
