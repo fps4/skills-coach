@@ -417,10 +417,10 @@ presentation:
   tagline:
     nl: Twintig vragen per keer, gericht op wat je nog mist.
     en: Twenty questions at a time, aimed at what you still miss.
-  # This pack opts *out* of the two language drills and the lesson surface: it has no vocabulary and
-  # no word-order sentences, and its blocks are question banks rather than reading material. Naming
-  # the surfaces is how a pack says so — omitting the key would offer all of them. Progress is not
-  # among them: a pack lands on its own progress, so it is not a surface to declare (ADR-0018).
+  # This pack has no vocabulary and no word-order sentences, so those surfaces would be absent even
+  # with no list here (ADR-0019). It is named anyway, and that is the one thing the list still does:
+  # its blocks are question banks rather than lesson material, so `lessons` is opted *out* on
+  # purpose. Progress is not a surface at all — a pack lands on its own (ADR-0018).
   surfaces: [quiz]
 
 # No `matchArticles:` — nothing here is matched as free text. An mcq is graded by set equality

@@ -6,6 +6,11 @@ date: 2026-08-14
 
 # ADR-0018 — The rail is packs, one level deep
 
+> The shape below stands. What decides whether an item under a pack is *there* changed the same day
+> in [ADR-0019](0019-a-surface-appears-when-the-pack-has-material-for-it.md): a surface the pack has
+> no material for is absent rather than disabled, so the sentence here about offered-but-empty is
+> superseded by that one.
+
 ## Context
 
 [ADR-0009](0009-per-pack-presentation-is-declarative.md) made the rail's *items* declarative: a pack

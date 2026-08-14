@@ -9,8 +9,9 @@
  * "no session" and is sent to sign in rather than rendering a shell around a page that will 401.
  *
  * It also carries what the shell needs to know about the learner's packs — what each one is called,
- * which surfaces it offers and how full its decks are (ADR-0009, ADR-0018). That comes from the
- * progress call this layout was already making, so per-pack chrome costs no extra request.
+ * which surfaces it offers and what material it actually holds (ADR-0009, ADR-0018, ADR-0019). That
+ * comes from the progress call this layout was already making, so per-pack chrome costs no extra
+ * request and no new endpoint.
  */
 
 import { Suspense, type ReactNode } from 'react';
@@ -43,12 +44,16 @@ async function railPacks(): Promise<{ packs: RailPack[]; palettes: Record<string
         icon: entry.pack.presentation?.icon,
         currentBlockId: entry.currentBlock?.blockId ?? null,
         surfaces: entry.pack.presentation?.surfaces,
-        decks: {
+        // Pack-wide totals, which is what these already are: the deck summaries are counted per pack
+        // and per learner, never per block, so what the rail offers cannot flicker as the learner
+        // moves through the program (ADR-0019).
+        material: {
+          blocks: entry.blocks.length,
           terms: entry.decks.terms.total,
           wordOrder: entry.decks.wordOrder.total,
           quiz: entry.decks.quiz.total,
+          reading: entry.reading?.total ?? 0,
         },
-        reading: entry.reading?.total ?? 0,
       })),
       palettes: Object.fromEntries(packs.map((entry) => [entry.pack.packId, entry.pack.presentation?.palette])),
     };
