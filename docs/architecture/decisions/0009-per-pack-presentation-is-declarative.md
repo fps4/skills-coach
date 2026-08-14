@@ -6,6 +6,10 @@ date: 2026-08-03
 
 # ADR-0009 — Per-pack presentation is declarative
 
+> Refined by [ADR-0018](0018-the-rail-is-packs-one-level-deep.md), which sets the rail's shape and
+> retires `progress` as a surface. Everything below still holds; the examples that list `progress`
+> among the surfaces now describe a key the viewer accepts and ignores.
+
 ## Context
 
 The landing page is a grid of tiles, one per pack, and it should stay generic — it is the product's

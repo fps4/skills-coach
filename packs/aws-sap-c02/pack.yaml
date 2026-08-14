@@ -419,8 +419,9 @@ presentation:
     en: Twenty questions at a time, aimed at what you still miss.
   # This pack opts *out* of the two language drills and the lesson surface: it has no vocabulary and
   # no word-order sentences, and its blocks are question banks rather than reading material. Naming
-  # the surfaces is how a pack says so — omitting the key would offer all of them.
-  surfaces: [quiz, progress]
+  # the surfaces is how a pack says so — omitting the key would offer all of them. Progress is not
+  # among them: a pack lands on its own progress, so it is not a surface to declare (ADR-0018).
+  surfaces: [quiz]
 
 # No `matchArticles:` — nothing here is matched as free text. An mcq is graded by set equality
 # against its own key, so tolerant matching has nothing to be tolerant about (ADR-0014).

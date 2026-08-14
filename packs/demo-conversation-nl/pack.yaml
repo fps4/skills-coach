@@ -110,4 +110,6 @@ presentation:
   # is how a pack opts *out* — a pack with no word-order material leaves that entry out and the
   # rail stops offering it. Unlike the two keys above, this set is closed and a typo fails the
   # publish, because a surface the runtime cannot render is the failure the contract prevents.
-  surfaces: [lessons, drills:terms, drills:word-order, progress]
+  # Progress is not in the list: a pack lands on its own progress, so it is not a surface a pack
+  # declares (ADR-0018).
+  surfaces: [lessons, drills:terms, drills:word-order]

@@ -282,6 +282,10 @@ export const sectionKindSchema = z.enum([
  * **Closed, like the section kinds, and for the same reason** (ADR-0004): a surface the runtime
  * cannot render is the failure this contract exists to prevent, so a typo must fail the publish
  * rather than silently hide a rail item. Adding one is a platform change with a renderer behind it.
+ *
+ * `progress` is kept for packs published before ADR-0018, which named it. A pack now lands on its
+ * own progress, so the viewer ignores the key rather than refusing it — retiring a surface must not
+ * fail the next publish of a manifest that was correct when it was written.
  */
 export const packSurfaceSchema = z.enum([
   'lessons',

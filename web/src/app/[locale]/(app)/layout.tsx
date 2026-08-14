@@ -8,9 +8,9 @@
  * indeterminate state for the browser to paint. A token that expired between the two lands here as
  * "no session" and is sent to sign in rather than rendering a shell around a page that will 401.
  *
- * It also carries what the shell needs to know about the learner's packs — which surfaces each one
- * offers and how full its decks are (ADR-0009). That comes from the progress call this layout was
- * already making, so per-pack chrome costs no extra request.
+ * It also carries what the shell needs to know about the learner's packs — what each one is called,
+ * which surfaces it offers and how full its decks are (ADR-0009, ADR-0018). That comes from the
+ * progress call this layout was already making, so per-pack chrome costs no extra request.
  */
 
 import { Suspense, type ReactNode } from 'react';
@@ -39,6 +39,8 @@ async function railPacks(): Promise<{ packs: RailPack[]; palettes: Record<string
     return {
       packs: packs.map((entry) => ({
         packId: entry.pack.packId,
+        title: entry.pack.title,
+        icon: entry.pack.presentation?.icon,
         currentBlockId: entry.currentBlock?.blockId ?? null,
         surfaces: entry.pack.presentation?.surfaces,
         decks: {

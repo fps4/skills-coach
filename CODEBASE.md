@@ -89,7 +89,7 @@ web/src/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
     app-header.tsx   sticky brand header with the accent wordmark, and sign-out
-    learner-rail.tsx your packs · the wiki · lessons · the two drills · the quiz · progress
+    learner-rail.tsx your packs, then what the pack in scope offers — one level, never two
     wiki-filters.tsx the chip rows and search box — writes the query string, filters nothing
     own-words.tsx    the entry form for your own words, inside the word trainer
     read-toggle.tsx  marking an article read, and putting it back. Never inferred from scrolling

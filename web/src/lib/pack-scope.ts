@@ -18,7 +18,6 @@ import {
   Languages,
   MessageCircle,
   Sparkles,
-  BarChart3,
   Cloud,
   Dumbbell,
   ListChecks,
@@ -42,13 +41,22 @@ import type { PackSurface } from '@/lib/types';
 export const PACK_HEADER = 'x-sc-pack';
 
 /**
+ * A surface that hangs under a pack in the rail.
+ *
+ * `progress` is missing on purpose (ADR-0018): it is no longer an item beside the others, it is what
+ * the pack itself lands on. The api still accepts it in a manifest's `surfaces` so packs published
+ * before that change keep publishing — it simply moves nothing.
+ */
+export type RailSurface = Exclude<PackSurface, 'progress'>;
+
+/**
  * Every surface the platform can render, in the order the rail shows them.
  *
  * A pack's declared list is filtered through this, never sorted by it: order is the product's, not
  * the pack's. Declaring surfaces is how a pack opts *out* of one, which is why omitting the key
  * means all of them.
  */
-export const DEFAULT_SURFACES: PackSurface[] = ['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz', 'progress'];
+export const DEFAULT_SURFACES: RailSurface[] = ['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz'];
 
 export interface DeckTotals {
   terms: number;
@@ -70,16 +78,6 @@ export interface SurfaceDef {
   icon: LucideIcon;
   /** A key in the `nav` dictionary — chrome, never pack content (ADR-0005). */
   labelKey: keyof Dictionary['nav'];
-  /** Rendered indented under the surface above it. */
-  sub?: boolean;
-  /**
-   * Belongs to a pack, so it does not exist outside one.
-   *
-   * The landing page is the product's, not any pack's: it lists packs and nothing else. A surface
-   * marked here is absent there — not greyed out, absent — because an item you cannot use and did
-   * not ask for is worse than no item.
-   */
-  packScoped: boolean;
   /**
    * Null disables the item *within* a pack: it is offered, there is simply nothing to practise yet.
    * That is a different statement from not being offered at all, and it reads differently.
@@ -87,33 +85,32 @@ export interface SurfaceDef {
   href: (context: SurfaceContext) => string | null;
 }
 
-export const SURFACES: Record<PackSurface, SurfaceDef> = {
+/**
+ * Every surface belongs to a pack, so every one of these is rendered under a pack and nowhere else
+ * (ADR-0018). Outside a pack there is nothing to show but the packs themselves.
+ */
+export const SURFACES: Record<RailSurface, SurfaceDef> = {
   lessons: {
     icon: Dumbbell,
     labelKey: 'lessons',
-    packScoped: true,
     href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/blocks/${currentBlockId}` : null),
   },
   /**
    * The learner's own library (ADR-0017).
    *
-   * A sub-surface of lessons, and pack-scoped but **not** block-scoped: reading material is loaded
-   * against a pack rather than against whichever block is open, so it does not come and go as the
-   * learner moves through the program. Empty disables rather than hides, like the decks — a library
-   * nobody has loaded anything into yet is offered, it is simply not stocked.
+   * Pack-scoped but **not** block-scoped: reading material is loaded against a pack rather than
+   * against whichever block is open, so it does not come and go as the learner moves through the
+   * program. Empty disables rather than hides, like the decks — a library nobody has loaded anything
+   * into yet is offered, it is simply not stocked.
    */
   reading: {
     icon: Newspaper,
     labelKey: 'reading',
-    sub: true,
-    packScoped: true,
     href: ({ locale, packId, reading }) => (packId && reading > 0 ? `/${locale}/reading?packId=${packId}` : null),
   },
   'drills:terms': {
     icon: Sparkles,
     labelKey: 'words',
-    sub: true,
-    packScoped: true,
     // Offered by the manifest, enabled by the deck: a block with no terms yet disables rather than hides.
     href: ({ locale, currentBlockId, decks }) =>
       currentBlockId && decks.terms > 0 ? `/${locale}/drills/words?blockId=${currentBlockId}` : null,
@@ -121,41 +118,39 @@ export const SURFACES: Record<PackSurface, SurfaceDef> = {
   'drills:word-order': {
     icon: Puzzle,
     labelKey: 'sentences',
-    sub: true,
-    packScoped: true,
     href: ({ locale, currentBlockId, decks }) =>
       currentBlockId && decks.wordOrder > 0 ? `/${locale}/drills/sentences?blockId=${currentBlockId}` : null,
   },
   quiz: {
     icon: ListChecks,
     labelKey: 'quiz',
-    sub: true,
-    packScoped: true,
     href: ({ locale, currentBlockId, decks }) =>
       currentBlockId && decks.quiz > 0 ? `/${locale}/quiz?blockId=${currentBlockId}` : null,
-  },
-  progress: {
-    icon: BarChart3,
-    labelKey: 'progress',
-    // Spans every pack the learner has, so it survives outside one.
-    packScoped: false,
-    href: ({ locale }) => `/${locale}/progress`,
   },
 };
 
 /**
- * Which surfaces the rail shows.
+ * Where a pack lands (ADR-0018).
  *
- * Outside a pack, only what spans packs — the landing page is the product's, not any pack's, and an
- * item you cannot use and did not ask for is worse than no item. Inside one, whatever that pack
- * declares, filtered through the platform's order rather than sorted by the pack's.
+ * Its progress — the decks, the error log, what to do next — because that is what the learner needs
+ * on arriving at a pack they are already working through. The block list stays one click away on the
+ * pack page, which is what the landing tiles link to.
+ */
+export function packLanding(locale: string, packId: string): string {
+  return `/${locale}/progress?packId=${encodeURIComponent(packId)}`;
+}
+
+/**
+ * Which surfaces the rail shows under a pack: whatever that pack declares, filtered through the
+ * platform's order rather than sorted by the pack's.
  *
  * `declared` being undefined means the pack said nothing, which means all of them: a pack opts out
- * of a surface, never in.
+ * of a surface, never in. A key the rail no longer renders — `progress`, which is now the pack's own
+ * landing — is ignored rather than refused, so a manifest written against ADR-0009 still publishes.
  */
-export function visibleSurfaces(packInScope: boolean, declared: PackSurface[] | undefined): PackSurface[] {
-  const offered = declared ?? DEFAULT_SURFACES;
-  return DEFAULT_SURFACES.filter((id) => (SURFACES[id].packScoped ? packInScope && offered.includes(id) : true));
+export function visibleSurfaces(declared: PackSurface[] | undefined): RailSurface[] {
+  const offered: PackSurface[] = declared ?? DEFAULT_SURFACES;
+  return DEFAULT_SURFACES.filter((id) => offered.includes(id));
 }
 
 /** Icons a pack may name for its tile. Unknown keys fall back — losing an icon must not lose a tile. */
@@ -176,8 +171,8 @@ export function packIcon(key: string | undefined): LucideIcon {
 }
 
 /**
- * The pack a path belongs to, or null where the URL does not name one (`/progress`, a session log,
- * the landing page itself — which is generic by design).
+ * The pack a path belongs to, or null where the URL does not name one (a session log, the landing
+ * page itself — which is generic by design).
  *
  * Identifiers carry it: a block is `${packId}.b${order}` and a lesson `${blockId}.l${order}`
  * (`api/src/services/context.ts`), and a packId is slug-shaped with no dots, so the pack is
@@ -194,6 +189,9 @@ export function packIdFromUrl(pathname: string, search?: URLSearchParams | null)
   // An article is `${packId}.r…`, so a URL naming one already carries its pack; the library itself
   // names the pack directly, because it belongs to no block.
   if (head === 'reading') return tail ? packIdFromEntityId(tail) : (search?.get('packId') ?? null);
+  // A pack's landing page (ADR-0018). It names the pack in the query, because progress belongs to a
+  // pack without belonging to any block of it.
+  if (head === 'progress') return search?.get('packId') ?? null;
   // Both of these name their block in the query rather than the path, so that is where the pack is.
   if (head === 'drills' || head === 'quiz') {
     const blockId = search?.get('blockId');

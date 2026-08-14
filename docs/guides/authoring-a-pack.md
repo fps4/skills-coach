@@ -70,7 +70,7 @@ presentation:                # optional — how the pack presents itself past th
   palette: blue
   icon: message-circle
   tagline: { nl: …, en: … }
-  surfaces: [lessons, drills:terms, drills:word-order, progress]
+  surfaces: [lessons, drills:terms, drills:word-order]
 ```
 
 The runtime never interprets a dial. It carries them into the brief, so whoever writes the next
@@ -109,6 +109,11 @@ tiles stay generic; this governs everything after them.
 with no `presentation` at all renders exactly like every pack does today. Leave out
 `drills:word-order` and the rail stops offering it; a surface that *is* offered but whose deck is
 empty renders disabled rather than disappearing.
+
+**`progress` is no longer one of them.** The rail is the learner's packs, and what a pack offers one
+level under it; a pack lands on its own progress, so progress is not an item beside the others
+([ADR-0018](../architecture/decisions/0018-the-rail-is-packs-one-level-deep.md)). The key is still
+accepted — a manifest that names it keeps publishing — and moves nothing. Leave it out of new packs.
 
 ### `sectionMap` replaces, it does not extend
 
