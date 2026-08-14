@@ -3,14 +3,15 @@
 /**
  * The learner rail.
  *
- * The pack tiles, then whatever the pack in scope offers, then progress. Two independent things
- * decide an item (ADR-0009): the manifest's `surfaces` say what this pack *offers* — a pack with no
- * word-order material never shows the puzzle at all — and the live deck counts say whether there is
- * anything to practise *today*. Offered-but-empty renders disabled rather than disappearing, because
- * a rail whose items come and go is harder to learn than one that explains itself.
+ * Two levels, and only two (ADR-0018): a pack, then what that pack offers. The learner's started
+ * packs are the top level — each one named as the pack names itself, landing on its own progress —
+ * and the surfaces of the pack currently in scope sit indented beneath it. Nothing else nests.
  *
- * Outside a pack the rail shows the platform's full set, which is exactly how it looked before a
- * pack could declare anything.
+ * Which surfaces appear is still the two independent gates of ADR-0009: the manifest's `surfaces`
+ * say what this pack *offers* — a pack with no word-order material never shows the puzzle at all —
+ * and the live deck counts say whether there is anything to practise *today*. Offered-but-empty
+ * renders disabled rather than disappearing, because a rail whose items come and go is harder to
+ * learn than one that explains itself.
  */
 
 import Link from 'next/link';
@@ -19,14 +20,19 @@ import { LayoutGrid, Library } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
-import { SURFACES, packIdFromUrl, visibleSurfaces, type DeckTotals } from '@/lib/pack-scope';
+import { SURFACES, packIcon, packIdFromUrl, packLanding, visibleSurfaces, type DeckTotals } from '@/lib/pack-scope';
+import { pickTitle } from '@/lib/text';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { PackSurface } from '@/lib/types';
+import type { PackSurface, TitleText } from '@/lib/types';
 
 /** What the shell knows about one of the learner's packs. */
 export interface RailPack {
   packId: string;
+  /** The pack's own name, which is what the learner sees at the top level. */
+  title: TitleText;
+  /** A key into the icon registry; unknown ones fall back rather than leaving a gap (ADR-0009). */
+  icon?: string;
   /** The block they are working through in that pack, when they have one. */
   currentBlockId: string | null;
   surfaces?: PackSurface[];
@@ -57,18 +63,6 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
   const scoped = packIdFromUrl(pathname, searchParams);
   const active = scoped ? (packs.find((entry) => entry.packId === scoped) ?? null) : null;
 
-  const context = {
-    locale,
-    currentBlockId: active?.currentBlockId ?? null,
-    decks: active?.decks ?? { terms: 0, wordOrder: 0, quiz: 0 },
-    packId: scoped,
-    reading: active?.reading ?? 0,
-  };
-
-  // A pack the learner has not opened yet is not in `packs`, so its surfaces fall back to the full
-  // set: it is a real pack, there is simply no progress for it until opening the page enrols them.
-  const offered = visibleSurfaces(Boolean(scoped), active?.surfaces);
-
   return (
     <nav
       aria-label={t.sections}
@@ -79,70 +73,102 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
       </RailItem>
 
       {/*
-        The wiki is the platform's, not a pack's — which is why it sits up here with Home rather than
-        in `SURFACES`. Putting it in that registry would add a key to the pack contract
-        (`api/src/domain/types.ts`) that means nothing to a pack and that no pack could opt out of,
-        since non-pack-scoped surfaces always render. ADR-0009 is about what a *pack* declares; this
-        is furniture.
+        Only packs the learner has started, because those are the ones this list is fetched from.
+        Choosing a *new* one is the landing page's job, and will be a marketplace of its own before
+        long — a rail that also listed everything on offer would be answering both questions at once.
+      */}
+      {packs.map((pack) => {
+        const landing = packLanding(locale, pack.packId);
+        const inScope = pack.packId === scoped;
+        const Icon = packIcon(pack.icon);
+
+        return (
+          <div key={pack.packId} className="contents">
+            <RailItem
+              href={landing}
+              icon={<Icon className="h-4 w-4" />}
+              active={inScope && isActive(`/${locale}/progress`)}
+              open={inScope}
+            >
+              {/* The pack's own name — localized metadata, resolved here, never translated (ADR-0005). */}
+              {pickTitle(pack.title, locale)}
+            </RailItem>
+
+            {inScope ? <PackSurfaces locale={locale} dictionary={dictionary} pack={pack} isActive={isActive} /> : null}
+          </div>
+        );
+      })}
+
+      {/*
+        The wiki is the platform's, not a pack's, so it sits beside the packs rather than under one.
+        It is on its way to becoming a pack of its own; until it is, this is the one item here that
+        no manifest declares.
       */}
       <RailItem href={`/${locale}/wiki`} icon={<Library className="h-4 w-4" />} active={isActive(`/${locale}/wiki`)}>
         {t.wiki}
       </RailItem>
 
-      {group(offered).map((run, index) => {
-        const items = run.ids.map((id) => {
-          const surface = SURFACES[id];
-          const Icon = surface.icon;
-          const href = surface.href(context);
-          return (
-            <RailItem
-              key={id}
-              sub={run.sub}
-              href={href}
-              icon={<Icon className="h-4 w-4" />}
-              active={href ? isActive(href.split('?')[0] as string) : false}
-            >
-              {t[surface.labelKey]}
-            </RailItem>
-          );
-        });
-
-        return run.sub ? (
-          <div key={index} className="my-0.5 ml-3.5 space-y-0.5 border-l border-border pl-2">
-            {items}
-          </div>
-        ) : (
-          items
-        );
-      })}
-
-      {!context.currentBlockId ? <p className="mt-auto px-2.5 pt-3 text-xs text-muted-foreground">{t.noBlockHint}</p> : null}
+      {!active?.currentBlockId ? <p className="mt-auto px-2.5 pt-3 text-xs text-muted-foreground">{t.noBlockHint}</p> : null}
     </nav>
   );
 }
 
-/** Consecutive sub-surfaces share one indent rule, so they are rendered as a run rather than singly. */
-function group(ids: PackSurface[]): { sub: boolean; ids: PackSurface[] }[] {
-  const runs: { sub: boolean; ids: PackSurface[] }[] = [];
-  for (const id of ids) {
-    const sub = Boolean(SURFACES[id].sub);
-    const last = runs[runs.length - 1];
-    if (last && last.sub === sub) last.ids.push(id);
-    else runs.push({ sub, ids: [id] });
-  }
-  return runs;
+/** What the pack in scope offers, one level under it. */
+function PackSurfaces({
+  locale,
+  dictionary,
+  pack,
+  isActive,
+}: {
+  locale: Locale;
+  dictionary: Dictionary;
+  pack: RailPack;
+  isActive: (href: string, exact?: boolean) => boolean;
+}) {
+  const context = {
+    locale,
+    currentBlockId: pack.currentBlockId,
+    decks: pack.decks,
+    packId: pack.packId,
+    reading: pack.reading,
+  };
+
+  return (
+    <div className="my-0.5 ml-3.5 space-y-0.5 border-l border-border pl-2">
+      {visibleSurfaces(pack.surfaces).map((id) => {
+        const surface = SURFACES[id];
+        const Icon = surface.icon;
+        const href = surface.href(context);
+
+        return (
+          <RailItem
+            key={id}
+            sub
+            href={href}
+            icon={<Icon className="h-4 w-4" />}
+            active={href ? isActive(href.split('?')[0] as string) : false}
+          >
+            {dictionary.nav[surface.labelKey]}
+          </RailItem>
+        );
+      })}
+    </div>
+  );
 }
 
 function RailItem({
   href,
   icon,
   active,
+  open,
   sub,
   children,
 }: {
   href: string | null;
   icon: ReactNode;
   active: boolean;
+  /** The pack this URL is inside, when it is not itself the page on screen. */
+  open?: boolean;
   sub?: boolean;
   children: ReactNode;
 }) {
@@ -164,7 +190,14 @@ function RailItem({
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
-      className={cn(shape, active ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60')}
+      className={cn(
+        shape,
+        active
+          ? 'bg-muted font-medium text-foreground'
+          : open
+            ? 'font-medium text-foreground hover:bg-muted/60'
+            : 'text-muted-foreground hover:bg-muted/60',
+      )}
     >
       {icon}
       <span className="flex-1">{children}</span>

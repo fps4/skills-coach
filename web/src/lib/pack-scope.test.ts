@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SURFACES, SURFACES, packIcon, packIdFromUrl, resolvePalette, visibleSurfaces } from './pack-scope';
+import { DEFAULT_SURFACES, SURFACES, packIcon, packIdFromUrl, packLanding, resolvePalette, visibleSurfaces } from './pack-scope';
 
 const search = (query: string) => new URLSearchParams(query);
 
@@ -43,9 +43,13 @@ describe('packIdFromUrl', () => {
     expect(packIdFromUrl('/nl/reading', search(''))).toBeNull();
   });
 
+  it('reads it off the pack landing page, which names its pack in the query', () => {
+    expect(packIdFromUrl('/nl/progress', search('packId=demo-conversation-nl'))).toBe('demo-conversation-nl');
+  });
+
   it('returns null where the URL names no pack — those surfaces stay generic', () => {
     expect(packIdFromUrl('/nl')).toBeNull();
-    expect(packIdFromUrl('/nl/progress')).toBeNull();
+    expect(packIdFromUrl('/nl/progress', search(''))).toBeNull();
     expect(packIdFromUrl('/nl/sessions/8f14e45f-ceea-467a-9a3f-4d2b5c9a1e77')).toBeNull();
   });
 
@@ -78,8 +82,14 @@ describe('resolvePalette', () => {
 
 describe('surfaces', () => {
   it('offers every surface by default — a pack opts out, never in', () => {
-    expect(DEFAULT_SURFACES).toEqual(['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz', 'progress']);
+    expect(DEFAULT_SURFACES).toEqual(['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz']);
     expect(Object.keys(SURFACES).sort()).toEqual([...DEFAULT_SURFACES].sort());
+  });
+
+  // The pack is the rail item progress hangs off, so it is not an item beside the others (ADR-0018).
+  it('does not carry progress as a surface — a pack lands on it', () => {
+    expect(Object.keys(SURFACES)).not.toContain('progress');
+    expect(packLanding('nl', 'demo-conversation-nl')).toBe('/nl/progress?packId=demo-conversation-nl');
   });
 
   it('disables a drill whose deck is empty rather than hiding it', () => {
@@ -102,8 +112,8 @@ describe('surfaces', () => {
     expect(SURFACES.lessons.href(noBlock)).toBeNull();
     expect(SURFACES['drills:terms'].href(noBlock)).toBeNull();
     expect(SURFACES.quiz.href(noBlock)).toBeNull();
-    // Progress is not block-scoped, so it stays reachable.
-    expect(SURFACES.progress.href(noBlock)).toBe('/nl/progress');
+    // The pack's own landing is not block-scoped, so it stays reachable throughout.
+    expect(packLanding('nl', 'demo')).toBe('/nl/progress?packId=demo');
   });
 
   // Reading belongs to a pack, not to a block (ADR-0017): it survives having no current block, and
@@ -116,30 +126,23 @@ describe('surfaces', () => {
 });
 
 describe('visibleSurfaces', () => {
-  it('shows no pack surfaces at all before a pack is chosen', () => {
-    // The landing page is the product's, not any pack's. Lessons and drills belong to a pack, so
-    // outside one they are absent — not greyed out, absent.
-    expect(visibleSurfaces(false, undefined)).toEqual(['progress']);
-  });
-
-  it('keeps showing them absent even when the learner has packs with material', () => {
-    expect(visibleSurfaces(false, ['lessons', 'drills:terms', 'drills:word-order', 'progress'])).toEqual(['progress']);
-  });
-
-  it('shows everything a pack offers once inside it', () => {
-    expect(visibleSurfaces(true, undefined)).toEqual(DEFAULT_SURFACES);
+  it('shows everything a pack offers when it declares nothing', () => {
+    expect(visibleSurfaces(undefined)).toEqual(DEFAULT_SURFACES);
   });
 
   it('honours a pack that opts out of one', () => {
-    expect(visibleSurfaces(true, ['lessons', 'drills:terms', 'progress'])).toEqual(['lessons', 'drills:terms', 'progress']);
+    expect(visibleSurfaces(['lessons', 'drills:terms'])).toEqual(['lessons', 'drills:terms']);
   });
 
   it('renders in the platform’s order, not the order the pack listed them', () => {
-    expect(visibleSurfaces(true, ['progress', 'drills:word-order', 'lessons'])).toEqual([
-      'lessons',
-      'drills:word-order',
-      'progress',
-    ]);
+    expect(visibleSurfaces(['drills:word-order', 'lessons'])).toEqual(['lessons', 'drills:word-order']);
+  });
+
+  // Packs published against ADR-0009 name it, and the api still accepts it. It moves nothing now
+  // that the pack itself lands on progress, and it must not fail the pack's other surfaces with it.
+  it('ignores a declared progress surface rather than choking on it', () => {
+    expect(visibleSurfaces(['quiz', 'progress'])).toEqual(['quiz']);
+    expect(visibleSurfaces(['progress'])).toEqual([]);
   });
 });
 

@@ -86,7 +86,7 @@ describe('dictionaries', () => {
   it('actually differ — a copied dictionary is an untranslated one', () => {
     const nl = getDictionary('nl');
     const en = getDictionary('en');
-    expect(en.nav.progress).not.toBe(nl.nav.progress);
+    expect(en.nav.lessons).not.toBe(nl.nav.lessons);
     expect(en.progress.errorLog).not.toBe(nl.progress.errorLog);
     expect(en.login.submit).not.toBe(nl.login.submit);
   });
