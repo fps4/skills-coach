@@ -7,11 +7,10 @@
  * packs are the top level — each one named as the pack names itself, landing on its own progress —
  * and the surfaces of the pack currently in scope sit indented beneath it. Nothing else nests.
  *
- * Which surfaces appear is still the two independent gates of ADR-0009: the manifest's `surfaces`
- * say what this pack *offers* — a pack with no word-order material never shows the puzzle at all —
- * and the live deck counts say whether there is anything to practise *today*. Offered-but-empty
- * renders disabled rather than disappearing, because a rail whose items come and go is harder to
- * learn than one that explains itself.
+ * Which surfaces appear is three questions, asked in `lib/pack-scope.ts` and answered nowhere else
+ * (ADR-0019): does the manifest *offer* it, does the pack *have* any material of that kind, and is
+ * there something to open *right now*. The first two decide whether an item exists — a pack with no
+ * questions never shows a practice test — and the third decides whether it is a link or greyed out.
  */
 
 import Link from 'next/link';
@@ -20,7 +19,7 @@ import { LayoutGrid, Library } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
-import { SURFACES, packIcon, packIdFromUrl, packLanding, visibleSurfaces, type DeckTotals } from '@/lib/pack-scope';
+import { SURFACES, packIcon, packIdFromUrl, packLanding, visibleSurfaces, type PackMaterial } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
@@ -35,10 +34,10 @@ export interface RailPack {
   icon?: string;
   /** The block they are working through in that pack, when they have one. */
   currentBlockId: string | null;
+  /** What the manifest offers; undefined means everything (ADR-0009). */
   surfaces?: PackSurface[];
-  decks: DeckTotals;
-  /** How many articles sit in this learner's library for the pack (ADR-0017). */
-  reading: number;
+  /** What the pack actually holds, which is what decides an item is there at all (ADR-0019). */
+  material: PackMaterial;
 }
 
 interface Props {
@@ -125,17 +124,15 @@ function PackSurfaces({
   pack: RailPack;
   isActive: (href: string, exact?: boolean) => boolean;
 }) {
-  const context = {
-    locale,
-    currentBlockId: pack.currentBlockId,
-    decks: pack.decks,
-    packId: pack.packId,
-    reading: pack.reading,
-  };
+  const context = { locale, packId: pack.packId, currentBlockId: pack.currentBlockId };
+  const surfaces = visibleSurfaces(pack.surfaces, pack.material);
+
+  // A pack with nothing under it yet — no blocks, no library — gets no rule and no empty box.
+  if (surfaces.length === 0) return null;
 
   return (
     <div className="my-0.5 ml-3.5 space-y-0.5 border-l border-border pl-2">
-      {visibleSurfaces(pack.surfaces).map((id) => {
+      {surfaces.map((id) => {
         const surface = SURFACES[id];
         const Icon = surface.icon;
         const href = surface.href(context);

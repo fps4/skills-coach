@@ -6,9 +6,12 @@ date: 2026-08-03
 
 # ADR-0009 — Per-pack presentation is declarative
 
-> Refined by [ADR-0018](0018-the-rail-is-packs-one-level-deep.md), which sets the rail's shape and
-> retires `progress` as a surface. Everything below still holds; the examples that list `progress`
-> among the surfaces now describe a key the viewer accepts and ignores.
+> Refined twice. [ADR-0018](0018-the-rail-is-packs-one-level-deep.md) sets the rail's shape and
+> retires `progress` as a surface — the examples that list it among the surfaces now describe a key
+> the viewer accepts and ignores. [ADR-0019](0019-a-surface-appears-when-the-pack-has-material-for-it.md)
+> replaces "offered-but-empty renders disabled" with "a pack shows what it has": a surface the pack
+> has no material for is absent, and disabled is kept for material that exists but cannot be opened
+> yet. The declaration, the registry, and resolution-by-key are unchanged.
 
 ## Context
 

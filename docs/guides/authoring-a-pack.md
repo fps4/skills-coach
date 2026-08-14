@@ -107,8 +107,13 @@ tiles stay generic; this governs everything after them.
 
 **Omitting `surfaces` means all of them.** A pack opts *out* of a surface, never in, so a manifest
 with no `presentation` at all renders exactly like every pack does today. Leave out
-`drills:word-order` and the rail stops offering it; a surface that *is* offered but whose deck is
-empty renders disabled rather than disappearing.
+`drills:word-order` and the rail stops offering it.
+
+**You only have to declare what you want hidden, not what you have not got.** A surface the pack has
+no material for is absent whether or not the manifest names it — no word-order sentences, no
+Zinspuzzel ([ADR-0019](../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)).
+Declaring is how you hide a surface you *do* have material for. A surface with material but nothing
+to open yet — a block still being written — renders disabled rather than disappearing.
 
 **`progress` is no longer one of them.** The rail is the learner's packs, and what a pack offers one
 level under it; a pack lands on its own progress, so progress is not an item beside the others

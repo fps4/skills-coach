@@ -58,20 +58,29 @@ export type RailSurface = Exclude<PackSurface, 'progress'>;
  */
 export const DEFAULT_SURFACES: RailSurface[] = ['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz'];
 
-export interface DeckTotals {
+/**
+ * What a pack *has*, counted across the whole pack rather than the block in front of the learner
+ * (ADR-0019).
+ *
+ * Every count here is pack-wide and learner-scoped, which is exactly how the progress payload
+ * already reports them — so a surface's presence is a property of the pack, not of where the learner
+ * happens to be in it, and the rail does not reshuffle as they move from block to block.
+ */
+export interface PackMaterial {
+  /** Blocks of this pack the learner can see; a pack whose blocks are all someone else's has none (ADR-0015). */
+  blocks: number;
   terms: number;
   wordOrder: number;
   quiz: number;
+  /** Articles in this learner's library for the pack (ADR-0017). */
+  reading: number;
 }
 
+/** Where a surface opens from. Only ever built inside a pack, so `packId` is known. */
 export interface SurfaceContext {
   locale: string;
+  packId: string;
   currentBlockId: string | null;
-  decks: DeckTotals;
-  /** The pack in scope, for surfaces that belong to a pack but not to a block. */
-  packId: string | null;
-  /** How many articles are in the learner's library for this pack (ADR-0017). */
-  reading: number;
 }
 
 export interface SurfaceDef {
@@ -79,8 +88,18 @@ export interface SurfaceDef {
   /** A key in the `nav` dictionary — chrome, never pack content (ADR-0005). */
   labelKey: keyof Dictionary['nav'];
   /**
-   * Null disables the item *within* a pack: it is offered, there is simply nothing to practise yet.
-   * That is a different statement from not being offered at all, and it reads differently.
+   * Does this pack do this at all?
+   *
+   * The presence gate (ADR-0019). False means the pack has no material of this kind anywhere, so
+   * the item is absent rather than greyed out — a certification pack has no vocabulary and never
+   * should have shown a word trainer. Adding a surface means answering this question here and
+   * nowhere else.
+   */
+  has: (material: PackMaterial) => boolean;
+  /**
+   * Where it opens *right now*, or null when there is material but nothing to open yet — a pack
+   * whose next block has not been published, say. That renders disabled, which is a different
+   * statement from "this pack does not do this" and reads differently.
    */
   href: (context: SurfaceContext) => string | null;
 }
@@ -88,11 +107,16 @@ export interface SurfaceDef {
 /**
  * Every surface belongs to a pack, so every one of these is rendered under a pack and nowhere else
  * (ADR-0018). Outside a pack there is nothing to show but the packs themselves.
+ *
+ * Each entry answers the same two questions — *does this pack have any?* and *where does it open?* —
+ * and a new surface is a new entry, never a branch somewhere else. That is the whole extension
+ * point: nothing here or downstream knows which pack it is looking at.
  */
 export const SURFACES: Record<RailSurface, SurfaceDef> = {
   lessons: {
     icon: Dumbbell,
     labelKey: 'lessons',
+    has: ({ blocks }) => blocks > 0,
     href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/blocks/${currentBlockId}` : null),
   },
   /**
@@ -100,32 +124,31 @@ export const SURFACES: Record<RailSurface, SurfaceDef> = {
    *
    * Pack-scoped but **not** block-scoped: reading material is loaded against a pack rather than
    * against whichever block is open, so it does not come and go as the learner moves through the
-   * program. Empty disables rather than hides, like the decks — a library nobody has loaded anything
-   * into yet is offered, it is simply not stocked.
+   * program. A pack nobody has loaded an article into does not read.
    */
   reading: {
     icon: Newspaper,
     labelKey: 'reading',
-    href: ({ locale, packId, reading }) => (packId && reading > 0 ? `/${locale}/reading?packId=${packId}` : null),
+    has: ({ reading }) => reading > 0,
+    href: ({ locale, packId }) => `/${locale}/reading?packId=${encodeURIComponent(packId)}`,
   },
   'drills:terms': {
     icon: Sparkles,
     labelKey: 'words',
-    // Offered by the manifest, enabled by the deck: a block with no terms yet disables rather than hides.
-    href: ({ locale, currentBlockId, decks }) =>
-      currentBlockId && decks.terms > 0 ? `/${locale}/drills/words?blockId=${currentBlockId}` : null,
+    has: ({ terms }) => terms > 0,
+    href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/drills/words?blockId=${currentBlockId}` : null),
   },
   'drills:word-order': {
     icon: Puzzle,
     labelKey: 'sentences',
-    href: ({ locale, currentBlockId, decks }) =>
-      currentBlockId && decks.wordOrder > 0 ? `/${locale}/drills/sentences?blockId=${currentBlockId}` : null,
+    has: ({ wordOrder }) => wordOrder > 0,
+    href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/drills/sentences?blockId=${currentBlockId}` : null),
   },
   quiz: {
     icon: ListChecks,
     labelKey: 'quiz',
-    href: ({ locale, currentBlockId, decks }) =>
-      currentBlockId && decks.quiz > 0 ? `/${locale}/quiz?blockId=${currentBlockId}` : null,
+    has: ({ quiz }) => quiz > 0,
+    href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/quiz?blockId=${currentBlockId}` : null),
   },
 };
 
@@ -141,16 +164,20 @@ export function packLanding(locale: string, packId: string): string {
 }
 
 /**
- * Which surfaces the rail shows under a pack: whatever that pack declares, filtered through the
- * platform's order rather than sorted by the pack's.
+ * Which surfaces the rail shows under a pack: the ones it *offers* and actually *has*, in the
+ * platform's order rather than the order the pack listed them (ADR-0019).
  *
- * `declared` being undefined means the pack said nothing, which means all of them: a pack opts out
- * of a surface, never in. A key the rail no longer renders — `progress`, which is now the pack's own
- * landing — is ignored rather than refused, so a manifest written against ADR-0009 still publishes.
+ * `declared` being undefined means the pack said nothing, which means all of them: a manifest opts
+ * out of a surface, never in. A key the rail no longer renders — `progress`, which is now the pack's
+ * own landing — is ignored rather than refused, so a manifest written against ADR-0009 still
+ * publishes.
+ *
+ * Declaring is intent and the material is reality; an item needs both. It is why a pack that simply
+ * has no questions never shows a practice test, without its author having to remember to say so.
  */
-export function visibleSurfaces(declared: PackSurface[] | undefined): RailSurface[] {
+export function visibleSurfaces(declared: PackSurface[] | undefined, material: PackMaterial): RailSurface[] {
   const offered: PackSurface[] = declared ?? DEFAULT_SURFACES;
-  return DEFAULT_SURFACES.filter((id) => offered.includes(id));
+  return DEFAULT_SURFACES.filter((id) => offered.includes(id) && SURFACES[id].has(material));
 }
 
 /** Icons a pack may name for its tile. Unknown keys fall back — losing an icon must not lose a tile. */

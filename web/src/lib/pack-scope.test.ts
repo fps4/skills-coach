@@ -8,7 +8,16 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SURFACES, SURFACES, packIcon, packIdFromUrl, packLanding, resolvePalette, visibleSurfaces } from './pack-scope';
+import {
+  DEFAULT_SURFACES,
+  SURFACES,
+  packIcon,
+  packIdFromUrl,
+  packLanding,
+  resolvePalette,
+  visibleSurfaces,
+  type PackMaterial,
+} from './pack-scope';
 
 const search = (query: string) => new URLSearchParams(query);
 
@@ -17,8 +26,16 @@ const context = (overrides: Partial<Parameters<(typeof SURFACES)['lessons']['hre
   locale: 'nl',
   currentBlockId: 'demo.b1',
   packId: 'demo',
-  decks: { terms: 20, wordOrder: 20, quiz: 20 },
-  reading: 0,
+  ...overrides,
+});
+
+/** A pack that has some of everything, so a test can zero out only what it is about. */
+const material = (overrides: Partial<PackMaterial> = {}): PackMaterial => ({
+  blocks: 3,
+  terms: 20,
+  wordOrder: 20,
+  quiz: 20,
+  reading: 4,
   ...overrides,
 });
 
@@ -92,18 +109,18 @@ describe('surfaces', () => {
     expect(packLanding('nl', 'demo-conversation-nl')).toBe('/nl/progress?packId=demo-conversation-nl');
   });
 
-  it('disables a drill whose deck is empty rather than hiding it', () => {
-    const empty = context({ decks: { terms: 20, wordOrder: 0, quiz: 20 } });
+  // Every surface answers this, and nothing else in the app asks the question — a new surface is a
+  // new entry here, never a branch in the rail (ADR-0019).
+  it('asks each surface whether the pack has any of it', () => {
+    for (const id of DEFAULT_SURFACES) {
+      expect(SURFACES[id].has(material())).toBe(true);
+    }
 
-    expect(SURFACES['drills:terms'].href(empty)).toBe('/nl/drills/words?blockId=demo.b1');
-    expect(SURFACES['drills:word-order'].href(empty)).toBeNull();
-    expect(SURFACES.quiz.href(empty)).toBe('/nl/quiz?blockId=demo.b1');
-  });
-
-  // A language pack has no questions and a certification pack has no word-order sentences; both
-  // disable the surface they do not fill rather than hiding it.
-  it('disables the quiz for a pack with no questions', () => {
-    expect(SURFACES.quiz.href(context({ decks: { terms: 20, wordOrder: 20, quiz: 0 } }))).toBeNull();
+    expect(SURFACES.quiz.has(material({ quiz: 0 }))).toBe(false);
+    expect(SURFACES['drills:terms'].has(material({ terms: 0 }))).toBe(false);
+    expect(SURFACES['drills:word-order'].has(material({ wordOrder: 0 }))).toBe(false);
+    expect(SURFACES.reading.has(material({ reading: 0 }))).toBe(false);
+    expect(SURFACES.lessons.has(material({ blocks: 0 }))).toBe(false);
   });
 
   it('disables everything block-scoped before the learner has a block', () => {
@@ -116,33 +133,47 @@ describe('surfaces', () => {
     expect(packLanding('nl', 'demo')).toBe('/nl/progress?packId=demo');
   });
 
-  // Reading belongs to a pack, not to a block (ADR-0017): it survives having no current block, and
-  // is disabled by an empty library rather than by where the learner is in the program.
-  it('keeps reading reachable without a block, and disables it when the library is empty', () => {
-    expect(SURFACES.reading.href(context({ currentBlockId: null, reading: 4 }))).toBe('/nl/reading?packId=demo');
-    expect(SURFACES.reading.href(context({ reading: 0 }))).toBeNull();
-    expect(SURFACES.reading.href(context({ packId: null, reading: 4 }))).toBeNull();
+  // Reading belongs to a pack, not to a block (ADR-0017), so it opens whether or not the learner has
+  // one. Whether it is there at all is `has`, above.
+  it('keeps reading reachable without a block', () => {
+    expect(SURFACES.reading.href(context({ currentBlockId: null }))).toBe('/nl/reading?packId=demo');
   });
 });
 
 describe('visibleSurfaces', () => {
-  it('shows everything a pack offers when it declares nothing', () => {
-    expect(visibleSurfaces(undefined)).toEqual(DEFAULT_SURFACES);
+  it('shows everything a pack offers and has when it declares nothing', () => {
+    expect(visibleSurfaces(undefined, material())).toEqual(DEFAULT_SURFACES);
   });
 
   it('honours a pack that opts out of one', () => {
-    expect(visibleSurfaces(['lessons', 'drills:terms'])).toEqual(['lessons', 'drills:terms']);
+    expect(visibleSurfaces(['lessons', 'drills:terms'], material())).toEqual(['lessons', 'drills:terms']);
   });
 
   it('renders in the platform’s order, not the order the pack listed them', () => {
-    expect(visibleSurfaces(['drills:word-order', 'lessons'])).toEqual(['lessons', 'drills:word-order']);
+    expect(visibleSurfaces(['drills:word-order', 'lessons'], material())).toEqual(['lessons', 'drills:word-order']);
+  });
+
+  // The rule that retires the dead item: a language program that never quizzes stops showing a
+  // practice test without its author having to declare anything (ADR-0019).
+  it('hides a surface the pack has no material for, declared or not', () => {
+    expect(visibleSurfaces(undefined, material({ quiz: 0 }))).toEqual([
+      'lessons',
+      'reading',
+      'drills:terms',
+      'drills:word-order',
+    ]);
+    expect(visibleSurfaces(['lessons', 'quiz'], material({ quiz: 0 }))).toEqual(['lessons']);
+  });
+
+  it('leaves a pack with nothing in it yet with nothing under it', () => {
+    expect(visibleSurfaces(undefined, material({ blocks: 0, terms: 0, wordOrder: 0, quiz: 0, reading: 0 }))).toEqual([]);
   });
 
   // Packs published against ADR-0009 name it, and the api still accepts it. It moves nothing now
   // that the pack itself lands on progress, and it must not fail the pack's other surfaces with it.
   it('ignores a declared progress surface rather than choking on it', () => {
-    expect(visibleSurfaces(['quiz', 'progress'])).toEqual(['quiz']);
-    expect(visibleSurfaces(['progress'])).toEqual([]);
+    expect(visibleSurfaces(['quiz', 'progress'], material())).toEqual(['quiz']);
+    expect(visibleSurfaces(['progress'], material())).toEqual([]);
   });
 });
 
