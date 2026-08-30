@@ -24,9 +24,11 @@ import {
   labelFacets,
   pickBody,
   readingCounts,
+  sourceFacets,
   type LabelFacet,
   type ReadingCounts,
   type ReadingFilter,
+  type SourceFacet,
 } from '../domain/reading.js';
 import type { Article, ArticleSource } from '../domain/types.js';
 import type { ArticleDoc } from '../db/collections.js';
@@ -71,6 +73,8 @@ export interface Library {
   articles: ArticleSummary[];
   /** Every label in the learner's library for this pack, not merely the filtered subset. */
   labels: LabelFacet[];
+  /** Every publication the library holds, on the same terms as the labels. */
+  sources: SourceFacet[];
   counts: ReadingCounts;
 }
 
@@ -139,9 +143,9 @@ function summarize(
 /**
  * The library: what to read next, and what the filters would give.
  *
- * The label facets are computed over the learner's *whole* library rather than the filtered view,
+ * Both sets of facets are computed over the learner's *whole* library rather than the filtered view,
  * because a filter that hides its own way out is a trap — narrow to one label and every other label
- * would vanish along with the articles carrying it.
+ * would vanish along with the articles carrying it, and the same goes for narrowing to one source.
  */
 export async function library(
   ctx: ServiceContext,
@@ -167,6 +171,7 @@ export async function library(
   return {
     articles,
     labels: labelFacets(refs, isRead),
+    sources: sourceFacets(refs, isRead),
     counts: readingCounts(refs, isRead),
   };
 }

@@ -162,6 +162,12 @@ export interface LabelFacet {
   unread: number;
 }
 
+export interface SourceFacet {
+  site: string;
+  total: number;
+  unread: number;
+}
+
 export interface ReadingCounts {
   total: number;
   unread: number;
@@ -171,6 +177,8 @@ export interface Library {
   articles: ArticleSummary[];
   /** Every label in the library, not merely the filtered subset — a filter must show its way out. */
   labels: LabelFacet[];
+  /** Every publication in the library, on the same terms as the labels. */
+  sources: SourceFacet[];
   counts: ReadingCounts;
 }
 

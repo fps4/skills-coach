@@ -27,7 +27,7 @@ api/src/
     drill-progress.ts  the stage/streak/mastery machine, shared by all drill kinds
     word-order.ts      order checking, alternative orders, per-chunk marks
     mcq.ts             answer keys: set-equality grading, deterministic option shuffle
-    reading.ts         which language variant a learner is shown, and the library's two filters
+    reading.ts         which language variant a learner is shown, and the library's three filters
     quiz.ts            assembling a sitting from weakness, and scoring one
     grading.ts         what to ask, what counts, what the learner is told
     error-log.ts       counter and status-transition rules

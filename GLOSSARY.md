@@ -61,6 +61,12 @@ language. This is the *only* place in the product where the language switch chan
 **Label** — a free string an article carries, chosen by whoever loaded it. The library filters and
 groups by labels; the runtime never interprets one, exactly as it never interprets a ramp's dials.
 
+**Source** — where an article was published: a URL, and the `site` that names the publication. The
+library groups and filters by `site` alongside labels, but on the opposite quantifier — an article
+carries many labels and needs *all* of the ones asked for, and has one source and needs to match
+*any* of them. An article with no `site` is not filed under a placeholder; it simply has no source
+facet.
+
 **Content language** — the language a pack's material is written in. Distinct from **UI language**,
 the language of the interface chrome. A Dutch pack renders as Dutch whether the interface is set to
 Dutch or English. See [ADR-0005](docs/architecture/decisions/0005-ui-language-vs-content-language.md).

@@ -55,7 +55,12 @@ language.**
    it from scrolling.
 
 5. **Labels are free strings the loader chooses.** The runtime groups and filters by them and never
-   interprets one, the way it carries a ramp's dials without reading them.
+   interprets one, the way it carries a ramp's dials without reading them. An article's
+   `source.site` is the second such axis and is treated the same way — uninterpreted, but grouped
+   and filtered on, because "everything from this publication" is a thing a learner means. The two
+   axes take opposite quantifiers: *every* label named, but *any* of the sources named, since an
+   article carries several labels and has one source. Both sets of facets are computed over the
+   whole library rather than the filtered view, so a filter always shows its own way out.
 
 6. **`reading` is a declared pack surface**, in the same closed set as the others
    ([ADR-0009](0009-per-pack-presentation-is-declarative.md)). A pack opts out by naming its

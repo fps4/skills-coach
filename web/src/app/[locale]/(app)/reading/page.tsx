@@ -1,16 +1,17 @@
 /**
  * The reading library (ADR-0017).
  *
- * A queue, not an archive: unread first and by default, newest at the top, with the two filters the
- * surface promises — read/unread and label — held in the URL rather than in component state. That
- * is what makes a filtered view something a learner can bookmark, share with themselves on another
- * device, and come back to.
+ * A queue, not an archive: unread first and by default, newest at the top, with the three filters
+ * the surface promises — read/unread, label and source — held in the URL rather than in component
+ * state. That is what makes a filtered view something a learner can bookmark, share with themselves
+ * on another device, and come back to.
  *
  * The filters are links rather than a client component on purpose. There is nothing here that needs
  * to happen without a round trip, and the api is already applying the filters — resolving them
  * twice, once on each side, is how the two end up disagreeing.
  */
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { BookOpenCheck, Clock, ExternalLink, Newspaper } from 'lucide-react';
@@ -29,18 +30,39 @@ export const dynamic = 'force-dynamic';
 interface Search {
   packId?: string;
   labels?: string;
+  sources?: string;
   unread?: string;
 }
 
-/** A filter link that keeps whatever the other filter is currently set to. */
+/** A filter link that keeps whatever the other filters are currently set to. */
 function filterHref(locale: Locale, search: Search, changes: Partial<Search>): string {
   const next = { ...search, ...changes };
   return `/${locale}/reading${query({
     packId: next.packId,
     labels: next.labels,
+    sources: next.sources,
     // `true` is the default the api applies, so it is left out of the URL rather than restated.
     unread: next.unread === 'false' ? 'false' : undefined,
   })}`;
+}
+
+/**
+ * One filter pill. A link, not a button — the filters live in the URL (see the module note), and
+ * the three rows would otherwise repeat this styling three times over.
+ */
+function FilterLink({ href, active, children }: { href: string; active: boolean; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? 'true' : undefined}
+      className={cn(
+        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+        active ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:text-foreground',
+      )}
+    >
+      {children}
+    </Link>
+  );
 }
 
 function ArticleCard({
@@ -120,10 +142,12 @@ export default async function ReadingPage({
   const dictionary = getDictionary(locale);
   const t = dictionary.reading;
   const selected = search.labels?.split(',').filter(Boolean) ?? [];
+  const selectedSources = search.sources?.split(',').filter(Boolean) ?? [];
 
   const library = await api<Library>(
     `/api/v1/packs/${search.packId}/reading${query({
       labels: search.labels,
+      sources: search.sources,
       unread: search.unread,
       // Reading is the one surface where the interface language selects content (ADR-0017).
       language: locale,
@@ -152,56 +176,61 @@ export default async function ReadingPage({
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={filterHref(locale, search, { unread: unreadOnly ? 'false' : 'true' })}
-              className={cn(
-                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                unreadOnly
-                  ? 'border-primary/40 bg-primary/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:text-foreground',
-              )}
-            >
+            <FilterLink href={filterHref(locale, search, { unread: unreadOnly ? 'false' : 'true' })} active={unreadOnly}>
               {unreadOnly ? t.unreadOnly : t.showRead}
-            </Link>
+            </FilterLink>
 
             <span className="mx-1 h-4 w-px bg-border" aria-hidden />
 
-            <Link
-              href={filterHref(locale, search, { labels: undefined })}
-              className={cn(
-                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                selected.length === 0
-                  ? 'border-primary/40 bg-primary/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:text-foreground',
-              )}
-            >
+            <FilterLink href={filterHref(locale, search, { labels: undefined })} active={selected.length === 0}>
               {t.allLabels}
-            </Link>
+            </FilterLink>
 
             {library.labels.map((facet) => {
               const active = selected.includes(facet.label);
               return (
-                <Link
+                <FilterLink
                   key={facet.label}
                   href={filterHref(locale, search, { labels: active ? undefined : facet.label })}
-                  className={cn(
-                    'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                    active
-                      ? 'border-primary/40 bg-primary/10 text-foreground'
-                      : 'border-border text-muted-foreground hover:text-foreground',
-                  )}
+                  active={active}
                 >
                   {facet.label}
                   <span className="ml-1.5 tabular-nums text-muted-foreground">{unreadOnly ? facet.unread : facet.total}</span>
-                </Link>
+                </FilterLink>
               );
             })}
           </div>
 
+          {/* A row of its own, and only once there is a choice to make: with everything from one
+              publication the filter would be a single pill that does nothing. */}
+          {library.sources.length > 1 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <FilterLink href={filterHref(locale, search, { sources: undefined })} active={selectedSources.length === 0}>
+                {t.allSources}
+              </FilterLink>
+
+              {library.sources.map((facet) => {
+                const active = selectedSources.includes(facet.site);
+                return (
+                  <FilterLink
+                    key={facet.site}
+                    href={filterHref(locale, search, { sources: active ? undefined : facet.site })}
+                    active={active}
+                  >
+                    {facet.site}
+                    <span className="ml-1.5 tabular-nums text-muted-foreground">{unreadOnly ? facet.unread : facet.total}</span>
+                  </FilterLink>
+                );
+              })}
+            </div>
+          ) : null}
+
           {library.articles.length === 0 ? (
             <Card>
               <CardContent className="space-y-2 p-8 text-center">
-                <p className="text-sm text-muted-foreground">{selected.length > 0 ? t.noMatch : t.allRead}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selected.length > 0 || selectedSources.length > 0 ? t.noMatch : t.allRead}
+                </p>
                 {unreadOnly ? (
                   <Link
                     href={filterHref(locale, search, { unread: 'false' })}

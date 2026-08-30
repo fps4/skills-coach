@@ -65,7 +65,7 @@ reach another's work.
 | POST | `/blocks/:blockId/terms` | `drill:curate` | Add a word of your own to this block's deck → `201` |
 | GET | `/blocks/:blockId/terms` | `drill:curate` | The words you added to this block |
 | DELETE | `/terms/:drillItemId` | `drill:curate` | Remove one of your words, and its progress → `204` |
-| GET | `/packs/:packId/reading` | `lesson:read` | Your reading library for this pack. `?labels`, `?unread`, `?language` |
+| GET | `/packs/:packId/reading` | `lesson:read` | Your reading library for this pack. `?labels`, `?sources`, `?unread`, `?language` |
 | GET | `/reading/:articleId` | `lesson:read` | One article, in the resolved language. `?language` |
 | POST | `/reading/:articleId/read` | `reading:track` | `{ read: boolean }` — mark read, or put it back |
 | GET | `/progress` | `progress:read` | Overview, or one pack with `?packId` |
@@ -178,7 +178,7 @@ what the pack itself no longer defines.
 
 ### `GET /packs/:packId/reading`
 
-`?labels=a,b` · `?unread=true|false` · `?language=nl`
+`?labels=a,b` · `?sources=a,b` · `?unread=true|false` · `?language=nl`
 
 The learner's own library ([ADR-0017](../architecture/decisions/0017-reading-is-personalized-parallel-text.md)).
 
@@ -197,16 +197,23 @@ The learner's own library ([ADR-0017](../architecture/decisions/0017-reading-is-
     "languages": ["nl", "en"]
   }],
   "labels": [{ "label": "netwerken", "total": 6, "unread": 4 }],
+  "sources": [{ "site": "AWS Architecture Blog", "total": 5, "unread": 3 }],
   "counts": { "total": 12, "unread": 9 }
 }
 ```
 
-Three things this contract commits to:
+Four things this contract commits to:
 
 - **Unread by default.** `unread=false` brings read articles back; nothing is ever deleted by being
   read. `POST /reading/:articleId/read` with `{ "read": false }` puts one back.
 - **`labels` narrows** — an article must carry *every* label named. The facets describe the whole
   library rather than the filtered view, so a filter always shows its own way out.
+- **`sources` matches any** — an article must come from *one of* the publications named. The
+  opposite quantifier to `labels`, because an article carries several labels but has only one
+  source: asking for two sources the way `labels` asks for two labels would always return nothing.
+  An article with no `source.site` has no facet and drops out of any source-filtered view. All
+  three filters compose by intersection, and the `sources` facets cover the whole library for the
+  same reason the label ones do.
 - **The api resolves the language, not the surface.** `language` (defaulting to the learner's
   `uiLanguage`) picks the variant: exact tag, then same base language, then the pack's
   `contentLanguage`, then whatever exists. `inRequestedLanguage: false` says it fell back, so the

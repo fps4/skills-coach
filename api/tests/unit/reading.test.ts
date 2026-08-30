@@ -1,5 +1,5 @@
 /**
- * Reading rules — language resolution and the two filters (ADR-0017).
+ * Reading rules — language resolution and the three filters (ADR-0017).
  *
  * The language tests are the load-bearing ones. Reading is the single surface where the interface
  * language changes *content*, so the order it resolves in is a product decision, not a detail.
@@ -14,6 +14,7 @@ import {
   matchBody,
   pickBody,
   readingCounts,
+  sourceFacets,
 } from '../../src/domain/reading.js';
 import type { Article, ArticleBody } from '../../src/domain/types.js';
 
@@ -148,6 +149,62 @@ describe('filterArticles', () => {
 
   it('orders newest first, so a fresh load lands at the top', () => {
     expect(filterArticles(articles, {}, readNone).map((entry) => entry.slug)).toEqual(['b', 'c', 'a']);
+  });
+
+  it('widens across sources: any of them, because an article has only one', () => {
+    const mixed = [
+      article('a', { source: { site: 'AG Connect' } }),
+      article('b', { source: { site: 'AWS Architecture Blog' } }),
+      article('c', { source: { site: 'AG Connect' } }),
+    ];
+    const both = filterArticles(mixed, { sources: ['AG Connect', 'AWS Architecture Blog'] }, readNone);
+    expect(both).toHaveLength(3);
+    expect(filterArticles(mixed, { sources: ['AG Connect'] }, readNone).map((e) => e.slug)).toEqual(['a', 'c']);
+  });
+
+  it('drops an article with no source out of a source-filtered view', () => {
+    const mixed = [article('a', { source: { site: 'AG Connect' } }), article('b')];
+    expect(filterArticles(mixed, { sources: ['AG Connect'] }, readNone).map((e) => e.slug)).toEqual(['a']);
+  });
+
+  it('composes the filters by intersection, not by whichever was set last', () => {
+    const mixed = [
+      article('a', { labels: ['security'], source: { site: 'AG Connect' } }),
+      article('b', { labels: ['security'], source: { site: 'AWS Architecture Blog' } }),
+      article('c', { labels: ['netwerken'], source: { site: 'AG Connect' } }),
+    ];
+    const narrowed = filterArticles(mixed, { labels: ['security'], sources: ['AG Connect'] }, readNone);
+    expect(narrowed.map((entry) => entry.slug)).toEqual(['a']);
+  });
+});
+
+describe('sourceFacets', () => {
+  const articles = [
+    article('a', { source: { site: 'AG Connect' } }),
+    article('b', { source: { site: 'AG Connect' } }),
+    article('c', { source: { site: 'AWS Architecture Blog' } }),
+  ];
+
+  it('counts what each publication holds', () => {
+    expect(sourceFacets(articles, readNone)).toEqual([
+      { site: 'AG Connect', total: 2, unread: 2 },
+      { site: 'AWS Architecture Blog', total: 1, unread: 1 },
+    ]);
+  });
+
+  it('leaves an article with no publication out rather than inventing a bucket for it', () => {
+    expect(sourceFacets([article('a'), article('b', { source: {} })], readNone)).toEqual([]);
+  });
+
+  it('keeps a publication with nothing unread rather than hiding it', () => {
+    const facets = sourceFacets(articles, readAll);
+    expect(facets).toHaveLength(2);
+    expect(facets.every((facet) => facet.unread === 0)).toBe(true);
+  });
+
+  it('puts what has most unread first, so the list says where to go next', () => {
+    const read = new Set(['pack-1.rowner.a', 'pack-1.rowner.b']);
+    expect(sourceFacets(articles, (id) => read.has(id))[0]?.site).toBe('AWS Architecture Blog');
   });
 });
 

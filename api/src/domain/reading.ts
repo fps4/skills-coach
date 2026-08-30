@@ -1,9 +1,9 @@
 /**
- * Reading: which language a learner is shown, and what the two filters mean (ADR-0017).
+ * Reading: which language a learner is shown, and what the three filters mean (ADR-0017).
  *
- * Pure, like every other module here. The library surface is two filters over a list and one
- * language decision per article, and all three are rules worth pinning in tests rather than
- * discovering in a component.
+ * Pure, like every other module here. The library surface is three filters over a list — read state,
+ * label, source — and one language decision per article, and all of them are rules worth pinning in
+ * tests rather than discovering in a component.
  */
 
 import type { ArticleBody } from './types.js';
@@ -20,6 +20,8 @@ export interface ArticleRef {
   slug: string;
   labels: string[];
   addedAt: Date;
+  /** Only the publication is needed here — the filter groups by where a piece came from. */
+  source?: { site?: string };
 }
 
 /**
@@ -85,9 +87,9 @@ export interface LabelFacet {
 /**
  * The label filter's options, with what each one would yield.
  *
- * Both counts are carried because the two filters compose: a learner looking at unread articles
- * needs to know a label has none left, and a label that reads `0` is more useful than a label that
- * has silently disappeared.
+ * Both counts are carried because the filters compose: a learner looking at unread articles needs
+ * to know a label has none left, and a label that reads `0` is more useful than a label that has
+ * silently disappeared.
  *
  * Sorted by how much unread material sits behind them, then alphabetically — the list is a place to
  * go next, so the label with something waiting belongs at the top.
@@ -114,20 +116,66 @@ export function labelFacets(
   );
 }
 
+export interface SourceFacet {
+  site: string;
+  total: number;
+  unread: number;
+}
+
+/**
+ * The source filter's options — which publications a library holds, and how much sits behind each.
+ *
+ * Sorted like the labels are, for the same reason: the list is a place to go next, so whatever has
+ * the most unread material belongs at the top.
+ *
+ * An article with no `source.site` is left out rather than bucketed under a placeholder. A facet
+ * exists to be clicked, and "unknown" is not a publication a learner would ever mean to choose —
+ * it would collect everything hand-loaded and read as if it were one more feed.
+ */
+export function sourceFacets(
+  articles: Pick<ArticleRef, 'articleId' | 'source'>[],
+  isRead: (articleId: string) => boolean,
+): SourceFacet[] {
+  const counts = new Map<string, SourceFacet>();
+
+  for (const article of articles) {
+    const site = article.source?.site?.trim();
+    if (!site) continue;
+    const facet = counts.get(site) ?? { site, total: 0, unread: 0 };
+    facet.total += 1;
+    if (!isRead(article.articleId)) facet.unread += 1;
+    counts.set(site, facet);
+  }
+
+  return [...counts.values()].sort((a, b) => b.unread - a.unread || b.total - a.total || a.site.localeCompare(b.site));
+}
+
 export interface ReadingFilter {
   /** An article must carry **every** label named here. Narrowing, not widening. */
   labels?: string[];
+  /**
+   * An article must come from **one of** the publications named here.
+   *
+   * The opposite quantifier to `labels`, and deliberately so: labels are tags, an article carries
+   * several, and asking for two means wanting both. A source is single-valued — asking for two the
+   * same way would always yield nothing. So this reads "from any of these", which is what a learner
+   * pinning a library down to a couple of feeds actually wants.
+   */
+  sources?: string[];
   /** The surface's default. `false` shows everything, read and unread alike. */
   unreadOnly?: boolean;
 }
 
 /**
- * Apply the two filters, newest first.
+ * Apply the three filters, newest first.
  *
  * Unread-by-default is the rule the whole surface is built on: a library where finished articles
  * keep their place stops being a queue and becomes an archive, and nothing in it says what to read
  * next. Read articles are never removed — the filter is a view, and `unreadOnly: false` brings them
  * all back.
+ *
+ * The filters compose by intersection: a learner asking for unread security pieces from AG Connect
+ * means all three at once.
  */
 export function filterArticles<T extends ArticleRef>(
   articles: T[],
@@ -135,11 +183,15 @@ export function filterArticles<T extends ArticleRef>(
   isRead: (articleId: string) => boolean,
 ): T[] {
   const wanted = filter.labels ?? [];
+  const sites = filter.sources ?? [];
   const unreadOnly = filter.unreadOnly ?? true;
 
   return articles
     .filter((article) => {
       if (unreadOnly && isRead(article.articleId)) return false;
+      // An article with no source cannot satisfy a source filter, so it drops out of a narrowed
+      // view — the same way one missing a label does.
+      if (sites.length > 0 && !sites.includes(article.source?.site?.trim() ?? '')) return false;
       const carried = new Set(article.labels);
       return wanted.every((label) => carried.has(label));
     })

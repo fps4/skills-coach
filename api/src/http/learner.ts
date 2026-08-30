@@ -45,29 +45,34 @@ const drillQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),
 });
 
+/** A comma-separated query parameter as the list it stands for. Empty means absent, not "none". */
+const commaList = z
+  .string()
+  .optional()
+  .transform((value) => {
+    const entries = value
+      ? value
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+      : [];
+    return entries.length > 0 ? entries : undefined;
+  });
+
 /**
- * The library's two filters, plus which language to be served in.
+ * The library's three filters, plus which language to be served in.
  *
- * `labels` arrives comma-separated because it is a URL, and `unread` defaults to true because that
- * is what the surface defaults to — the query string and the screen say the same thing, so a
- * bookmarked link reproduces what the learner was looking at.
+ * `labels` and `sources` arrive comma-separated because this is a URL, and `unread` defaults to true
+ * because that is what the surface defaults to — the query string and the screen say the same thing,
+ * so a bookmarked link reproduces what the learner was looking at.
  *
  * `language` is optional: absent, the learner's own interface language is used. It is a parameter
  * at all because reading is the one surface where language selects *content* (ADR-0017), and the
  * caller — a page rendered under `/en/…` — knows that better than the stored profile does.
  */
 const readingQuerySchema = z.object({
-  labels: z
-    .string()
-    .optional()
-    .transform((value) =>
-      value
-        ? value
-            .split(',')
-            .map((label) => label.trim())
-            .filter(Boolean)
-        : undefined,
-    ),
+  labels: commaList,
+  sources: commaList,
   unread: z
     .enum(['true', 'false'])
     .optional()
@@ -153,12 +158,12 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
   app.get('/api/v1/packs/:packId/reading', async (request) => {
     const learner = await caller(request, 'lesson:read');
     const { packId } = request.params as { packId: string };
-    const { labels, unread, language } = readingQuerySchema.parse(request.query);
+    const { labels, sources, unread, language } = readingQuerySchema.parse(request.query);
     return reading.library(
       ctx,
       learner.learnerId,
       packId,
-      { labels, unreadOnly: unread },
+      { labels, sources, unreadOnly: unread },
       language ?? learner.uiLanguage,
     );
   });

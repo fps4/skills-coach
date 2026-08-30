@@ -151,7 +151,7 @@ describeIfMongo('the reading library', () => {
     expect(guessed.statusCode).toBe(404);
   });
 
-  // --- the two filters ------------------------------------------------------
+  // --- the three filters ----------------------------------------------------
 
   it('shows only unread by default, and brings a read article back on request', async () => {
     await load([bilingual('failover'), bilingual('graviton')]);
@@ -197,6 +197,46 @@ describeIfMongo('the reading library', () => {
 
     const both = (await library('?labels=netwerken,compute')).json();
     expect(both.articles).toEqual([]);
+  });
+
+  it('narrows by source, and keeps every source on offer while narrowed', async () => {
+    await load([
+      { ...bilingual('failover'), source: { site: 'Example Blog' } },
+      { ...bilingual('kamervragen'), source: { site: 'AG Connect' } },
+      { ...bilingual('datalek'), source: { site: 'AG Connect' } },
+    ]);
+
+    const filtered = (await library('?sources=AG%20Connect')).json();
+    expect(filtered.articles.map((article: { slug: string }) => article.slug).sort()).toEqual([
+      'datalek',
+      'kamervragen',
+    ]);
+    // Same promise the labels make: narrowing must not hide the way back out.
+    expect(filtered.sources).toEqual([
+      { site: 'AG Connect', total: 2, unread: 2 },
+      { site: 'Example Blog', total: 1, unread: 1 },
+    ]);
+  });
+
+  it('takes any of the sources asked for, since an article only ever has one', async () => {
+    await load([
+      { ...bilingual('failover'), source: { site: 'Example Blog' } },
+      { ...bilingual('kamervragen'), source: { site: 'AG Connect' } },
+    ]);
+
+    const both = (await library('?sources=AG%20Connect,Example%20Blog')).json();
+    expect(both.articles).toHaveLength(2);
+  });
+
+  it('composes the source filter with the label filter', async () => {
+    await load([
+      { ...bilingual('failover', ['security']), source: { site: 'Example Blog' } },
+      { ...bilingual('kamervragen', ['security']), source: { site: 'AG Connect' } },
+      { ...bilingual('datalek', ['netwerken']), source: { site: 'AG Connect' } },
+    ]);
+
+    const narrowed = (await library('?sources=AG%20Connect&labels=security')).json();
+    expect(narrowed.articles.map((article: { slug: string }) => article.slug)).toEqual(['kamervragen']);
   });
 
   // --- language -------------------------------------------------------------
