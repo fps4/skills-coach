@@ -7,6 +7,9 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 
 - [`product/vision.md`](product/vision.md) — the problem, who it is for, what is explicitly not in scope
 - [`product/prd/0001-dutch-conversation-coach.md`](product/prd/0001-dutch-conversation-coach.md) — the first pack, and what M0 must do
+- [`product/surfaces/`](product/surfaces/README.md) — **one spec per function**, each complete enough
+  to rebuild that function: the Woordtrainer, the Zinspuzzel, the Oefentoets, the reading library,
+  the lesson reader, the session log, progress and the rail, and the wiki
 
 ## Architecture — how it is built
 
@@ -27,6 +30,15 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0008](architecture/decisions/0008-a-packs-manifest-is-product.md) | A pack's manifest is product; its blocks are content |
 | [0009](architecture/decisions/0009-per-pack-presentation-is-declarative.md) | A pack declares how it presents itself; the viewer resolves it |
 | [0010](architecture/decisions/0010-mcp-is-a-second-transport.md) | MCP is a second transport over the same services, hand-written |
+| [0011](architecture/decisions/0011-sessions-renew-where-cookies-can-be-written.md) | Sessions renew where cookies can be written |
+| [0012](architecture/decisions/0012-a-learner-may-add-to-their-own-deck.md) | A learner may add words to their own deck |
+| [0013](architecture/decisions/0013-nightly-backups-run-from-the-host.md) | Nightly backups run from the host |
+| [0014](architecture/decisions/0014-an-authored-answer-key-may-write-the-error-log.md) | An authored answer key may write the error log |
+| [0015](architecture/decisions/0015-a-block-may-be-owned-by-a-learner.md) | A block may be owned by a learner |
+| [0016](architecture/decisions/0016-the-reference-library-ships-with-the-code.md) | The reference library ships with the code |
+| [0017](architecture/decisions/0017-reading-is-personalized-parallel-text.md) | Reading is personalized parallel text; the interface language selects the variant |
+| [0018](architecture/decisions/0018-the-rail-is-packs-one-level-deep.md) | The rail is packs, one level deep; a pack lands on its progress |
+| [0019](architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md) | A surface appears when the pack has material for it |
 
 ## Reference
 

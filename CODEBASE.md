@@ -3,6 +3,11 @@
 Orientation for humans and agents. Read [`GLOSSARY.md`](GLOSSARY.md) first for what the domain terms
 mean, then this for where they live.
 
+For what each function of the product actually *does* — the Woordtrainer's streak machine, the
+quiz's selection rule, the reading library's filters — see
+[`docs/product/surfaces/`](docs/product/surfaces/README.md). One file per function, each written to
+be enough to rebuild it.
+
 ## Two packages, no workspace
 
 `api/` and `web/` each have their own `package.json` and lockfile and are built by their own

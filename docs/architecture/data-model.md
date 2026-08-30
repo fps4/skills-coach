@@ -23,6 +23,8 @@ lesson          demo-conversation-nl.b1.l2           blockId + order
 drill item      demo-conversation-nl.b1.d.00250fd6   blockId + hash(kind|term|sentence|stem)
   added by a learner
                 demo-conversation-nl.b1.ua1f3c9e2.00250fd6
+article         dutch-conversation-nl.r8f14e45f.multi-region-failover
+                                                     packId + hash(learnerId) + slug
 ```
 
 For a question the hashed key is its **stem**, so rewording a distractor or fixing a typo in an
@@ -47,7 +49,8 @@ Events (submissions, corrections) get random ids: each is a new thing that happe
 that has an identity.
 
 Derived keys: `enrollment = learnerId:packId`, `drillState = learnerId:drillItemId`,
-`errorLog = learnerId:packId:category`, `blockReview = blockId:learnerId`.
+`errorLog = learnerId:packId:category`, `blockReview = blockId:learnerId`,
+`readingState = learnerId:articleId`.
 
 ## Collections
 
@@ -59,6 +62,7 @@ Derived keys: `enrollment = learnerId:packId`, `drillState = learnerId:drillItem
 | `blocks` | deterministic | `(packId, learnerId, order)` unique · `(packId, status)` |
 | `lessons` | deterministic | `(blockId, order)` unique · `packId` |
 | `drillItems` | content hash | `(blockId, lessonOrder)` · `packId` · `(learnerId, blockId)` sparse |
+| `articles` | deterministic | `(learnerId, packId, addedAt desc)` · `(learnerId, labels)` |
 
 A block's position is `(pack, owner, order)`. A missing `learnerId` indexes as null, which is what
 lets a pack-wide block 1 and one learner's block 1 coexist under a single unique key. This is the one
@@ -74,6 +78,19 @@ read once, drill items are scheduled independently and forever. A vocabulary sec
 lesson *and* contributes term items — and because ids are content-derived, a term listed in both
 places collapses to one item.
 
+`articles` is content, but content owned by one learner
+([ADR-0017](decisions/0017-reading-is-personalized-parallel-text.md)): every read is scoped by
+`learnerId` in the query filter itself, so another learner's article is *not found* rather than
+forbidden. An article holds `bodies: ArticleBody[]` — one authored variant per language, which is
+what makes it parallel text — plus free `labels` and an optional `source` (`url`, `site`, `author`,
+`publishedAt`). Both `labels` and `source.site` are filter and facet axes on the library, and the
+runtime interprets neither. Keying on the slug is what makes loading idempotent: re-importing a
+corrected translation updates the article in place and keeps the learner's read mark, which lives
+elsewhere.
+
+The list endpoint never reads the bodies' markdown — it projects titles and summaries only, since
+the text is most of the document and none of it is shown on a library screen.
+
 ### Learner state
 
 | Collection | Key | Notable indexes |
@@ -82,6 +99,7 @@ places collapses to one item.
 | `enrollments` | derived | `(learnerId, packId)` unique |
 | `drillState` | derived | `(learnerId, drillItemId)` unique · `(learnerId, blockId)` |
 | `attempts` | random, append-only | `(learnerId, at)` · `(drillItemId, at)` |
+| `readingState` | derived | `(learnerId, articleId)` unique · `(learnerId, packId)` |
 
 `learners` is keyed on the token's `sub` and holds no credentials
 ([ADR-0002](decisions/0002-identity-service-as-authentication-engine.md)): display name, UI language,
@@ -98,6 +116,11 @@ written before the distinction existed, where `learnerId` still answered both.
 `drillState` is the spaced-repetition state: `stage`, `streak`, `stage1Cleared`, `stage2Cleared`,
 `mastered`, plus attempt counters. `attempts` is the append-only record behind it, including whether
 the learner overrode a rejection.
+
+`readingState` is to `articles` what `drillState` is to `drillItems`, and split off for the same
+reason: an article is content and gets re-loaded, and a corrected translation must not arrive as
+something unread. There is no document for "not yet read" — its absence *is* unread — so marking an
+article unread again deletes the row rather than writing a flag.
 
 ### The coaching loop
 
