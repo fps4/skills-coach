@@ -52,7 +52,10 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
     setError(null);
     setExpired(false);
     try {
-      const page = await clientApi<DeckPage>(`/v1/drills${query({ blockId, kind: 'term', stage, limit: 40 })}`);
+      // The API's maximum, so a round is the *whole* rotation wherever the deck fits in one.
+      // Asking for less put an arbitrary number on screen beside the deck's real one — "1 van 40"
+      // next to "0/44" — and the two had no relationship a learner could work out.
+      const page = await clientApi<DeckPage>(`/v1/drills${query({ blockId, kind: 'term', stage, limit: 100 })}`);
       setDeck(page);
       setSummary(page.summary);
       setIndex(0);
