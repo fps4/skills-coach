@@ -126,8 +126,12 @@ export function DeckProgress({ summary, dictionary }: { summary: DeckSummary; di
   return (
     <div className="mt-6 border-t border-border pt-4">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
+        {/* Both counters against the deck, so every number on this screen is out of the same total. */}
         <span>
-          {t.unlocked}: <span className="tabular-nums">{summary.stage1Cleared}</span>
+          {t.unlocked}:{' '}
+          <span className="tabular-nums">
+            {summary.stage1Cleared}/{summary.total}
+          </span>
         </span>
         <span>
           {dictionary.block.mastered}:{' '}

@@ -161,6 +161,32 @@ describeIfMongo('drills', () => {
     expect(summary).toMatchObject({ total: 4, stage1Cleared: 1, stage2Unlocked: 1, mastered: 0 });
   });
 
+  /**
+   * What the surface's position indicator is made of.
+   *
+   * It shows "word N of `items.length`" beside meters counting out of `summary.total`, so the two
+   * have to be reconcilable on screen. They are, by this identity — and the surface asks for the
+   * API maximum precisely so the batch is the whole rotation rather than a page size that happens
+   * to sit near the deck's real count.
+   */
+  it('serves every unmastered item, so the round plus what is mastered is the whole deck', async () => {
+    const fresh = await fetchDrills();
+    expect(fresh.items).toHaveLength(fresh.summary.total! - fresh.summary.mastered!);
+
+    // Master one word outright: two correct at stage 1, then two at stage 2.
+    const item = await findTerm('ingewikkeld');
+    await attempt(item.drillItemId, { stage: 1, given: 'complicated' });
+    await attempt(item.drillItemId, { stage: 1, given: 'complicated' });
+    await attempt(item.drillItemId, { stage: 2, given: 'ingewikkeld' });
+    await attempt(item.drillItemId, { stage: 2, given: 'ingewikkeld' });
+
+    const after = await fetchDrills();
+    expect(after.summary.mastered).toBe(1);
+    expect(after.items).toHaveLength(after.summary.total! - after.summary.mastered!);
+    // The deck's own total never moves — mastering something does not shrink the deck it is in.
+    expect(after.summary.total).toBe(fresh.summary.total);
+  });
+
   it('resets only the scope it is given, and refuses an unscoped reset', async () => {
     const item = await findTerm('ingewikkeld');
     await attempt(item.drillItemId, { stage: 1, given: 'complicated' });

@@ -111,7 +111,7 @@ collapsed, first letter capitalised. That is also how `alternative` is rendered.
 Identical to the word trainer, with `kind=word-order`:
 
 ```http
-GET  /api/v1/drills?blockId=…&kind=word-order&stage=1|2&limit=40
+GET  /api/v1/drills?blockId=…&kind=word-order&stage=1|2&limit=100
 POST /api/v1/drills/:drillItemId/attempts   { stage, given: string[], override? }
 POST /api/v1/drills/reset                   { blockId | packId }
 ```
@@ -127,7 +127,7 @@ The prompt adds `bank`, `leadCue` and `tip` to the shared shape; the result adds
 Zinstrainer                                     [⇄ Volgorde 2]  [↺ Reset]
 Tik de delen in de juiste volgorde.
 ┌──────────────────────────────────────────────────────────────────────┐
-│ Zin 3 van 20 · Reeks 1/2         begin met «Morgen»   [ Volgorde 1 ] │
+│ Zin 3 van 18 · Reeks 1/2         begin met «Morgen»   [ Volgorde 1 ] │
 │                                                                      │
 │ Tomorrow I'm going to the dentist.        ← the meaning, not the answer │
 │                                                                      │
@@ -152,11 +152,11 @@ Behaviour the rebuild must keep:
 - **After a verdict the tiles freeze** — no taking or putting back — and the built row turns into the
   per-chunk marks.
 - **Check is disabled on an empty sentence**; the override is not.
-- **Position in the round is shown above the prompt** — *"Zin 3 van 20"*, counting through the batch
-  currently loaded. The same line the [word trainer](word-trainer.md) carries, and for the same
-  reason: mastering a sentence takes four correct answers across two orders, so the `beheerst` meter
-  sits at `0/n` for a whole first pass and reads as if nothing is being counted. A fresh batch
-  restarts the count, because a new batch is a new round.
+- **Position in the round is shown above the prompt** — *"Zin 3 van 18"*, out of what is still to
+  master. The same line the [word trainer](word-trainer.md) carries, and for the same reason:
+  mastering a sentence takes four correct answers across two orders, so the `beheerst` meter sits at
+  `0/n` for a whole first pass and reads as if nothing is being counted. The surface asks for the
+  API maximum so the round is the whole rotation, and **round + mastered = total** holds on screen.
 - `lang={contentLanguage}` on every chunk and on the lead cue. The prompt is the translation and
   carries no `lang` override.
 - Meters, reset, direction switch, stale-session prompt: as the word trainer.

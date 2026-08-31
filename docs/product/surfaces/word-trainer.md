@@ -130,7 +130,7 @@ the prompt leaves the server. An unmasked hint would make the spelling drill fre
 
 ### Rotation and ordering
 
-`GET /drills` returns a batch (default 20, max 100; the surface asks for 40) ordered
+`GET /drills` returns a batch (default 20, max 100; **the surface asks for the maximum**) ordered
 **least-practised first** — `progress.attempts` ascending, then by id for stability. A session works
 through the deck rather than re-showing favourites. Reaching the end of a batch fetches a fresh one;
 items that were answered wrong come back in it.
@@ -138,7 +138,7 @@ items that were answered wrong come back in it.
 ## API
 
 ```http
-GET  /api/v1/drills?blockId=…&kind=term&stage=1|2&limit=40    → DeckPage
+GET  /api/v1/drills?blockId=…&kind=term&stage=1|2&limit=100   → DeckPage
 POST /api/v1/drills/:drillItemId/attempts                     → AttemptResult
 POST /api/v1/drills/reset            { blockId | packId }     → { reset: n }
 POST /api/v1/blocks/:blockId/terms   { term, translation, example? }  → 201 { term }
@@ -184,7 +184,7 @@ everything is not a thing this endpoint will do by omission.
 Woordtrainer                                    [⇄ Richting 2]  [↺ Reset]
 Typ de vertaling. Twee keer goed achter elkaar en het woord is klaar.
 ┌──────────────────────────────────────────────────────────────────────┐
-│ Woord 3 van 40 · Reeks 1/2                           [ Richting 1 ]  │
+│ Woord 3 van 44 · Reeks 1/2                           [ Richting 1 ]  │
 │                                                                      │
 │ de doorlooptijd                          ← lang=contentLanguage      │
 │ De doorlooptijd is…                      ← hint, only once asked     │
@@ -193,7 +193,7 @@ Typ de vertaling. Twee keer goed achter elkaar en het woord is klaar.
 │ └──────────────────────────────────────┘                             │
 │ [ Nakijken ]  [ Hint ]                                               │
 │ ──────────────────────────────────────────────────────────────────── │
-│ Vrijgespeeld: 45                 Beheerst: 15/120                    │
+│ Vrijgespeeld: 45/120             Beheerst: 15/120                    │
 │ ▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░  ← stage1Cleared                            │
 │ ▓▓░░░░░░░░░░░░░░░░░░░░░░  ← mastered (success tone)                  │
 │ ▸ Eigen woord toevoegen                                              │
@@ -213,11 +213,18 @@ Behaviour the rebuild must keep:
   shown. Refusing to submit it would be the page deciding the verdict.
 - **The override is offered regardless of the box**, because overriding is a claim about the
   grading, not about the text in it.
-- **Position in the round is shown above the prompt** — *"Woord 3 van 40"*, counting through the
-  batch currently loaded. It is the one "where am I" the meters below cannot give: mastering a word
-  takes four correct answers across two directions, so `mastered` legitimately sits at `0/n` for a
-  whole first pass, which reads exactly like nothing is being counted. Reaching the end of a batch
-  fetches a fresh one and the count restarts, because a new batch is a new round.
+- **Position in the round is shown above the prompt** — *"Woord 3 van 44"*. It is the one "where am
+  I" the meters below cannot give: mastering a word takes four correct answers across two
+  directions, so `mastered` legitimately sits at `0/n` for a whole first pass, which reads exactly
+  like nothing is being counted.
+- **Every number on the screen is out of the same deck.** The surface asks for the API maximum, so
+  the round *is* the whole rotation wherever a deck fits in one batch — and then the position's
+  denominator is the deck's own count rather than a page size that happens to sit near it. Asking
+  for less put an arbitrary number beside a real one (*"1 van 40"* over *"beheerst: 0/44"*) with no
+  relationship a learner could work out. Both footer counters carry `/total` for the same reason.
+
+  Past 100 unmastered items the round is genuinely a subset, and the count restarts on the next
+  batch. What keeps that honest is the arithmetic: **round + mastered = total**, always.
 - **The meters move on every answer**, without refetching the deck. They are held beside the deck in
   their own state and patched from the attempt's before/after progress. An override re-grades, so
   what it moves *from* is the first verdict rather than the deck's stale copy.
