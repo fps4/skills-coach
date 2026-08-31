@@ -15,7 +15,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutGrid, Library } from 'lucide-react';
+import { HardDriveDownload, LayoutGrid, Library } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -105,6 +105,19 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
       */}
       <RailItem href={`/${locale}/wiki`} icon={<Library className="h-4 w-4" />} active={isActive(`/${locale}/wiki`)}>
         {t.wiki}
+      </RailItem>
+
+      {/*
+        Beside the packs for the opposite reason the wiki is: the wiki belongs to no pack, and this
+        belongs to *every* pack at once. A learner's archive spans everything they have touched, so
+        filing it under one of them would be filing it under the wrong one.
+      */}
+      <RailItem
+        href={`/${locale}/archive`}
+        icon={<HardDriveDownload className="h-4 w-4" />}
+        active={isActive(`/${locale}/archive`)}
+      >
+        {t.yourData}
       </RailItem>
 
       {!active?.currentBlockId ? <p className="mt-auto px-2.5 pt-3 text-xs text-muted-foreground">{t.noBlockHint}</p> : null}

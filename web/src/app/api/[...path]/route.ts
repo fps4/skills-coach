@@ -50,9 +50,15 @@ async function proxy(request: NextRequest, path: string[]): Promise<NextResponse
   });
 
   const text = await response.text();
+  // `content-disposition` is forwarded so a download keeps the filename the API chose. Without it
+  // the browser names the file after the route, and an archive lands as `import` or `v1`.
+  const disposition = response.headers.get('content-disposition');
   return new NextResponse(text || null, {
     status: response.status,
-    headers: { 'content-type': response.headers.get('content-type') ?? 'application/json' },
+    headers: {
+      'content-type': response.headers.get('content-type') ?? 'application/json',
+      ...(disposition ? { 'content-disposition': disposition } : {}),
+    },
   });
 }
 

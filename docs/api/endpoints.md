@@ -17,7 +17,7 @@ Every request carries `Authorization: Bearer <token>` issued by identity-service
 
 | Role | Capabilities |
 |---|---|
-| `learner` | `lesson:read` `drill:practice` `drill:curate` `reading:track` `submission:write` `progress:read` |
+| `learner` | `lesson:read` `drill:practice` `drill:curate` `reading:track` `submission:write` `progress:read` `progress:restore` |
 | `coach` | `lesson:read` `pack:publish` `submission:read-all` `correction:write` `review:write` |
 
 An unrecognised role grants nothing and is logged. An absent `roles` claim is treated as `learner`.
@@ -69,6 +69,8 @@ reach another's work.
 | GET | `/reading/:articleId` | `lesson:read` | One article, in the resolved language. `?language` |
 | POST | `/reading/:articleId/read` | `reading:track` | `{ read: boolean }` — mark read, or put it back |
 | GET | `/progress` | `progress:read` | Overview, or one pack with `?packId` |
+| GET | `/archive` | `progress:read` | Everything about you, as a JSON attachment |
+| POST | `/archive/import` | `progress:restore` | Put an archive back. `?dryRun=true` reports and writes nothing |
 
 ### `GET /drills`
 
@@ -115,6 +117,57 @@ Returns the verdict, the expected answer, `acceptedAlso` (every form that would 
 
 `otherValidOrder: true` with `correct: false` means the learner built the *other* correct order —
 good material, wrong round. Requesting stage 2 before stage 1 is cleared is a `400`.
+
+### `GET /archive` and `POST /archive/import`
+
+The learner's portable archive ([ADR-0020](../architecture/decisions/0020-a-learner-can-take-their-progress-with-them.md)).
+`GET` returns the whole file as `attachment; filename="skills-coach-YYYY-MM-DD.json"`.
+
+```jsonc
+{
+  "kind": "skills-coach.learner-archive",
+  "version": 1,
+  "exportedAt": "2026-08-31T09:12:04.318Z",
+  "packs": [{ "packId": "aws-sap-c02", "version": 7 }],
+  "learner": { "uiLanguage": "nl", "profile": { "domain": "integration architecture" } },
+  "drillState": [{
+    "item": { "pack": "aws-sap-c02", "block": 1, "owned": false,
+              "kind": "term", "digest": "00250fd6b17e", "own": false },
+    "progress": { "stage": 2, "streak": 1, "stage1Cleared": true, "stage2Cleared": false,
+                  "mastered": false, "attempts": 6, "correct": 4 },
+    "updatedAt": "2026-08-30T20:11:00.000Z"
+  }],
+  "ownTerms": [], "attempts": [], "submissions": [], "corrections": [],
+  "errorLog": [], "blockReviews": [], "quizSessions": [], "articles": []
+}
+```
+
+**References, not identifiers.** Several ids embed a hash of the `learnerId`, which is a
+`randomUUID()` per identity subject — so the file carries what an id is made of and the import
+re-derives it under whoever is importing. That is what makes a move to another deployment work.
+A drill item's **content digest** travels; its text never does, so a learner's file holds no pack
+material.
+
+`POST /archive/import` returns a report rather than the data:
+
+```jsonc
+{
+  "dryRun": true,
+  "archive": { "version": 1, "exportedAt": "2026-08-31T09:12:04.318Z" },
+  "packs": [{ "packId": "aws-sap-c02", "archived": 7, "live": 9 }],
+  "sections": { "drillState": { "applied": 44, "unchanged": 0, "unresolved": 3 }, "…": "…" },
+  "examples": [{ "section": "drillState", "ref": "aws-sap-c02/p1/pab12cd34ef56",
+                 "why": "no such drill item on this system" }]
+}
+```
+
+**Merge never demotes**: the further-along side wins, taken whole, and counters are maxed rather than
+summed. There is no replace mode. A reference to material this system does not have is reported as
+unresolved and skipped, never invented.
+
+`400` for a file that is not an archive, a `version` this build cannot read, or a malformed row —
+and in every case **nothing is applied**, because nobody can tell which half of a half-applied
+archive landed. `403` for a coach token: this is a learner surface.
 
 ### `POST /quiz/sessions`
 
