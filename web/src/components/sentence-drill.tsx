@@ -159,8 +159,15 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
       {current && prompt ? (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Position in the round being worked through — the same line the Woordtrainer carries,
+                and for the same reason: mastery needs four correct answers per sentence, so the
+                meters below sit at zero through a whole first pass. */}
             <p className="text-xs text-muted-foreground">
-              {t.streak} {current.progress.streak}/2
+              <span className="tabular-nums">
+                {t.sentence} {index + 1} {dictionary.common.of} {deck?.items.length ?? 0}
+              </span>
+              {' · '}
+              {t.streak} <span className="tabular-nums">{current.progress.streak}/2</span>
             </p>
             <div className="flex flex-wrap items-center gap-2">
               {prompt.leadCue ? (

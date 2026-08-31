@@ -78,7 +78,9 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
 
   const check = async (override = false): Promise<void> => {
     if (!current) return;
-    if (!override && answer.trim().length === 0) return;
+    // An empty answer goes to the server like any other. "I don't know" is a thing a learner needs
+    // to be able to say, and deciding here that it is wrong would be grading on the page.
+    //
     // An override grades a second time, so what it moves from is the first verdict, not the deck.
     const before = result?.progress ?? current.progress;
     try {
@@ -147,8 +149,17 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
       {current && prompt ? (
         <>
           <div className="flex items-center justify-between gap-2">
+            {/*
+              Position in the round being worked through, which is the only "where am I" the deck
+              meters below cannot show: mastery needs four correct answers per word, so it sits at
+              zero through a whole first pass and reads as if nothing is counted.
+            */}
             <p className="text-xs text-muted-foreground">
-              {t.streak} {current.progress.streak}/2
+              <span className="tabular-nums">
+                {t.word} {index + 1} {dictionary.common.of} {deck?.items.length ?? 0}
+              </span>
+              {' · '}
+              {t.streak} <span className="tabular-nums">{current.progress.streak}/2</span>
             </p>
             <Pill>{current.stage === 1 ? t.stage1 : t.stage2}</Pill>
           </div>
@@ -191,9 +202,7 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
             />
           ) : (
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button onClick={() => void check()} disabled={answer.trim().length === 0}>
-                {dictionary.common.check}
-              </Button>
+              <Button onClick={() => void check()}>{dictionary.common.check}</Button>
               {prompt.hint ? (
                 <Button variant="outline" onClick={() => setShowHint(true)}>
                   {dictionary.common.hint}
