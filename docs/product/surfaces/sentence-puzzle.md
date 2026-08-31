@@ -127,7 +127,7 @@ The prompt adds `bank`, `leadCue` and `tip` to the shared shape; the result adds
 Zinstrainer                                     [⇄ Volgorde 2]  [↺ Reset]
 Tik de delen in de juiste volgorde.
 ┌──────────────────────────────────────────────────────────────────────┐
-│ Reeks 1/2                        begin met «Morgen»   [ Volgorde 1 ] │
+│ Zin 3 van 20 · Reeks 1/2         begin met «Morgen»   [ Volgorde 1 ] │
 │                                                                      │
 │ Tomorrow I'm going to the dentist.        ← the meaning, not the answer │
 │                                                                      │
@@ -152,6 +152,11 @@ Behaviour the rebuild must keep:
 - **After a verdict the tiles freeze** — no taking or putting back — and the built row turns into the
   per-chunk marks.
 - **Check is disabled on an empty sentence**; the override is not.
+- **Position in the round is shown above the prompt** — *"Zin 3 van 20"*, counting through the batch
+  currently loaded. The same line the [word trainer](word-trainer.md) carries, and for the same
+  reason: mastering a sentence takes four correct answers across two orders, so the `beheerst` meter
+  sits at `0/n` for a whole first pass and reads as if nothing is being counted. A fresh batch
+  restarts the count, because a new batch is a new round.
 - `lang={contentLanguage}` on every chunk and on the lead cue. The prompt is the translation and
   carries no `lang` override.
 - Meters, reset, direction switch, stale-session prompt: as the word trainer.
