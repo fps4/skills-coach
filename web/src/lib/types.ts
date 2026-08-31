@@ -376,6 +376,38 @@ export interface PackProgress {
   };
 }
 
+// --- the portable archive --------------------------------------------------
+
+/** The sections an archive is reported in, in the order the report lists them. */
+export const ARCHIVE_SECTIONS = [
+  'enrollments',
+  'drillState',
+  'ownTerms',
+  'attempts',
+  'submissions',
+  'corrections',
+  'errorLog',
+  'blockReviews',
+  'quizSessions',
+  'articles',
+] as const;
+
+export type ArchiveSection = (typeof ARCHIVE_SECTIONS)[number];
+
+export interface ArchiveSectionReport {
+  applied: number;
+  unchanged: number;
+  unresolved: number;
+}
+
+export interface ArchiveImportReport {
+  dryRun: boolean;
+  archive: { version: number; exportedAt: string; generator?: string };
+  packs: { packId: string; archived: number; live: number | null }[];
+  sections: Record<ArchiveSection, ArchiveSectionReport>;
+  examples: { section: ArchiveSection; ref: string; why: string }[];
+}
+
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown };
 }

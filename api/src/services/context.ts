@@ -12,6 +12,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { Config } from '../config.js';
 import type { Store } from '../db/client.js';
+import { contentDigest } from '../domain/portable.js';
 import type { DrillPayload } from '../domain/types.js';
 
 export interface ServiceContext {
@@ -54,11 +55,19 @@ export const lessonIdFor = (blockId: string, order: number): string => `${blockI
  * the id travels in URLs, and it does not need to name anybody.
  */
 export function drillIdFor(blockId: string, payload: DrillPayload, learnerId?: string): string {
-  // The side a learner is asked to produce first. For a question that is the stem — editing an
-  // option's wording keeps the item, and with it the learner's progress on it, which is what an
-  // author fixing a typo in a distractor should get.
-  const key = payload.kind === 'term' ? payload.term : payload.kind === 'mcq' ? payload.stem : payload.sentence;
-  const digest = createHash('sha256').update(`${payload.kind}|${key}`).digest('hex').slice(0, 12);
+  // The digest — which side a learner is asked to produce first, hashed — is `domain/portable.ts`'s,
+  // because an archive has to arrive at the same answer to re-attach a streak on the way back in.
+  return drillIdWithDigest(blockId, contentDigest(payload), learnerId);
+}
+
+/**
+ * The same id, from a digest that has already been computed.
+ *
+ * What an archive re-derives an id from: it carries the digest rather than the content, so a
+ * learner's file holds no pack material, and the owner tag is minted fresh for whoever is importing
+ * (`domain/portable.ts`).
+ */
+export function drillIdWithDigest(blockId: string, digest: string, learnerId?: string): string {
   if (!learnerId) return `${blockId}.d.${digest}`;
   return `${blockId}.u${ownerTag(learnerId)}.${digest}`;
 }

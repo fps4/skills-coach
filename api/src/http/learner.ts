@@ -28,6 +28,7 @@ import * as progress from '../services/progress.js';
 import * as quiz from '../services/quiz.js';
 import * as reading from '../services/reading.js';
 import * as submissions from '../services/submissions.js';
+import * as archive from '../services/archive.js';
 import * as audit from '../services/audit.js';
 import type { ServiceContext } from '../services/context.js';
 
@@ -79,6 +80,9 @@ const readingQuerySchema = z.object({
     .transform((value) => value !== 'false'),
   language: z.string().min(2).max(35).optional(),
 });
+
+/** Stamped into every archive, so a file found later says which build wrote it. */
+const GENERATOR = 'skills-coach-api';
 
 export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext): void {
   /** Every learner route starts here, which is also what lazily creates the profile. */
@@ -329,4 +333,66 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     if (packId) return progress.packProgress(ctx, learner.learnerId, packId);
     return progress.overview(ctx, learner.learnerId);
   });
+
+  // --- the portable archive -------------------------------------------------
+  //
+  // Leaving with your work is not a feature that should need anybody's permission, so the download
+  // sits behind the same capability as reading your own progress: it is a read of exactly that, in
+  // a form you can keep. Putting one back is its own capability — see `auth/capabilities.ts`.
+
+  app.get('/api/v1/archive', async (request, reply) => {
+    const learner = await caller(request, 'progress:read');
+    const file = await archive.exportArchive(ctx, learner.learnerId, GENERATOR);
+
+    // Named for the day rather than the learner: this lands in a downloads folder, and a filename is
+    // the one part of the transfer that gets read over somebody's shoulder.
+    const stamp = file.exportedAt.toISOString().slice(0, 10);
+    return (
+      reply
+        .header('content-type', 'application/json; charset=utf-8')
+        .header('content-disposition', `attachment; filename="skills-coach-${stamp}.json"`)
+        // Pretty-printed on purpose. The file is the learner's, they may well open it, and two spaces
+        // is the difference between something readable and a single unbroken line.
+        .send(JSON.stringify(file, null, 2))
+    );
+  });
+
+  app.post(
+    '/api/v1/archive/import',
+    {
+      // Well above the app-wide 2 MB. An archive is dominated by `attempts`, one row per answer ever
+      // given, and a learner two years into a pack legitimately has tens of thousands. Refusing their
+      // own history at the door because it got long would defeat the point of keeping it.
+      bodyLimit: 32 * 1024 * 1024,
+    },
+    async (request) => {
+      const learner = await caller(request, 'progress:restore');
+      const { dryRun } = z
+        .object({ dryRun: z.enum(['true', 'false']).optional() })
+        .transform((value) => ({ dryRun: value.dryRun === 'true' }))
+        .parse(request.query);
+
+      const report = await archive.importArchive(ctx, learner.learnerId, request.body, { dryRun });
+
+      // A dry run decided nothing, so there is nothing to record. A real one rewrote a person's whole
+      // history in one call, which is exactly the kind of thing an audit trail exists for.
+      if (!dryRun) {
+        const auth = requireCapability(request, 'progress:restore');
+        await audit.record(ctx, {
+          principal: auth.principal,
+          action: 'archive.import',
+          resource: `learner/${learner.learnerId}`,
+          meta: {
+            archiveVersion: report.archive.version,
+            exportedAt: report.archive.exportedAt.toISOString(),
+            applied: Object.fromEntries(
+              Object.entries(report.sections).map(([name, counts]) => [name, counts.applied]),
+            ),
+          },
+        });
+      }
+
+      return report;
+    },
+  );
 }

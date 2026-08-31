@@ -18,6 +18,7 @@ the same one. There is no per-pack branching anywhere in the runtime.
 | [Oefentoets — the practice test](quiz.md) | `quiz` | `/{locale}/quiz` |
 | [Voortgang & de rail](progress-and-navigation.md) | — (not declarable) | `/{locale}/progress` |
 | [Wiki — the reference library](wiki.md) | — (platform-wide) | `/{locale}/wiki` |
+| [Jouw gegevens — the portable archive](your-data.md) | — (the learner's, not a pack's) | `/{locale}/archive` |
 
 ## How a surface comes to exist
 

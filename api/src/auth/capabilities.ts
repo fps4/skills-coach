@@ -21,6 +21,10 @@ export const CAPABILITIES = [
   'reading:track',
   'submission:write',
   'progress:read',
+  // Writing a whole archive back. Not implied by anything: it writes across every collection a
+  // learner owns at once, which is more authority than any single surface holds, and the same rule
+  // that keeps `drill:curate` out of `drill:practice` keeps this out of `progress:read` (ADR-0020).
+  'progress:restore',
   'pack:publish',
   'submission:read-all',
   'correction:write',
@@ -35,7 +39,15 @@ export type Capability = (typeof CAPABILITIES)[number];
  * machine credential cannot practise.
  */
 export const ROLE_CAPABILITIES: Record<string, readonly Capability[]> = {
-  learner: ['lesson:read', 'drill:practice', 'drill:curate', 'reading:track', 'submission:write', 'progress:read'],
+  learner: [
+    'lesson:read',
+    'drill:practice',
+    'drill:curate',
+    'reading:track',
+    'submission:write',
+    'progress:read',
+    'progress:restore',
+  ],
   coach: ['lesson:read', 'pack:publish', 'submission:read-all', 'correction:write', 'review:write'],
 };
 

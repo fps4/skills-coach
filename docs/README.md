@@ -9,7 +9,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 - [`product/prd/0001-dutch-conversation-coach.md`](product/prd/0001-dutch-conversation-coach.md) — the first pack, and what M0 must do
 - [`product/surfaces/`](product/surfaces/README.md) — **one spec per function**, each complete enough
   to rebuild that function: the Woordtrainer, the Zinspuzzel, the Oefentoets, the reading library,
-  the lesson reader, the session log, progress and the rail, and the wiki
+  the lesson reader, the session log, progress and the rail, the wiki, and the portable archive
 
 ## Architecture — how it is built
 
@@ -39,6 +39,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0017](architecture/decisions/0017-reading-is-personalized-parallel-text.md) | Reading is personalized parallel text; the interface language selects the variant |
 | [0018](architecture/decisions/0018-the-rail-is-packs-one-level-deep.md) | The rail is packs, one level deep; a pack lands on its progress |
 | [0019](architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md) | A surface appears when the pack has material for it |
+| [0020](architecture/decisions/0020-a-learner-can-take-their-progress-with-them.md) | A learner can take their progress with them |
 
 ## Reference
 

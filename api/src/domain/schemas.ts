@@ -10,6 +10,7 @@
  */
 
 import { z } from 'zod';
+import { ARCHIVE_KIND } from './portable.js';
 import { LOCALES } from './types.js';
 
 const nonEmpty = z.string().trim().min(1);
@@ -498,6 +499,191 @@ export const patchMeSchema = z.object({
   displayName: z.string().max(120).optional(),
   profile: learnerProfileSchema.optional(),
 });
+
+// ---------------------------------------------------------------------------
+// The portable archive
+// ---------------------------------------------------------------------------
+
+/**
+ * A learner's archive, as it arrives from a file.
+ *
+ * This is the least trusted input the system takes. A pack manifest comes from a coach holding
+ * `pack:publish`; an archive comes off somebody's disk, possibly hand-edited, possibly written by a
+ * build of this product that no longer exists. So it is validated exactly as strictly as anything
+ * else here, and the import refuses the whole file rather than applying the half of it that parsed —
+ * a partly-applied archive is worse than a rejected one, because nobody can tell which half landed.
+ *
+ * References carry no identifier that embeds an owner; see `domain/portable.ts` for why.
+ */
+const blockRefSchema = z.object({
+  pack: nonEmpty.max(120),
+  block: z.number().int().positive().max(10_000),
+  /** The block was written for one learner (ADR-0015), so its id carries an owner tag. */
+  owned: z.boolean().default(false),
+});
+
+const itemRefSchema = blockRefSchema.extend({
+  kind: z.enum(['term', 'word-order', 'mcq']),
+  digest: z.string().regex(/^[0-9a-f]{12}$/, 'a content digest is twelve hex characters'),
+  /** The learner added this word themselves (ADR-0012), so its id carries an owner tag too. */
+  own: z.boolean().default(false),
+});
+
+const progressSchema = z.object({
+  stage: z.union([z.literal(1), z.literal(2)]),
+  streak: z.number().int().min(0).max(1_000),
+  stage1Cleared: z.boolean(),
+  stage2Cleared: z.boolean(),
+  mastered: z.boolean(),
+  attempts: z.number().int().min(0),
+  correct: z.number().int().min(0),
+});
+
+/**
+ * Whether a learner has read an article rides on the article rather than in a section of its own.
+ *
+ * Live they are two documents, deliberately — re-loading a corrected translation must not mark an
+ * article unread. In a file there is nothing to re-load: the article and the fact arrive together
+ * and leave together, and splitting them would only invite one to appear without the other.
+ */
+const archiveArticleSchema = articleSchema.and(
+  z.object({
+    pack: nonEmpty.max(120),
+    addedAt: z.coerce.date(),
+    readAt: z.coerce.date().nullable().default(null),
+  }),
+);
+
+export const archiveSchema = z.object({
+  kind: z.literal(ARCHIVE_KIND),
+  /** Checked against `READABLE_VERSIONS` by the importer, which can say more than a schema can. */
+  version: z.number().int().positive(),
+  exportedAt: z.coerce.date(),
+  /** What wrote the file. Advisory — for a human reading a support thread, not for a branch here. */
+  generator: z.string().max(200).optional(),
+  /** Pack versions at export time, so an import can report that the material has moved on. */
+  packs: z.array(z.object({ packId: nonEmpty.max(120), version: z.number().int().min(0) })).default([]),
+  learner: z
+    .object({
+      displayName: z.string().max(120).optional(),
+      uiLanguage: localeSchema.optional(),
+      profile: learnerProfileSchema.optional(),
+    })
+    .default({}),
+  enrollments: z
+    .array(
+      z.object({
+        pack: nonEmpty.max(120),
+        currentBlock: blockRefSchema.nullable().default(null),
+        currentLessonOrder: z.number().int().min(0),
+        startedAt: z.coerce.date(),
+      }),
+    )
+    .default([]),
+  drillState: z
+    .array(z.object({ item: itemRefSchema, progress: progressSchema, updatedAt: z.coerce.date() }))
+    .default([]),
+  ownTerms: z.array(blockRefSchema.and(createLearnerTermSchema)).default([]),
+  attempts: z
+    .array(
+      z.object({
+        item: itemRefSchema,
+        stage: z.union([z.literal(1), z.literal(2)]),
+        given: z.string(),
+        correct: z.boolean(),
+        acceptedOverride: z.boolean().default(false),
+        at: z.coerce.date(),
+      }),
+    )
+    .default([]),
+  submissions: z
+    .array(
+      z.object({
+        /** Kept from the file so a correction can still name its submission after the move. */
+        id: nonEmpty.max(120),
+        lesson: blockRefSchema.extend({ lesson: z.number().int().positive().max(10_000) }),
+        answers: z.array(z.object({ ref: nonEmpty, text: z.string() })).default([]),
+        speakingNote: z.string().optional(),
+        status: z.enum(['pending', 'corrected']),
+        createdAt: z.coerce.date(),
+        correctedAt: z.coerce.date().optional(),
+      }),
+    )
+    .default([]),
+  corrections: z
+    .array(
+      z.object({
+        id: nonEmpty.max(120),
+        submissionId: nonEmpty.max(120),
+        items: z.array(correctionItemSchema).default([]),
+        categoryTally: z.record(z.number().int().min(0)).default({}),
+        ratings: z
+          .object({
+            fluency: z.number().min(0).max(5).optional(),
+            accuracy: z.number().min(0).max(5).optional(),
+            courage: z.number().min(0).max(5).optional(),
+          })
+          .optional(),
+        note: z.string().optional(),
+        model: z.string().optional(),
+        at: z.coerce.date(),
+      }),
+    )
+    .default([]),
+  errorLog: z
+    .array(
+      z.object({
+        pack: nonEmpty.max(120),
+        category: nonEmpty.max(200),
+        examples: z
+          .array(
+            z.object({
+              wrong: z.string(),
+              right: z.string(),
+              lessonRef: z.string().optional(),
+              at: z.coerce.date(),
+            }),
+          )
+          .default([]),
+        count: z.number().int().min(0),
+        firstSeen: z.coerce.date(),
+        lastSeen: z.coerce.date(),
+        lastBlockOrder: z.number().int().min(0),
+        closedThrough: z.number().int().min(0),
+        cleanBlocks: z.number().int().min(0),
+        status: z.enum(['new', 'recurring', 'improving', 'mastered']),
+      }),
+    )
+    .default([]),
+  blockReviews: z.array(blockRefSchema.and(postBlockReviewSchema).and(z.object({ at: z.coerce.date() }))).default([]),
+  quizSessions: z
+    .array(
+      z.object({
+        id: nonEmpty.max(120),
+        block: blockRefSchema,
+        mode: z.enum(['practice', 'exam']),
+        items: z.array(itemRefSchema).default([]),
+        answers: z
+          .array(
+            z.object({
+              item: itemRefSchema,
+              chosen: z.array(z.string()).default([]),
+              correct: z.boolean(),
+              categories: z.array(z.string()).default([]),
+              at: z.coerce.date(),
+            }),
+          )
+          .default([]),
+        limitSeconds: z.number().int().positive().optional(),
+        startedAt: z.coerce.date(),
+        finishedAt: z.coerce.date().optional(),
+      }),
+    )
+    .default([]),
+  articles: z.array(archiveArticleSchema).default([]),
+});
+
+export type Archive = z.infer<typeof archiveSchema>;
 
 export type PackManifestInput = z.infer<typeof packManifestSchema>;
 export type PublishBlockInput = z.infer<typeof publishBlockSchema>;

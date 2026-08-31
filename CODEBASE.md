@@ -38,6 +38,8 @@ api/src/
     error-log.ts       counter and status-transition rules
     progression.ts     next lesson, block completion, answer references
     ramp.ts            position on a pack's competency ramp
+    portable.ts        what a reference is, once it has to outlive a learner id —
+                       content digests, and the never-demote merge rule (ADR-0020)
 
   db/                collections, indexes, the Mongo client
   services/          domain rules + persistence, transport-agnostic
@@ -50,6 +52,9 @@ api/src/
     quiz.ts            sittings: start, answer, finish. Grading delegates to drills.ts,
                        so a question answered in a sitting and one answered outside it
                        move identical state
+    archive.ts         a learner's work in and out of a file: gathers everything of
+                       theirs, carries no pack material and no owner-scoped id, and
+                       re-derives every reference on the way back in (ADR-0020)
   auth/              JWKS verification, role → capability map, fastify plugin
   http/              route definitions only — thin, delegating to services
   mcp/               the same coach surface as tools — `handler.ts` is transport-agnostic,
