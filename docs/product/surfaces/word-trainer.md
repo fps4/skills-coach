@@ -176,12 +176,14 @@ An `AttemptResult` adds, after grading: `correct`, `overridden`, `expected` (the
 `progress`.
 
 `POST /drills/reset` refuses a body with neither `blockId` nor `packId`: a reset that clears
-everything is not a thing this endpoint will do by omission.
+everything is not a thing this endpoint will do by omission. **No screen calls it.** Wiping a deck
+was one click away from the practice a learner had just done, and an undo for it does not exist; the
+endpoint stays for a coach or a script, which is where a decision that destructive belongs.
 
 ## The screen
 
 ```
-Woordtrainer                                    [⇄ Richting 2]  [↺ Reset]
+Woordtrainer                                    [⇄ Richting 2]
 Typ de vertaling. Twee keer goed achter elkaar en het woord is klaar.
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Woord 3 van 44 · Reeks 1/2                           [ Richting 1 ]  │
@@ -236,7 +238,6 @@ Behaviour the rebuild must keep:
   answer language flips with the stage.
 - **A stale session is a sign-in prompt, not an error.** `expired` renders a *Sign in again* button
   that returns to this exact drill via `?next=`.
-- **Reset asks first**, and only ever scopes to the block being practised.
 
 ## Your own words
 

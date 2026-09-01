@@ -124,7 +124,7 @@ The prompt adds `bank`, `leadCue` and `tip` to the shared shape; the result adds
 ## The screen
 
 ```
-Zinstrainer                                     [⇄ Volgorde 2]  [↺ Reset]
+Zinstrainer                                     [⇄ Volgorde 2]
 Tik de delen in de juiste volgorde.
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Zin 3 van 18 · Reeks 1/2         begin met «Morgen»   [ Volgorde 1 ] │
@@ -159,7 +159,8 @@ Behaviour the rebuild must keep:
   API maximum so the round is the whole rotation, and **round + mastered = total** holds on screen.
 - `lang={contentLanguage}` on every chunk and on the lead cue. The prompt is the translation and
   carries no `lang` override.
-- Meters, reset, direction switch, stale-session prompt: as the word trainer.
+- Meters, direction switch, stale-session prompt: as the word trainer. Reset is an endpoint only,
+  not a control — see there.
 
 There is **no add-your-own** here. A learner can add a word; authoring a sentence with chunk
 boundaries and a second valid order is an authoring job, not a practice-time one.

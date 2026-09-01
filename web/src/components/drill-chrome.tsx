@@ -11,7 +11,7 @@
  *   right. It is recorded as an override rather than hidden.
  */
 
-import { ArrowRight, Check, RotateCcw, X } from 'lucide-react';
+import { ArrowRight, Check, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Meter, PageShell } from '@/components/atoms';
@@ -31,7 +31,6 @@ export function DrillShell({
   empty,
   stage,
   onSwitchStage,
-  onReset,
   children,
   footer,
 }: {
@@ -46,7 +45,6 @@ export function DrillShell({
   empty: boolean;
   stage?: Stage;
   onSwitchStage: () => void;
-  onReset: () => Promise<void>;
   children: ReactNode;
   /**
    * Rendered under the card's content whether or not there is anything to practise. The deck meters
@@ -63,16 +61,6 @@ export function DrillShell({
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={onSwitchStage}>
           ⇄ {stage === 2 ? t.stage1 : t.stage2}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={() => {
-            if (window.confirm(t.resetConfirm)) void onReset();
-          }}
-        >
-          <RotateCcw className="h-4 w-4" /> {dictionary.common.reset}
         </Button>
       </div>
 
