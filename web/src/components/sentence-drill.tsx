@@ -153,10 +153,6 @@ export function SentenceDrill({ blockId, contentLanguage, dictionary }: Props) {
       empty={!loading && deck !== null && deck.items.length === 0}
       stage={current?.stage}
       onSwitchStage={() => setStage((value) => (value === 2 ? 1 : 2))}
-      onReset={async () => {
-        await clientApi('/v1/drills/reset', { method: 'POST', body: { blockId } });
-        await load();
-      }}
       footer={summary ? <DeckProgress summary={summary} dictionary={dictionary} /> : null}
     >
       {current && prompt ? (
