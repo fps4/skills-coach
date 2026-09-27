@@ -51,6 +51,8 @@ is operator configuration in identity-service, not a code change here.
 **Costs.** A hard runtime dependency: the JWKS endpoint must be reachable from the api container. On
 ds1 that means joining identity-service's Docker network, because the public host is
 Cloudflare-fronted and unreachable from inside — hence `infra/docker/compose.ds1.networks.yml`.
+*(2026-09-27: superseded in practice. Skills Coach now verifies against the fps4 realm on AWS, whose
+issuer is public, and the overlay is removed. The decision itself is unchanged.)*
 Role and entitlement changes also take effect no sooner than the next token refresh; instant
 revocation would need introspection or shorter TTLs, deferred until a deployment demands it.
 

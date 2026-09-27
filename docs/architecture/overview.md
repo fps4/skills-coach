@@ -58,10 +58,10 @@ never a substitute for verification.
 **Coach request.** External caller → `api` `/coach/v1/*` directly with a client-credentials token.
 This path does not pass through `web`.
 
-**Token verification.** `api` fetches the JWKS from identity-service and caches it. On ds1 that fetch
-must resolve in-network — the public host is Cloudflare-fronted and unreachable from inside the
-container — so `compose.ds1.networks.yml` joins `api` to identity-service's Docker network. Issuer
-and audience remain the public claim values; the fetch URL is independent of them.
+**Token verification.** `api` fetches the JWKS from identity-service and caches it. The deployment
+uses the fps4 realm on AWS, whose issuer is public, so the fetch goes to the issuer's
+`/.well-known/jwks.json`. `AUTH_JWKS_URL` stays a separate setting from `AUTH_ISSUER`, so a
+deployment that has to fetch keys in-network still can.
 
 ## Layers inside `api`
 

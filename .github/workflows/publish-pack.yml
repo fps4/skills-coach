@@ -57,7 +57,7 @@ jobs:
           CLIENT_SECRET: ${{ secrets.COACH_CLIENT_SECRET }}
         run: |
           test -n "$CLIENT_SECRET" || { echo "COACH_CLIENT_SECRET is not set"; exit 1; }
-          TOKEN=$(curl -sS -X POST https://auth.fps4.nl/oauth2/token \
+          TOKEN=$(curl -sS -X POST https://wvf40lhrub.execute-api.eu-central-1.amazonaws.com/oauth2/token \
             -H 'content-type: application/json' \
             -d "{\"grant_type\":\"client_credentials\",\"client_id\":\"skills-coach-coach\",\"client_secret\":\"$CLIENT_SECRET\"}" \
             | jq -r '.access_token // .accessToken')
