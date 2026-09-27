@@ -1,7 +1,7 @@
 # The Skills Coach stack — used for local development, for CI, and for the ds1 deploy.
 #
 #   local:  make up            (or: docker compose -f infra/docker/compose.yml -p skills-coach up -d)
-#   ds1:    the deploy-ds1 workflow, which adds compose.ds1.networks.yml and an --env-file
+#   ds1:    the deploy-ds1 workflow, which adds an --env-file
 #
 # Every value comes from ${VAR} interpolation with a local-dev default inline, so the same file
 # serves both without a separate override for the common case.
@@ -16,11 +16,13 @@ services:
       default:
         # A UNIQUE hostname, deliberately not the service name.
         #
-        # On ds1 the api also joins identity-service's network so the JWKS fetch resolves, and a
+        # On ds1 the api used to join identity-service's network so the JWKS fetch resolved, and a
         # container there is aliased `mongo` too. Docker's DNS answers across every attached
-        # network, so plain `mongo` can resolve to *their* database — which presents as
+        # network, so plain `mongo` resolved to *their* database — which presents as
         # "Authentication failed" and looks like a wrong password rather than a wrong server.
-        # Any product sharing that network and using a generic service name has this hazard.
+        # The api no longer shares a network with anything (identity is reached at its public
+        # issuer), but the alias stays: MONGO_URI names it, and the hazard returns with any
+        # shared network.
         aliases:
           - skills-coach-mongo
     environment:

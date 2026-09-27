@@ -27,9 +27,7 @@ concurrency:
 env:
   # The ds1 runner predates Node 24; pin the checkout JS action to the node20 it has.
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
-  # The networks override joins the api container to identity-service's network, so the in-network
-  # JWKS fetch resolves (see compose.ds1.networks.yml).
-  COMPOSE: docker compose -f infra/docker/compose.yml -f infra/docker/compose.ds1.networks.yml -p skills-coach --env-file config/ds1/.env
+  COMPOSE: docker compose -f infra/docker/compose.yml -p skills-coach --env-file config/ds1/.env
 
 jobs:
   deploy:

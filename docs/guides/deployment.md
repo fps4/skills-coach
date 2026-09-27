@@ -65,9 +65,10 @@ needs **no `/api` rule**: the Next server proxies `/api/*` to the api service it
 is what can turn the session cookie into an `Authorization` header (see
 [ADR-0002](../architecture/decisions/0002-identity-service-as-authentication-engine.md)).
 
-`compose.ds1.networks.yml` joins the api container to identity-service's Docker network so the JWKS
-fetch resolves in-network as `http://identity-service:7305/…`. The public host is Cloudflare-fronted
-and unreachable from inside the container. The network name comes from `docker network ls` on ds1.
+Identity is the fps4 realm on AWS, reached at its public issuer (`AUTH_ISSUER` in
+`config/ds1/.env.base`); the api fetches the JWKS from there like any other client. It used to join
+ds1's own identity-service's Docker network to fetch it in-network, because that host was
+Cloudflare-fronted and unreachable from inside the container — that overlay is gone with it.
 
 ## First deploy
 

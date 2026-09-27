@@ -55,7 +55,7 @@ The coach surface authenticates with a **client-credentials** token from identit
 `aud=skills-coach` and the `coach` role:
 
 ```sh
-TOKEN=$(curl -s -X POST https://auth.fps4.nl/oauth2/token \
+TOKEN=$(curl -s -X POST https://wvf40lhrub.execute-api.eu-central-1.amazonaws.com/oauth2/token \
   -H 'content-type: application/json' \
   -d '{"grant_type":"client_credentials","client_id":"skills-coach-coach","client_secret":"…","scope":["coach"]}' \
   | jq -r '.access_token // .accessToken')
