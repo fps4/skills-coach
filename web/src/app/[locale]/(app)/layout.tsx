@@ -49,7 +49,9 @@ async function railPacks(): Promise<{ packs: RailPack[]; palettes: Record<string
         // and per learner, never per block, so what the rail offers cannot flicker as the learner
         // moves through the program (ADR-0019).
         material: {
-          blocks: entry.blocks.length,
+          // Blocks with lessons in them. A skill that is only a deck has one block holding its words
+          // and no lessons, and must not grow a Lessons tab for it (ADR-0022).
+          blocks: entry.blocks.filter(({ block }) => block.lessonCount > 0).length,
           terms: entry.decks.terms.total,
           wordOrder: entry.decks.wordOrder.total,
           quiz: entry.decks.quiz.total,

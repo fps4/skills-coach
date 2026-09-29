@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { packIcon } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
-import { getDictionary } from '@/i18n/dictionaries';
+import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import type { Enrollment, Learner, Pack, PackProgress } from '@/lib/types';
 
@@ -78,7 +78,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
               // already, and a runtime prefix would say it twice.
               caption={block ? pickTitle(block.title, locale) : undefined}
             >
-              {progress ? (
+              {progress && progress.lessonCount > 0 ? (
                 <div>
                   <Meter value={progress.completed} total={progress.lessonCount} />
                   <div className="mt-2 flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
@@ -96,6 +96,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
                   ) : null}
                 </div>
               ) : null}
+
+              {/* A skill without lessons says what it holds instead (ADR-0022). */}
+              {!progress || progress.lessonCount === 0 ? <SkillHoldings entry={entry} dictionary={dictionary} /> : null}
 
               {/* `relative` lifts the action above the tile-wide link behind it. */}
               {block && next ? (
@@ -137,6 +140,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
         ))}
       </div>
     </PageShell>
+  );
+}
+
+/** One line on what a skill without lessons holds: its words, its reading, or both. */
+function SkillHoldings({ entry, dictionary }: { entry: PackProgress; dictionary: Dictionary }) {
+  const parts: string[] = [];
+  if (entry.decks.terms.total > 0) {
+    parts.push(`${entry.decks.terms.mastered}/${entry.decks.terms.total} ${dictionary.progress.words.toLowerCase()}`);
+  }
+  if (entry.reading.total > 0) parts.push(`${entry.reading.unread}/${entry.reading.total} ${dictionary.home.unread}`);
+  if (parts.length === 0) return null;
+
+  return (
+    <div>
+      {entry.decks.terms.total > 0 ? <Meter value={entry.decks.terms.mastered} total={entry.decks.terms.total} /> : null}
+      <p className="mt-2 text-xs text-muted-foreground">{parts.join(' · ')}</p>
+    </div>
   );
 }
 

@@ -18,6 +18,11 @@ Type the translation. Two right in a row and the word is done in that direction.
 direction unlocks only once the forward one is cleared, and a wrong answer sends the streak back to
 zero.
 
+**It is also a skill of its own**, `woordtrainer-nl`: a deck with no lessons around it, holding only
+the learner's own words ([ADR-0022](../../architecture/decisions/0022-a-skill-can-be-only-a-deck-or-a-library.md)).
+The surface is the same one either way; a programme skill shows it as a tab beside its lessons, the
+word skill shows it as the one thing it does.
+
 ## What it is for
 
 A vocabulary deck with spaced-repetition-style gating, prompting in both directions. It replaces a

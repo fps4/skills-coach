@@ -33,10 +33,10 @@ on:
         required: true
         default: /home/fgurbanov/reading-load
       pack:
-        description: "Pack the library belongs to"
+        description: "Skill the library belongs to"
         type: string
         required: true
-        default: dutch-conversation-nl
+        default: lezen-nieuws-nl
       only:
         description: "Load a single slug, leaving the rest of the library alone"
         type: string

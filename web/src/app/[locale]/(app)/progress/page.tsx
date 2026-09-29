@@ -14,7 +14,7 @@
  */
 
 import { redirect } from 'next/navigation';
-import { BarChart3, ListChecks, Puzzle, Sparkles } from 'lucide-react';
+import { BarChart3, ListChecks, Newspaper, Puzzle, Sparkles } from 'lucide-react';
 
 import { Meter, PageShell, Pill, Stat } from '@/components/atoms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,34 +64,59 @@ export default async function ProgressPage({
 
   const entry = await api<PackProgress>(`/api/v1/progress?packId=${encodeURIComponent(packId)}`);
   const recurring = entry.errorLog.entries.filter((row) => row.status === 'recurring').length;
+  const tracksErrors = entry.pack.errorCategories.length > 0;
+  const hasDecks = entry.decks.terms.total + entry.decks.wordOrder.total + entry.decks.quiz.total > 0;
 
   return (
     // The skill's name is already in the header above (ADR-0021); this page is its overview.
     <PageShell title={dictionary.nav.overview}>
+      {/*
+        Only what this skill actually has: a skill that is only a word deck or only a reading list
+        has no sentences and nothing on its error log to count (ADR-0022).
+      */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <Stat
-          icon={<Sparkles className="h-4 w-4 text-primary" />}
-          value={`${entry.decks.terms.mastered}/${entry.decks.terms.total}`}
-          label={t.words.toLowerCase()}
-        />
-        <Stat
-          icon={<Puzzle className="h-4 w-4 text-primary" />}
-          value={`${entry.decks.wordOrder.mastered}/${entry.decks.wordOrder.total}`}
-          label={t.sentences.toLowerCase()}
-        />
-        <Stat icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />} value={recurring} label={t.redrill.toLowerCase()} />
+        {entry.decks.terms.total > 0 ? (
+          <Stat
+            icon={<Sparkles className="h-4 w-4 text-primary" />}
+            value={`${entry.decks.terms.mastered}/${entry.decks.terms.total}`}
+            label={t.words.toLowerCase()}
+          />
+        ) : null}
+        {entry.decks.wordOrder.total > 0 ? (
+          <Stat
+            icon={<Puzzle className="h-4 w-4 text-primary" />}
+            value={`${entry.decks.wordOrder.mastered}/${entry.decks.wordOrder.total}`}
+            label={t.sentences.toLowerCase()}
+          />
+        ) : null}
+        {entry.reading.total > 0 ? (
+          <Stat
+            icon={<Newspaper className="h-4 w-4 text-primary" />}
+            value={`${entry.reading.unread}/${entry.reading.total}`}
+            label={dictionary.home.unread}
+          />
+        ) : null}
+        {tracksErrors ? (
+          <Stat
+            icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+            value={recurring}
+            label={t.redrill.toLowerCase()}
+          />
+        ) : null}
       </div>
 
-      <Card>
-        <CardHeader className="pb-1">
-          <CardTitle className="text-base">{t.decks}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DeckRow label={t.words} summary={entry.decks.terms} dictionary={dictionary} />
-          <DeckRow label={t.sentences} summary={entry.decks.wordOrder} dictionary={dictionary} />
-          <DeckRow label={dictionary.nav.quiz} summary={entry.decks.quiz} dictionary={dictionary} />
-        </CardContent>
-      </Card>
+      {hasDecks ? (
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle className="text-base">{t.decks}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DeckRow label={t.words} summary={entry.decks.terms} dictionary={dictionary} />
+            <DeckRow label={t.sentences} summary={entry.decks.wordOrder} dictionary={dictionary} />
+            <DeckRow label={dictionary.nav.quiz} summary={entry.decks.quiz} dictionary={dictionary} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Only for packs that actually quiz. Advisory throughout — see ADR-0014. */}
       {entry.quiz.sessions > 0 ? (
@@ -124,75 +149,77 @@ export default async function ProgressPage({
         </Card>
       ) : null}
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t.errorLog}</CardTitle>
-          <p className="max-w-prose text-sm text-muted-foreground">{t.errorLogIntro}</p>
-        </CardHeader>
+      {tracksErrors ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{t.errorLog}</CardTitle>
+            <p className="max-w-prose text-sm text-muted-foreground">{t.errorLogIntro}</p>
+          </CardHeader>
 
-        <CardContent>
-          {entry.errorLog.entries.length === 0 ? (
-            <>
-              <p className="text-sm">{t.noErrors}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{t.noErrorsHint}</p>
-            </>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="py-2 pr-4 font-medium">{t.category}</th>
-                      <th className="py-2 pr-4 font-medium">{t.example}</th>
-                      <th className="py-2 pr-4 text-right font-medium">{t.count}</th>
-                      <th className="py-2 pr-4 font-medium">{t.lastSeen}</th>
-                      <th className="py-2 font-medium">{t.status}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entry.errorLog.entries.map((row) => {
-                      const example = row.examples.at(-1);
-                      return (
-                        <tr key={row.category} className="border-b border-border/60 align-top last:border-0">
-                          {/* The category id is pack-authored content — rendered as written. */}
-                          <td className="py-2 pr-4 font-medium">{row.category}</td>
-                          <td className="py-2 pr-4 text-muted-foreground" lang={entry.pack.contentLanguage}>
-                            {example ? (
-                              <>
-                                <span className="line-through decoration-destructive/60">{example.wrong}</span>
-                                {' → '}
-                                <span className="text-success">{example.right}</span>
-                              </>
-                            ) : null}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">{row.count}</td>
-                          <td className="py-2 pr-4 text-muted-foreground">{formatDate(row.lastSeen, locale)}</td>
-                          <td className="py-2">
-                            <Pill tone={statusTone(row.status)}>{statusLabel(row.status, dictionary)}</Pill>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+          <CardContent>
+            {entry.errorLog.entries.length === 0 ? (
+              <>
+                <p className="text-sm">{t.noErrors}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t.noErrorsHint}</p>
+              </>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-muted-foreground">
+                        <th className="py-2 pr-4 font-medium">{t.category}</th>
+                        <th className="py-2 pr-4 font-medium">{t.example}</th>
+                        <th className="py-2 pr-4 text-right font-medium">{t.count}</th>
+                        <th className="py-2 pr-4 font-medium">{t.lastSeen}</th>
+                        <th className="py-2 font-medium">{t.status}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {entry.errorLog.entries.map((row) => {
+                        const example = row.examples.at(-1);
+                        return (
+                          <tr key={row.category} className="border-b border-border/60 align-top last:border-0">
+                            {/* The category id is pack-authored content — rendered as written. */}
+                            <td className="py-2 pr-4 font-medium">{row.category}</td>
+                            <td className="py-2 pr-4 text-muted-foreground" lang={entry.pack.contentLanguage}>
+                              {example ? (
+                                <>
+                                  <span className="line-through decoration-destructive/60">{example.wrong}</span>
+                                  {' → '}
+                                  <span className="text-success">{example.right}</span>
+                                </>
+                              ) : null}
+                            </td>
+                            <td className="py-2 pr-4 text-right tabular-nums">{row.count}</td>
+                            <td className="py-2 pr-4 text-muted-foreground">{formatDate(row.lastSeen, locale)}</td>
+                            <td className="py-2">
+                              <Pill tone={statusTone(row.status)}>{statusLabel(row.status, dictionary)}</Pill>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-              {entry.errorLog.redrill.length > 0 ? (
-                <p className="mt-4 text-sm">
-                  <span className="font-medium">{t.redrill}: </span>
-                  <span className="text-muted-foreground">{entry.errorLog.redrill.join(' · ')}</span>
-                </p>
-              ) : null}
-              {entry.errorLog.retire.length > 0 ? (
-                <p className="mt-1 text-sm">
-                  <span className="font-medium">{t.retired}: </span>
-                  <span className="text-muted-foreground">{entry.errorLog.retire.join(' · ')}</span>
-                </p>
-              ) : null}
-            </>
-          )}
-        </CardContent>
-      </Card>
+                {entry.errorLog.redrill.length > 0 ? (
+                  <p className="mt-4 text-sm">
+                    <span className="font-medium">{t.redrill}: </span>
+                    <span className="text-muted-foreground">{entry.errorLog.redrill.join(' · ')}</span>
+                  </p>
+                ) : null}
+                {entry.errorLog.retire.length > 0 ? (
+                  <p className="mt-1 text-sm">
+                    <span className="font-medium">{t.retired}: </span>
+                    <span className="text-muted-foreground">{entry.errorLog.retire.join(' · ')}</span>
+                  </p>
+                ) : null}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
     </PageShell>
   );
 }

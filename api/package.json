@@ -21,6 +21,7 @@
     "import:errorlog": "tsx src/importer/import-error-log.ts",
     "import:reading": "tsx src/importer/import-reading.ts",
     "migrate:block-ownership": "tsx src/importer/migrate-block-ownership.ts",
+    "migrate:to-skills": "tsx src/importer/migrate-to-skills.ts",
     "remove:pack": "tsx src/importer/remove-pack.ts",
     "validate:manifests": "tsx src/importer/validate-manifests.ts"
   },

@@ -1,0 +1,46 @@
+# Woordtrainer — a skill that is only a word deck (ADR-0022).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill, and it names no
+# person. There is no curriculum behind it and none will ever be committed: every word in it belongs
+# to the learner who added it (ADR-0012), in a deck block of one — `woordenlijst` — that
+# `migrate:to-skills` creates the first time it runs and that has no lessons. `.gitignore`
+# un-ignores this one file.
+#
+# It was forked out of `dutch-conversation-nl`, whose word trainer it replaces: the words a learner
+# could practise there, and their streaks, were copied here as their own.
+
+packId: woordtrainer-nl
+
+title:
+  nl: Woordtrainer
+  en: Word trainer
+
+description:
+  nl: Jouw eigen Nederlandse woorden, twee kanten op geoefend tot ze blijven hangen.
+  en: Your own Dutch words, practised both ways until they stick.
+
+contentLanguage: nl
+translationLanguage: en
+skill: vocabulary # free label, descriptive only — nothing branches on it
+
+# Required by the contract, and meaningless for a deck: nothing is authored in blocks here, so no
+# ramp reads it. Kept to the ladder the rest of the Dutch skills use.
+framework:
+  id: cefr
+  levels: [A2, B1, B2]
+
+# No `errorCategories`: a word drill writes nothing to the error log, and nothing a coach corrects
+# arrives here (ADR-0022).
+
+# "vergadering" is accepted for "de vergadering" and the other way round.
+matchArticles:
+  nl: [de, het, een, "'t"]
+  en: [the, a, an]
+
+presentation:
+  palette: orange
+  icon: languages
+  tagline:
+    nl: Jouw woorden, jouw tempo.
+    en: Your words, your pace.
+  surfaces: [drills:terms]

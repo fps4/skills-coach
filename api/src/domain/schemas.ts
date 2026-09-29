@@ -354,6 +354,9 @@ export const packManifestSchema = z.object({
       .optional(),
   }),
   method: packMethodSchema.optional(),
+  // May be empty (ADR-0022). A skill that is only a word deck or only a reading list has nothing a
+  // coach corrects, so it has no vocabulary of mistakes — and a correction naming any category
+  // against it is refused, exactly as an unknown one is against a pack that declares some.
   errorCategories: z
     .array(
       z.object({
@@ -363,7 +366,7 @@ export const packManifestSchema = z.object({
         group: localizedTextSchema.optional(),
       }),
     )
-    .min(1),
+    .default([]),
   sectionMap: z.array(z.object({ match: nonEmpty, kind: sectionKindSchema })).optional(),
   matchArticles: z.record(z.array(z.string())).optional(),
   presentation: packPresentationSchema.optional(),
@@ -382,7 +385,9 @@ export const publishBlockSchema = z.object({
   focus: z.array(z.string()).optional(),
   milestone: z.string().optional(),
   status: z.enum(['draft', 'published']).default('published'),
-  lessons: z.array(lessonSchema).min(1),
+  // May be empty (ADR-0022): a block can be only a deck — the place a skill's words live, with no
+  // lessons around them.
+  lessons: z.array(lessonSchema).default([]),
   drillItems: z.array(drillItemSchema).default([]),
   /**
    * Who this block is for (ADR-0015). Omit and the pack owns it, which is what a demo or template
