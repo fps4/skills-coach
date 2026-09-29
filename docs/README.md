@@ -37,9 +37,10 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0015](architecture/decisions/0015-a-block-may-be-owned-by-a-learner.md) | A block may be owned by a learner |
 | [0016](architecture/decisions/0016-the-reference-library-ships-with-the-code.md) | The reference library ships with the code |
 | [0017](architecture/decisions/0017-reading-is-personalized-parallel-text.md) | Reading is personalized parallel text; the interface language selects the variant |
-| [0018](architecture/decisions/0018-the-rail-is-packs-one-level-deep.md) | The rail is packs, one level deep; a pack lands on its progress |
+| [0018](architecture/decisions/0018-the-rail-is-packs-one-level-deep.md) | ~~The rail is packs, one level deep; a pack lands on its progress~~ — superseded by 0021 |
 | [0019](architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md) | A surface appears when the pack has material for it |
 | [0020](architecture/decisions/0020-a-learner-can-take-their-progress-with-them.md) | A learner can take their progress with them |
+| [0021](architecture/decisions/0021-the-menu-is-folders-of-skills.md) | The menu is folders of skills; a skill's surfaces are its tabs |
 
 ## Reference
 

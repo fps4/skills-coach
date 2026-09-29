@@ -494,6 +494,33 @@ export const learnerProfileSchema = z.object({
   notes: z.string().trim().max(2000).optional(),
 });
 
+/**
+ * The learner's menu as a client proposes it (ADR-0021).
+ *
+ * Only the shape is checked here. Reconciling it with what the learner has actually started — which
+ * skills exist, which folders a placement may name — is `domain/menu.ts::normalizeMenu`, because the
+ * same rule has to repair a stale stored menu on the way out.
+ */
+export const menuSchema = z.object({
+  folders: z
+    .array(
+      z.object({
+        folderId: z.string().regex(/^[A-Za-z0-9_-]{1,40}$/, 'a folder id is 1–40 letters, digits, - or _'),
+        name: z.string().max(200),
+      }),
+    )
+    .max(200),
+  placements: z
+    .array(
+      z.object({
+        packId: z.string().min(1).max(120),
+        folderId: z.string().max(40).nullable(),
+        hidden: z.boolean(),
+      }),
+    )
+    .max(1000),
+});
+
 export const patchMeSchema = z.object({
   uiLanguage: localeSchema.optional(),
   displayName: z.string().max(120).optional(),
@@ -568,6 +595,7 @@ export const archiveSchema = z.object({
       displayName: z.string().max(120).optional(),
       uiLanguage: localeSchema.optional(),
       profile: learnerProfileSchema.optional(),
+      menu: menuSchema.optional(),
     })
     .default({}),
   enrollments: z
@@ -696,6 +724,7 @@ export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
 export type CreateLearnerTermInput = z.infer<typeof createLearnerTermSchema>;
 export type PostAttemptInput = z.infer<typeof postAttemptSchema>;
 export type PatchMeInput = z.infer<typeof patchMeSchema>;
+export type MenuInput = z.infer<typeof menuSchema>;
 export type StartQuizInput = z.infer<typeof startQuizSchema>;
 export type AnswerQuizInput = z.infer<typeof answerQuizSchema>;
 export type LearnerProfileInput = z.infer<typeof learnerProfileSchema>;

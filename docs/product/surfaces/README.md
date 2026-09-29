@@ -16,7 +16,7 @@ the same one. There is no per-pack branching anywhere in the runtime.
 | [Woordtrainer — the word trainer](word-trainer.md) | `drills:terms` | `/{locale}/drills/words` |
 | [Zinspuzzel — the sentence puzzle](sentence-puzzle.md) | `drills:word-order` | `/{locale}/drills/sentences` |
 | [Oefentoets — the practice test](quiz.md) | `quiz` | `/{locale}/quiz` |
-| [Voortgang & de rail](progress-and-navigation.md) | — (not declarable) | `/{locale}/progress` |
+| [Voortgang & het menu](progress-and-navigation.md) | — (not declarable) | `/{locale}/progress` |
 | [Wiki — the reference library](wiki.md) | — (platform-wide) | `/{locale}/wiki` |
 | [Jouw gegevens — the portable archive](your-data.md) | — (the learner's, not a pack's) | `/{locale}/archive` |
 
@@ -31,7 +31,7 @@ lessons · reading · drills:terms · drills:word-order · quiz · progress
 Closed for the same reason the section kinds are
 ([ADR-0004](../../architecture/decisions/0004-pack-contract-and-typed-sections.md)): a surface the
 runtime cannot render is the failure the pack contract exists to prevent, so a typo must fail the
-publish rather than silently hide a rail item. `progress` is retained only for packs published
+publish rather than silently hide a tab. `progress` is retained only for packs published
 before [ADR-0018](../../architecture/decisions/0018-the-rail-is-packs-one-level-deep.md) named it;
 the viewer ignores the key.
 
@@ -41,7 +41,7 @@ plus a count in the material payload if it needs a new one. No new endpoint, and
 on which pack is being served.
 
 Whether a surface *appears* for a given learner is decided in one place and by three questions —
-see [Voortgang & de rail](progress-and-navigation.md#when-a-surface-appears)
+see [Voortgang & het menu](progress-and-navigation.md#when-a-surface-appears)
 ([ADR-0019](../../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)).
 
 ## What every surface has in common

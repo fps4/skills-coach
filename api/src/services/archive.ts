@@ -192,6 +192,8 @@ export async function exportArchive(ctx: ServiceContext, learnerId: string, gene
       ...(learner?.displayName ? { displayName: learner.displayName } : {}),
       ...(learner?.uiLanguage ? { uiLanguage: learner.uiLanguage } : {}),
       ...(learner?.profile ? { profile: learner.profile } : {}),
+      // Folders and what shows (ADR-0021). Skills are named by packId, which is already portable.
+      ...(learner?.menu ? { menu: learner.menu } : {}),
     },
     enrollments: enrollments.map((doc) => ({
       pack: doc.packId,
@@ -832,6 +834,9 @@ export async function importArchive(
     if (archive.learner.displayName && !live?.displayName) fill.displayName = archive.learner.displayName;
     if (archive.learner.uiLanguage && !live?.uiLanguage) fill.uiLanguage = archive.learner.uiLanguage as Locale;
     if (archive.learner.profile && !live?.profile) fill.profile = archive.learner.profile;
+    // Stored as it arrived: the menu is reconciled with what is started every time it is read, so a
+    // folder naming a skill this system does not have simply shows without it.
+    if (archive.learner.menu && !live?.menu) fill.menu = archive.learner.menu;
     if (Object.keys(fill).length > 0) await c.learners.updateOne({ _id: learnerId }, { $set: fill });
   }
 

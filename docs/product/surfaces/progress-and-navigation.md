@@ -1,14 +1,14 @@
 ---
-title: Voortgang & de rail — where a learner is, and how they get anywhere
-surface: (progress is no longer a declarable surface — ADR-0018)
+title: Voortgang & het menu — where a learner is, and how they get anywhere
+surface: (progress is no longer a declarable surface — ADR-0018, ADR-0021)
 status: built
 ---
 
-# Voortgang & de rail (progress and navigation)
+# Voortgang & het menu (progress and navigation)
 
 | | |
 |---|---|
-| **Routes** | `/{locale}` (landing) · `/{locale}/progress?packId=…` · `/{locale}/packs/{packId}` · `/{locale}/blocks/{blockId}` |
+| **Routes** | `/{locale}` (landing) · `/{locale}/skills` · `/{locale}/progress?packId=…` · `/{locale}/packs/{packId}` · `/{locale}/blocks/{blockId}` |
 | **Capability** | `progress:read` |
 | **Decides** | nothing. Every number here is **derived on read** |
 
@@ -16,36 +16,54 @@ This is the artifact the program this replaces maintained by hand across three m
 it is derived from what actually happened, so it cannot fall out of date — and there is nothing
 stored that could disagree with the events it came from.
 
-## The rail: packs, one level deep
+## The rail: folders of skills
 
 ```
-Jouw pakketten            /nl                      the landing page
-Nederlands B1             /nl/progress?packId=…    a pack the learner has started
-  Lessen                  /nl/blocks/…
-  Lezen                   /nl/reading?packId=…
-  Woordtrainer            /nl/drills/words?blockId=…
-  Zinspuzzel              /nl/drills/sentences?blockId=…
-  Oefentoets              /nl/quiz?blockId=…
-Wiki                      /nl/wiki                 platform furniture, for now
+Start                     /nl                        the landing page
+MIJN MENU                 (organise → /nl/skills)
+▾ Nederlands              a folder the learner made
+    Woordtrainer          /nl/progress?packId=…      a skill — opens on its overview
+    Lezen · nieuws
+  SAP · Networking        a skill outside any folder
+Alle vaardigheden +3 verborgen   /nl/skills           everything started, hidden ones included
+Wiki                      /nl/wiki                   platform furniture
+Jouw gegevens             /nl/archive
 ```
 
-Three rules ([ADR-0018](../../architecture/decisions/0018-the-rail-is-packs-one-level-deep.md)):
+Rules ([ADR-0021](../../architecture/decisions/0021-the-menu-is-folders-of-skills.md), which
+supersedes ADR-0018):
 
-- **The top level is the learner's *started* packs**, named as the pack names itself. Packs on offer
-  but not started are the landing page's business — a rail that listed those too would be answering
-  "what am I working on" and "what could I work on" in one column.
-- **Surfaces render only under the pack in scope.** They belong to a pack, so outside one they are
-  absent rather than greyed out.
-- **`progress` is not a surface.** It is what the pack item opens, so it cannot also be an item
-  beside the others. `/progress` with no `packId` has nothing to report on and redirects to the
-  landing page.
+- **Two levels: a folder, then skills.** Folders, their names and order, which folder a skill is in
+  and whether it shows are all the learner's — stored as `menu` on the learner, never on a pack.
+  Whether a folder is open is a per-browser preference (`localStorage`), and the folder holding the
+  skill on screen is always open.
+- **Only started skills.** Starting a new one is the landing page's job.
+- **Hidden is not gone.** A hidden skill leaves the rail and is counted beside "All my skills", where
+  it can be switched back on with its progress intact.
+- **Nothing is ever lost.** `normalizeMenu` places every started skill exactly once, on read and on
+  write — see the API doc for `/me/menu`.
+
+## A skill's page: overview, then tabs
+
+A skill's surfaces are no longer rail items. `SkillHeader` — rendered by the shell above whatever page
+is open — shows the folder the skill is filed in, its name, and a row of tabs:
+
+```
+Nederlands ›
+Woordtrainer
+[Overzicht] [Lessen] [Lezen] [Woordtrainer] [Zinspuzzel] [Oefentoets]
+```
+
+`Overzicht` is `/progress?packId=…`, the page ADR-0018 had a pack land on. The rest are the surfaces
+the skill offers and has. A tab is highlighted by route (`activeTab` in `lib/pack-scope.ts`), because
+most surfaces open on more than one page — lessons covers the block list, a block and a lesson.
 
 `progress` stays in the API's `surfaces` enum, because packs published against
 [ADR-0009](../../architecture/decisions/0009-per-pack-presentation-is-declarative.md) name it and
 rejecting it would fail their next publish over chrome that moved. The viewer ignores the key.
 
-A pack the learner has **just** opened for the first time is not in the rail until the next render:
-opening the pack page is what enrols them, and the shell fetched its list before that.
+A skill the learner has **just** opened for the first time has no header until the next render:
+opening the skill is what enrols them, and the shell fetched its list before that.
 
 ## When a surface appears
 
@@ -194,5 +212,7 @@ next block — the same numbers, so the learner and the author are looking at on
 | Ramp position | `api/src/domain/ramp.ts` |
 | Assembly | `api/src/services/progress.ts` |
 | Surface registry (the one place) | `web/src/lib/pack-scope.ts` |
-| Rail | `web/src/components/learner-rail.tsx` |
+| Menu | `web/src/components/learner-rail.tsx`, `web/src/lib/menu.ts`, `api/src/domain/menu.ts` |
+| Skill tabs | `web/src/components/skill-header.tsx`, `skillTabs` in `web/src/lib/pack-scope.ts` |
+| Organise page | `web/src/app/[locale]/(app)/skills/page.tsx`, `web/src/components/menu-editor.tsx` |
 | Screens | `web/src/app/[locale]/(app)/page.tsx`, `progress/page.tsx`, `packs/[packId]/page.tsx`, `blocks/[blockId]/page.tsx` |

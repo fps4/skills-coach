@@ -8,10 +8,10 @@
  * indeterminate state for the browser to paint. A token that expired between the two lands here as
  * "no session" and is sent to sign in rather than rendering a shell around a page that will 401.
  *
- * It also carries what the shell needs to know about the learner's packs — what each one is called,
- * which surfaces it offers and what material it actually holds (ADR-0009, ADR-0018, ADR-0019). That
- * comes from the progress call this layout was already making, so per-pack chrome costs no extra
- * request and no new endpoint.
+ * It also carries what the shell needs to know about the learner's skills — what each one is called,
+ * which surfaces it offers and what material it actually holds (ADR-0009, ADR-0019) — and how the
+ * learner has arranged them into folders (ADR-0021). The first comes from the progress call this
+ * layout was already making; the menu is one more small read.
  */
 
 import { Suspense, type ReactNode } from 'react';
@@ -20,13 +20,14 @@ import { redirect } from 'next/navigation';
 
 import { AppHeader } from '@/components/app-header';
 import { LearnerRail, type RailPack } from '@/components/learner-rail';
+import { SkillHeader } from '@/components/skill-header';
 import { PackPaletteSync } from '@/components/pack-palette-sync';
 import { PACK_HEADER } from '@/lib/pack-scope';
 import type { Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/dictionaries';
 import { api } from '@/lib/api';
 import { currentToken } from '@/lib/auth';
-import type { PackProgress } from '@/lib/types';
+import type { LearnerMenu, PackProgress } from '@/lib/types';
 
 /**
  * Everything the shell needs about the learner's packs, from one call.
@@ -62,6 +63,15 @@ async function railPacks(): Promise<{ packs: RailPack[]; palettes: Record<string
   }
 }
 
+/** The learner's folders. Soft for the same reason: without it every skill simply shows, loose. */
+async function learnerMenu(): Promise<LearnerMenu | null> {
+  try {
+    return (await api<{ menu: LearnerMenu }>('/api/v1/me/menu')).menu;
+  } catch {
+    return null;
+  }
+}
+
 export default async function AppLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   // Narrowing is safe here: the locale layout above has already sent anything else to `notFound()`.
   const { locale } = (await params) as { locale: Locale };
@@ -71,7 +81,7 @@ export default async function AppLayout({ children, params }: { children: ReactN
   if (!(await currentToken())) redirect(`/${locale}/login`);
 
   const dictionary = getDictionary(locale);
-  const { packs, palettes } = await railPacks();
+  const [{ packs, palettes }, menu] = await Promise.all([railPacks(), learnerMenu()]);
 
   // The middleware resolved the pack from the URL before render, which is the only way to get the
   // right hue into the *first* paint — this layout sits above the segment that names the pack.
@@ -91,9 +101,14 @@ export default async function AppLayout({ children, params }: { children: ReactN
             prerendered page still has something to send. */}
         <Suspense fallback={null}>
           <PackPaletteSync palettes={palettes} />
-          <LearnerRail locale={locale} dictionary={dictionary} packs={packs} />
+          <LearnerRail locale={locale} dictionary={dictionary} packs={packs} menu={menu} />
         </Suspense>
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          <Suspense fallback={null}>
+            <SkillHeader locale={locale} dictionary={dictionary} packs={packs} menu={menu} />
+          </Suspense>
+          {children}
+        </main>
       </div>
     </>
   );

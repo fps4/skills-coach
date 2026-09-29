@@ -1,42 +1,42 @@
 'use client';
 
 /**
- * The learner rail.
+ * The learner rail: the learner's own menu of skills (ADR-0021).
  *
- * Two levels, and only two (ADR-0018): a pack, then what that pack offers. The learner's started
- * packs are the top level — each one named as the pack names itself, landing on its own progress —
- * and the surfaces of the pack currently in scope sit indented beneath it. Nothing else nests.
+ * Two levels, and only two: a folder, then the skills in it. Folders and what shows are the
+ * learner's — they file skills where they like and hide the ones they are not studying now. What a
+ * skill *offers* is no longer in the rail at all; it is the row of tabs on that skill's own page
+ * (`skill-header.tsx`), which is what freed the second level for folders.
  *
- * Which surfaces appear is three questions, asked in `lib/pack-scope.ts` and answered nowhere else
- * (ADR-0019): does the manifest *offer* it, does the pack *have* any material of that kind, and is
- * there something to open *right now*. The first two decide whether an item exists — a pack with no
- * questions never shows a practice test — and the third decides whether it is a link or greyed out.
+ * Which skill is in scope is still read off the URL (`lib/pack-scope.ts`), so the rail can mark it
+ * and open the folder it sits in.
  */
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { HardDriveDownload, LayoutGrid, Library } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ChevronRight, Folder, HardDriveDownload, LayoutGrid, Library, ListTree, Rows3 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { SURFACES, packIcon, packIdFromUrl, packLanding, visibleSurfaces, type PackMaterial } from '@/lib/pack-scope';
+import { arrangeRail } from '@/lib/menu';
+import { packIcon, packIdFromUrl, packLanding, type PackMaterial } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { PackSurface, TitleText } from '@/lib/types';
+import type { LearnerMenu, PackSurface, TitleText } from '@/lib/types';
 
-/** What the shell knows about one of the learner's packs. */
+/** What the shell knows about one of the learner's skills. */
 export interface RailPack {
   packId: string;
-  /** The pack's own name, which is what the learner sees at the top level. */
+  /** The skill's own name, which is what the learner sees. */
   title: TitleText;
   /** A key into the icon registry; unknown ones fall back rather than leaving a gap (ADR-0009). */
   icon?: string;
-  /** The block they are working through in that pack, when they have one. */
+  /** The block they are working through in that skill, when they have one. */
   currentBlockId: string | null;
   /** What the manifest offers; undefined means everything (ADR-0009). */
   surfaces?: PackSurface[];
-  /** What the pack actually holds, which is what decides an item is there at all (ADR-0019). */
+  /** What the skill actually holds, which is what decides a tab is there at all (ADR-0019). */
   material: PackMaterial;
 }
 
@@ -44,73 +44,148 @@ interface Props {
   locale: Locale;
   dictionary: Dictionary;
   packs: RailPack[];
+  /** Null when it could not be fetched — every skill then shows, loose. */
+  menu: LearnerMenu | null;
 }
 
-export function LearnerRail({ locale, dictionary, packs }: Props) {
+/** Folders the learner closed. Remembered per browser: it is a view preference, not their menu. */
+const CLOSED_KEY = 'sc.menu.closed';
+
+function readClosed(): Set<string> {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CLOSED_KEY) ?? '[]') as unknown;
+    return new Set(Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function LearnerRail({ locale, dictionary, packs, menu }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = dictionary.nav;
 
+  const [closed, setClosed] = useState<Set<string>>(new Set());
+  useEffect(() => setClosed(readClosed()), []);
+
+  const toggle = (folderId: string): void => {
+    setClosed((previous) => {
+      const next = new Set(previous);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      try {
+        localStorage.setItem(CLOSED_KEY, JSON.stringify([...next]));
+      } catch {
+        // A browser that will not store it just forgets the choice on reload.
+      }
+      return next;
+    });
+  };
+
   const isActive = (href: string, exact = false) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith(`${href}?`);
+    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   const home = `/${locale}`;
-
-  // The pack this URL is inside, if any. No fallback to "their first pack": a pack's surfaces
-  // belong to that pack, and offering them before one is chosen is offering something that does
-  // not exist yet.
+  const skills = `/${locale}/skills`;
   const scoped = packIdFromUrl(pathname, searchParams);
-  const active = scoped ? (packs.find((entry) => entry.packId === scoped) ?? null) : null;
+  const arranged = arrangeRail(menu, packs);
+
+  const skillItem = (pack: RailPack, nested: boolean) => {
+    const Icon = packIcon(pack.icon);
+    return (
+      <RailItem
+        key={pack.packId}
+        href={packLanding(locale, pack.packId)}
+        icon={<Icon className="h-4 w-4" />}
+        active={pack.packId === scoped}
+        nested={nested}
+      >
+        {/* The skill's own name — localized metadata, resolved here, never translated (ADR-0005). */}
+        {pickTitle(pack.title, locale)}
+      </RailItem>
+    );
+  };
 
   return (
     <nav
       aria-label={t.sections}
-      className="hidden w-56 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-border p-3 md:flex"
+      className="hidden w-60 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-border p-3 md:flex"
     >
       <RailItem href={home} icon={<LayoutGrid className="h-4 w-4" />} active={isActive(home, true)}>
         {t.home}
       </RailItem>
 
-      {/*
-        Only packs the learner has started, because those are the ones this list is fetched from.
-        Choosing a *new* one is the landing page's job, and will be a marketplace of its own before
-        long — a rail that also listed everything on offer would be answering both questions at once.
-      */}
-      {packs.map((pack) => {
-        const landing = packLanding(locale, pack.packId);
-        const inScope = pack.packId === scoped;
-        const Icon = packIcon(pack.icon);
+      <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t.myMenu}</span>
+        <Link
+          href={skills}
+          aria-label={t.organise}
+          title={t.organise}
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+        >
+          <ListTree className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      {arranged.folders.map((folder) => {
+        // The folder holding the skill on screen stays open, whatever was remembered: closing the
+        // folder you are standing in would hide where you are.
+        const holdsScoped = folder.items.some((item) => item.packId === scoped);
+        const open = holdsScoped || !closed.has(folder.folderId);
 
         return (
-          <div key={pack.packId} className="contents">
-            <RailItem
-              href={landing}
-              icon={<Icon className="h-4 w-4" />}
-              active={inScope && isActive(`/${locale}/progress`)}
-              open={inScope}
+          <div key={folder.folderId} className="contents">
+            <button
+              type="button"
+              onClick={() => toggle(folder.folderId)}
+              aria-expanded={open}
+              title={t.openFolder}
+              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
             >
-              {/* The pack's own name — localized metadata, resolved here, never translated (ADR-0005). */}
-              {pickTitle(pack.title, locale)}
-            </RailItem>
-
-            {inScope ? <PackSurfaces locale={locale} dictionary={dictionary} pack={pack} isActive={isActive} /> : null}
+              <ChevronRight className={cn('h-3.5 w-3.5 shrink-0 transition-transform', open && 'rotate-90')} />
+              <Folder className={cn('h-4 w-4 shrink-0', holdsScoped ? 'text-primary' : 'text-muted-foreground')} />
+              {/* The learner's own name for it — neither chrome nor pack content. */}
+              <span className="flex-1 truncate">{folder.name}</span>
+              <span className="text-xs tabular-nums text-muted-foreground">{folder.items.length}</span>
+            </button>
+            {open ? (
+              <div className="my-0.5 ml-4 space-y-0.5 border-l border-border pl-2">
+                {folder.items.map((pack) => skillItem(pack, true))}
+              </div>
+            ) : null}
           </div>
         );
       })}
 
+      {arranged.loose.map((pack) => skillItem(pack, false))}
+
+      <div className="mx-1 my-3 h-px bg-border" />
+
+      <RailItem href={skills} icon={<Rows3 className="h-4 w-4" />} active={isActive(skills)}>
+        <span className="flex items-center justify-between gap-2">
+          {t.allSkills}
+          {arranged.hidden > 0 ? (
+            <span className="text-xs tabular-nums text-muted-foreground" title={`${arranged.hidden} ${t.hidden}`}>
+              <span aria-hidden="true">+{arranged.hidden}</span>
+              <span className="sr-only">
+                {arranged.hidden} {t.hidden}
+              </span>
+            </span>
+          ) : null}
+        </span>
+      </RailItem>
+
       {/*
-        The wiki is the platform's, not a pack's, so it sits beside the packs rather than under one.
-        It is on its way to becoming a pack of its own; until it is, this is the one item here that
-        no manifest declares.
+        The wiki is the platform's, not a skill's, so it sits beside the skills rather than in the
+        menu the learner arranges.
       */}
       <RailItem href={`/${locale}/wiki`} icon={<Library className="h-4 w-4" />} active={isActive(`/${locale}/wiki`)}>
         {t.wiki}
       </RailItem>
 
       {/*
-        Beside the packs for the opposite reason the wiki is: the wiki belongs to no pack, and this
-        belongs to *every* pack at once. A learner's archive spans everything they have touched, so
-        filing it under one of them would be filing it under the wrong one.
+        Beside the skills for the opposite reason the wiki is: the archive belongs to *every* skill at
+        once, so filing it under one of them would be filing it under the wrong one.
       */}
       <RailItem
         href={`/${locale}/archive`}
@@ -119,50 +194,7 @@ export function LearnerRail({ locale, dictionary, packs }: Props) {
       >
         {t.yourData}
       </RailItem>
-
-      {!active?.currentBlockId ? <p className="mt-auto px-2.5 pt-3 text-xs text-muted-foreground">{t.noBlockHint}</p> : null}
     </nav>
-  );
-}
-
-/** What the pack in scope offers, one level under it. */
-function PackSurfaces({
-  locale,
-  dictionary,
-  pack,
-  isActive,
-}: {
-  locale: Locale;
-  dictionary: Dictionary;
-  pack: RailPack;
-  isActive: (href: string, exact?: boolean) => boolean;
-}) {
-  const context = { locale, packId: pack.packId, currentBlockId: pack.currentBlockId };
-  const surfaces = visibleSurfaces(pack.surfaces, pack.material);
-
-  // A pack with nothing under it yet — no blocks, no library — gets no rule and no empty box.
-  if (surfaces.length === 0) return null;
-
-  return (
-    <div className="my-0.5 ml-3.5 space-y-0.5 border-l border-border pl-2">
-      {surfaces.map((id) => {
-        const surface = SURFACES[id];
-        const Icon = surface.icon;
-        const href = surface.href(context);
-
-        return (
-          <RailItem
-            key={id}
-            sub
-            href={href}
-            icon={<Icon className="h-4 w-4" />}
-            active={href ? isActive(href.split('?')[0] as string) : false}
-          >
-            {dictionary.nav[surface.labelKey]}
-          </RailItem>
-        );
-      })}
-    </div>
   );
 }
 
@@ -170,47 +202,27 @@ function RailItem({
   href,
   icon,
   active,
-  open,
-  sub,
+  nested,
   children,
 }: {
-  href: string | null;
+  href: string;
   icon: ReactNode;
   active: boolean;
-  /** The pack this URL is inside, when it is not itself the page on screen. */
-  open?: boolean;
-  sub?: boolean;
+  nested?: boolean;
   children: ReactNode;
 }) {
-  const shape = cn(
-    'flex items-center gap-2.5 rounded-lg px-2.5 text-left transition-colors',
-    sub ? 'py-1.5 text-[13px]' : 'py-2 text-sm',
-  );
-
-  if (!href) {
-    return (
-      <span className={cn(shape, 'cursor-not-allowed text-muted-foreground/50')} aria-disabled="true">
-        {icon}
-        <span className="flex-1">{children}</span>
-      </span>
-    );
-  }
-
   return (
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        shape,
-        active
-          ? 'bg-muted font-medium text-foreground'
-          : open
-            ? 'font-medium text-foreground hover:bg-muted/60'
-            : 'text-muted-foreground hover:bg-muted/60',
+        'flex items-center gap-2.5 rounded-lg px-2.5 text-left text-sm transition-colors',
+        nested ? 'py-1.5' : 'py-2',
+        active ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60',
       )}
     >
       {icon}
-      <span className="flex-1">{children}</span>
+      <span className="min-w-0 flex-1 truncate">{children}</span>
     </Link>
   );
 }

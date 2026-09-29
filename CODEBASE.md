@@ -38,6 +38,7 @@ api/src/
     error-log.ts       counter and status-transition rules
     progression.ts     next lesson, block completion, answer references
     ramp.ts            position on a pack's competency ramp
+    menu.ts            the learner's folders of skills: every started skill placed exactly once (ADR-0021)
     portable.ts        what a reference is, once it has to outlive a learner id —
                        content digests, and the never-demote merge rule (ADR-0020)
 
@@ -93,13 +94,16 @@ web/src/
   lib/               api (server) / api-client (browser) / auth (server-only) / session (shared)
     refresh.ts       spending the rotating refresh token — middleware and route handler only (ADR-0011)
     theme/palettes   the hue axis — a palette is data, not code
+    menu.ts          grouping the rail by the learner's menu — pure, unit-tested
     wiki-labels.ts   the wiki's topic/format taxonomy and its filter predicate — pure, unit-tested
     wiki.ts          reading and validating the corpus off disk, server-only (ADR-0016)
   components/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
     app-header.tsx   sticky brand header with the accent wordmark, and sign-out
-    learner-rail.tsx your packs, then what the pack in scope offers — one level, never two
+    learner-rail.tsx the learner's menu: their folders, then the skills in them — two levels, never three
+    skill-header.tsx a skill's name, its folder, and its surfaces as tabs (ADR-0021)
+    menu-editor.tsx  "All my skills": folders, which folder a skill is in, and what shows
     wiki-filters.tsx the chip rows and search box — writes the query string, filters nothing
     own-words.tsx    the entry form for your own words, inside the word trainer
     read-toggle.tsx  marking an article read, and putting it back. Never inferred from scrolling

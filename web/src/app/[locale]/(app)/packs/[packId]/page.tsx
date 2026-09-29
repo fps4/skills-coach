@@ -27,7 +27,8 @@ export default async function PackPage({ params }: { params: Promise<{ locale: L
 
   return (
     <PageShell
-      title={pickTitle(progress.pack.title, locale)}
+      // The skill's name is in the header above (ADR-0021); this page is its lessons.
+      title={dictionary.nav.lessons}
       subtitle={progress.pack.description ? pickTitle(progress.pack.description, locale) : undefined}
     >
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{dictionary.pack.blocks}</p>

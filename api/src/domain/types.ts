@@ -6,6 +6,8 @@
  * three as opaque data.
  */
 
+import type { LearnerMenu } from './menu.js';
+
 /** Interface languages the product ships. Distinct from a pack's content language — ADR-0005. */
 export const LOCALES = ['nl', 'en'] as const;
 export type Locale = (typeof LOCALES)[number];
@@ -441,6 +443,8 @@ export interface Learner {
   uiLanguage: Locale;
   createdAt: Date;
   profile?: LearnerProfile;
+  /** Their folders, and which skills show (ADR-0021). Absent until they first arrange anything. */
+  menu?: LearnerMenu;
 }
 
 /**
