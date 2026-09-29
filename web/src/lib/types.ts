@@ -18,6 +18,24 @@ export interface Learner {
   uiLanguage: Locale;
 }
 
+/** The learner's folders, and which skills show in the menu (ADR-0021). Always complete when read. */
+export interface MenuFolder {
+  folderId: string;
+  name: string;
+}
+
+export interface MenuPlacement {
+  packId: string;
+  folderId: string | null;
+  hidden: boolean;
+}
+
+export interface LearnerMenu {
+  folders: MenuFolder[];
+  /** One per started skill, in the learner's order. */
+  placements: MenuPlacement[];
+}
+
 export interface Enrollment {
   packId: string;
   currentBlockId?: string;

@@ -1,10 +1,14 @@
 ---
 title: The rail is packs, one level deep, and a pack lands on its progress
-status: accepted
+status: superseded by 0021
 date: 2026-08-14
 ---
 
 # ADR-0018 — The rail is packs, one level deep
+
+> **Superseded by [ADR-0021](0021-the-menu-is-folders-of-skills.md).** The rail is now folders of
+> skills, and what a pack offers moved from the rail to tabs on the skill's own page. The landing
+> page, the pack landing on its overview, and the ignored `progress` key all carry over.
 
 > The shape below stands. What decides whether an item under a pack is *there* changed the same day
 > in [ADR-0019](0019-a-surface-appears-when-the-pack-has-material-for-it.md): a surface the pack has

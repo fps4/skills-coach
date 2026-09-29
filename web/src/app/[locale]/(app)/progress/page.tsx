@@ -5,7 +5,7 @@
  * actually happened, so it cannot be out of date — which is the point, because this is the evidence
  * the next block gets written from.
  *
- * **One pack, named in the query** (ADR-0018). This is the pack's own page rather than a report
+ * **One skill, named in the query** (ADR-0018, ADR-0021). This is the pack's own page rather than a report
  * spanning every pack the learner has: it is what the rail's pack item opens, so it answers "how am
  * I doing *here*". Without a `packId` there is no pack to report on, and the landing page — which is
  * the product's list of packs — is the honest answer.
@@ -19,7 +19,7 @@ import { BarChart3, ListChecks, Puzzle, Sparkles } from 'lucide-react';
 import { Meter, PageShell, Pill, Stat } from '@/components/atoms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
-import { formatDate, pickTitle, statusLabel, statusTone } from '@/lib/text';
+import { formatDate, statusLabel, statusTone } from '@/lib/text';
 import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import type { DeckSummary, PackProgress } from '@/lib/types';
@@ -66,7 +66,8 @@ export default async function ProgressPage({
   const recurring = entry.errorLog.entries.filter((row) => row.status === 'recurring').length;
 
   return (
-    <PageShell title={pickTitle(entry.pack.title, locale)} subtitle={t.title}>
+    // The skill's name is already in the header above (ADR-0021); this page is its overview.
+    <PageShell title={dictionary.nav.overview}>
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat
           icon={<Sparkles className="h-4 w-4 text-primary" />}

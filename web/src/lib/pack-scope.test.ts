@@ -10,6 +10,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SURFACES,
+  activeTab,
+  skillTabs,
   SURFACES,
   packIcon,
   packIdFromUrl,
@@ -181,5 +183,47 @@ describe('packIcon', () => {
   it('falls back rather than rendering nothing', () => {
     expect(packIcon('not-an-icon')).toBe(packIcon(undefined));
     expect(packIcon('message-circle')).not.toBe(packIcon(undefined));
+  });
+});
+
+describe('skillTabs', () => {
+  const skill = (overrides: Partial<Parameters<typeof skillTabs>[1]> = {}) => ({
+    packId: 'demo',
+    currentBlockId: 'demo.b1',
+    material: material(),
+    ...overrides,
+  });
+
+  it('opens on the overview, then the surfaces the skill offers and has', () => {
+    expect(skillTabs('nl', skill()).map((tab) => tab.id)).toEqual(['overview', ...DEFAULT_SURFACES]);
+    expect(skillTabs('nl', skill())[0]?.href).toBe(packLanding('nl', 'demo'));
+  });
+
+  it('leaves out a surface the skill has no material for, as the rail did (ADR-0019)', () => {
+    const tabs = skillTabs('nl', skill({ material: material({ quiz: 0, wordOrder: 0, blocks: 0, reading: 0 }) }));
+    expect(tabs.map((tab) => tab.id)).toEqual(['overview', 'drills:terms']);
+  });
+
+  it('greys a tab out, rather than dropping it, when there is nothing to open yet', () => {
+    const words = skillTabs('nl', skill({ currentBlockId: null })).find((tab) => tab.id === 'drills:terms');
+    expect(words?.href).toBeNull();
+  });
+});
+
+describe('activeTab', () => {
+  it('maps each route onto the tab it belongs to', () => {
+    expect(activeTab('/nl/progress')).toBe('overview');
+    expect(activeTab('/nl/packs/demo')).toBe('lessons');
+    expect(activeTab('/nl/blocks/demo.b1')).toBe('lessons');
+    expect(activeTab('/en/lessons/demo.b1.l2')).toBe('lessons');
+    expect(activeTab('/nl/reading/demo.rab12cd34.x')).toBe('reading');
+    expect(activeTab('/nl/drills/words')).toBe('drills:terms');
+    expect(activeTab('/nl/drills/sentences')).toBe('drills:word-order');
+    expect(activeTab('/nl/quiz')).toBe('quiz');
+  });
+
+  it('is null outside a skill', () => {
+    expect(activeTab('/nl')).toBeNull();
+    expect(activeTab('/nl/wiki')).toBeNull();
   });
 });

@@ -46,6 +46,8 @@ reach another's work.
 |---|---|---|---|
 | GET | `/me` | `progress:read` | Profile and enrollments. Creates the profile on first call |
 | PATCH | `/me` | `progress:read` | `{ uiLanguage?, displayName? }` |
+| GET | `/me/menu` | `progress:read` | Your folders and which skills show — every started skill placed exactly once |
+| PUT | `/me/menu` | `progress:read` | Replace the menu wholesale. Reconciled with what you have started, never refused for it |
 | GET | `/packs` | `lesson:read` | Every published pack |
 | GET | `/packs/:packId` | `lesson:read` | Pack and its blocks. **Enrols the learner** |
 | GET | `/packs/:packId/blocks` | `lesson:read` | Published blocks only |
@@ -71,6 +73,29 @@ reach another's work.
 | GET | `/progress` | `progress:read` | Overview, or one pack with `?packId` |
 | GET | `/archive` | `progress:read` | Everything about you, as a JSON attachment |
 | POST | `/archive/import` | `progress:restore` | Put an archive back. `?dryRun=true` reports and writes nothing |
+
+### `GET /me/menu` and `PUT /me/menu`
+
+```jsonc
+{
+  "folders": [{ "folderId": "nl", "name": "Nederlands" }],
+  "placements": [
+    { "packId": "woordtrainer-nl", "folderId": "nl", "hidden": false },
+    { "packId": "some-other-skill", "folderId": null, "hidden": true }
+  ]
+}
+```
+
+The learner's own arrangement of their skills ([ADR-0021](../architecture/decisions/0021-the-menu-is-folders-of-skills.md)).
+Order is array order — of folders, and of skills within a folder. `folderId` is chosen by the client
+and must be 1–40 letters, digits, `-` or `_`; a malformed one is a `400`.
+
+Both directions run through the same reconciliation, so the response is always complete: every skill
+the learner has started appears exactly once, one never placed is appended loose and shown, a
+placement for a skill they have not started is dropped, and one naming a missing folder moves out of
+it. A `PUT` is therefore never refused for naming the wrong skills — it is corrected, and the
+corrected menu is what comes back. Private to the learner; not on the coach surface. Travels in the
+archive under `learner.menu`.
 
 ### `GET /drills`
 

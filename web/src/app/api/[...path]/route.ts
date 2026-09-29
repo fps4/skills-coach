@@ -73,6 +73,9 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
 export async function PATCH(request: NextRequest, context: Context): Promise<NextResponse> {
   return proxy(request, (await context.params).path);
 }
+export async function PUT(request: NextRequest, context: Context): Promise<NextResponse> {
+  return proxy(request, (await context.params).path);
+}
 export async function DELETE(request: NextRequest, context: Context): Promise<NextResponse> {
   return proxy(request, (await context.params).path);
 }

@@ -6,6 +6,16 @@ never uses it.
 
 ## Content
 
+**Skill** — what a learner sees and practises: the learner-facing name for a **pack**
+([ADR-0021](docs/architecture/decisions/0021-the-menu-is-folders-of-skills.md)). Interface text says
+*skill* (Dutch: *vaardigheid*); code, the API and the archive format keep saying *pack*, because
+`packId` is the reference every exported file carries. Skills are small and narrowly focused — a word
+trainer, one set of verbs, a reading list.
+
+**Menu** — the learner's own arrangement of the skills they have started: **folders** they name and
+order, and for each skill which folder it is in and whether it is **hidden**. Belongs to the learner,
+never to a pack. A hidden skill keeps its progress and waits on the "All my skills" page.
+
 **Pack** — a complete training program for one skill, e.g. Dutch conversation B1→B2. A pack declares
 its own **content language**, its competency **framework**, its **error categories** and its section
 map. Everything skill-specific enters the platform through a pack; nothing about a skill is hardcoded

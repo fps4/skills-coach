@@ -11,7 +11,14 @@
 import { randomUUID } from 'node:crypto';
 import { notFound } from '../http/errors.js';
 import type { Principal } from '../auth/verifier.js';
-import { learnerProfileSchema, type LearnerProfileInput, type PatchMeInput } from '../domain/schemas.js';
+import {
+  learnerProfileSchema,
+  menuSchema,
+  type LearnerProfileInput,
+  type MenuInput,
+  type PatchMeInput,
+} from '../domain/schemas.js';
+import { normalizeMenu, type LearnerMenu } from '../domain/menu.js';
 import { DEFAULT_LOCALE, type Enrollment, type Learner, type LearnerProfile } from '../domain/types.js';
 import type { LearnerDoc } from '../db/collections.js';
 import { enrollmentIdFor, type ServiceContext } from './context.js';
@@ -139,6 +146,42 @@ export async function updateLearner(ctx: ServiceContext, learnerId: string, inpu
   );
   if (!result) throw notFound(`learner ${learnerId}`);
   return toLearner(result);
+}
+
+// ---------------------------------------------------------------------------
+// The menu (ADR-0021)
+// ---------------------------------------------------------------------------
+
+/**
+ * The learner's menu, reconciled with what they have started.
+ *
+ * Normalised on the way *out* as well as in: a skill started since the menu was last saved has no
+ * placement yet, and one they have left still has one. Neither needs a write to be right.
+ */
+export async function getMenu(ctx: ServiceContext, learnerId: string): Promise<LearnerMenu> {
+  const learner = await getLearner(ctx, learnerId);
+  return normalizeMenu(learner.menu, await startedPackIds(ctx, learnerId));
+}
+
+/** Oldest first, so a skill nobody has placed yet joins the end of the menu in the order it was started. */
+async function startedPackIds(ctx: ServiceContext, learnerId: string): Promise<string[]> {
+  const enrollments = await listEnrollments(ctx, learnerId);
+  return enrollments
+    .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime() || a.packId.localeCompare(b.packId))
+    .map((entry) => entry.packId);
+}
+
+/**
+ * Replace the learner's menu wholesale.
+ *
+ * The client sends the whole arrangement, the way a profile is sent: moving one skill changes the
+ * order of the others, and a patch language for that would be more code than the menu itself.
+ */
+export async function setMenu(ctx: ServiceContext, learnerId: string, input: MenuInput): Promise<LearnerMenu> {
+  const menu = normalizeMenu(menuSchema.parse(input), await startedPackIds(ctx, learnerId));
+  const result = await ctx.store.collections.learners.updateOne({ _id: learnerId }, { $set: { menu } });
+  if (result.matchedCount === 0) throw notFound(`learner ${learnerId}`);
+  return menu;
 }
 
 // ---------------------------------------------------------------------------

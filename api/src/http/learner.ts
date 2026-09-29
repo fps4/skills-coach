@@ -14,6 +14,7 @@ import {
   answerQuizSchema,
   createLearnerTermSchema,
   createSubmissionSchema,
+  menuSchema,
   patchMeSchema,
   postAttemptSchema,
   setReadSchema,
@@ -105,6 +106,18 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const learner = await caller(request, 'progress:read');
     const updated = await learners.updateLearner(ctx, learner.learnerId, patchMeSchema.parse(request.body));
     return { learner: updated };
+  });
+
+  // The learner's own arrangement of their skills (ADR-0021). Same capability as the rest of `/me`:
+  // it is theirs, and it decides nothing about their work.
+  app.get('/api/v1/me/menu', async (request) => {
+    const learner = await caller(request, 'progress:read');
+    return { menu: await learners.getMenu(ctx, learner.learnerId) };
+  });
+
+  app.put('/api/v1/me/menu', async (request) => {
+    const learner = await caller(request, 'progress:read');
+    return { menu: await learners.setMenu(ctx, learner.learnerId, menuSchema.parse(request.body)) };
   });
 
   // --- content --------------------------------------------------------------

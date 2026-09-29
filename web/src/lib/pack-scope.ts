@@ -20,6 +20,7 @@ import {
   Sparkles,
   Cloud,
   Dumbbell,
+  LayoutDashboard,
   ListChecks,
   Newspaper,
   Puzzle,
@@ -178,6 +179,59 @@ export function packLanding(locale: string, packId: string): string {
 export function visibleSurfaces(declared: PackSurface[] | undefined, material: PackMaterial): RailSurface[] {
   const offered: PackSurface[] = declared ?? DEFAULT_SURFACES;
   return DEFAULT_SURFACES.filter((id) => offered.includes(id) && SURFACES[id].has(material));
+}
+
+/** One tab along the top of a skill's page (ADR-0021). */
+export interface SkillTab {
+  id: 'overview' | RailSurface;
+  icon: LucideIcon;
+  labelKey: keyof Dictionary['nav'];
+  /** Null renders the tab disabled: the skill has this, there is simply nothing to open right now. */
+  href: string | null;
+}
+
+/**
+ * The tabs of a skill's page: its overview, then every surface it offers and has.
+ *
+ * These used to hang under the pack in the rail (ADR-0018). They moved here when the rail became
+ * folders of skills, because a third level of nesting in a sidebar is where menus stop being
+ * readable — and a skill's surfaces are about *that* skill, so its own page is where they belong.
+ * Which surfaces appear is still `visibleSurfaces`, so the rules of ADR-0019 are unchanged.
+ */
+export function skillTabs(
+  locale: string,
+  skill: { packId: string; currentBlockId: string | null; surfaces?: PackSurface[]; material: PackMaterial },
+): SkillTab[] {
+  const context = { locale, packId: skill.packId, currentBlockId: skill.currentBlockId };
+  return [
+    { id: 'overview', icon: LayoutDashboard, labelKey: 'overview', href: packLanding(locale, skill.packId) },
+    ...visibleSurfaces(skill.surfaces, skill.material).map((id) => ({
+      id,
+      icon: SURFACES[id].icon,
+      labelKey: SURFACES[id].labelKey,
+      href: SURFACES[id].href(context),
+    })),
+  ];
+}
+
+/**
+ * Which tab a path belongs to.
+ *
+ * By route rather than by exact href, because most surfaces open on more than one page — the lessons
+ * tab covers the pack's block list, a block, a lesson and the session log a lesson produced.
+ */
+export function activeTab(pathname: string): SkillTab['id'] | null {
+  const segments = pathname.split('/').filter(Boolean);
+  const rest = segments.length > 0 && segments[0]?.length === 2 ? segments.slice(1) : segments;
+  const [head, tail] = rest;
+
+  if (head === 'progress') return 'overview';
+  if (head === 'packs' || head === 'blocks' || head === 'lessons' || head === 'sessions') return 'lessons';
+  if (head === 'reading') return 'reading';
+  if (head === 'quiz') return 'quiz';
+  if (head === 'drills' && tail === 'words') return 'drills:terms';
+  if (head === 'drills' && tail === 'sentences') return 'drills:word-order';
+  return null;
 }
 
 /** Icons a pack may name for its tile. Unknown keys fall back — losing an icon must not lose a tile. */
