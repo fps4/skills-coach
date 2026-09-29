@@ -41,6 +41,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0019](architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md) | A surface appears when the pack has material for it |
 | [0020](architecture/decisions/0020-a-learner-can-take-their-progress-with-them.md) | A learner can take their progress with them |
 | [0021](architecture/decisions/0021-the-menu-is-folders-of-skills.md) | The menu is folders of skills; a skill's surfaces are its tabs |
+| [0022](architecture/decisions/0022-a-skill-can-be-only-a-deck-or-a-library.md) | A skill can be only a deck or only a library, and a programme's can be forked out of it |
 
 ## Reference
 

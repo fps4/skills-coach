@@ -5,11 +5,13 @@
  */
 
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Check, CircleDashed, Clock } from 'lucide-react';
 
 import { Meter, PageShell, Pill } from '@/components/atoms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { packLanding } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -24,6 +26,10 @@ export default async function PackPage({ params }: { params: Promise<{ locale: L
   // The GET is what enrols; the progress call then has an enrollment to report against.
   await api<{ pack: unknown; blocks: Block[] }>(`/api/v1/packs/${packId}`);
   const progress = await api<PackProgress>(`/api/v1/progress?packId=${packId}`);
+
+  // A skill with no lessons — only a deck, or only a reading list — has no block list worth showing,
+  // so opening it lands where every skill lands: its overview (ADR-0022). Enrolment already happened.
+  if (!progress.blocks.some(({ block }) => block.lessonCount > 0)) redirect(packLanding(locale, packId));
 
   return (
     <PageShell

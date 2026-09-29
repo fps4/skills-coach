@@ -1,5 +1,5 @@
 /**
- * `npm run remove:pack -- --pack <packId> [--dry-run]`
+ * `npm run remove:pack -- --pack <packId> [--dry-run] [--including-history]`
  *
  * Delete a pack and everything published under it.
  *
@@ -12,14 +12,22 @@
  * **It refuses if anyone has worked the pack.** A submission, a correction, an error-log entry or a
  * drill streak all mean this is somebody's history, and history is archived, never deleted. That
  * check is the whole safety story, so it runs before anything is removed and names what it found.
+ *
+ * **`--including-history` overrides that refusal**, and deletes every learner's work in the pack as
+ * well (`services/pack-removal.ts`). It exists for one case: the people whose history it is have asked
+ * for the pack to go, after what they wanted to keep was moved out (ADR-0022). It prints the full
+ * footprint first, and `--dry-run` stops there.
  */
 
 import { loadConfig } from '../config.js';
 import { connect, type Store } from '../db/client.js';
+import { createContext } from '../services/context.js';
+import { countPackFootprint, removePackWithHistory } from '../services/pack-removal.js';
 
 interface Args {
   packId: string;
   dryRun: boolean;
+  includingHistory: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -37,8 +45,8 @@ function parseArgs(argv: string[]): Args {
   }
 
   const { pack } = args;
-  if (typeof pack !== 'string') throw new Error('usage: remove:pack --pack <packId> [--dry-run]');
-  return { packId: pack, dryRun: args['dry-run'] === true };
+  if (typeof pack !== 'string') throw new Error('usage: remove:pack --pack <packId> [--dry-run] [--including-history]');
+  return { packId: pack, dryRun: args['dry-run'] === true, includingHistory: args['including-history'] === true };
 }
 
 /** Everything that would make deleting this pack a loss of somebody's history. */
@@ -73,6 +81,22 @@ async function main(): Promise<void> {
     const pack = await store.collections.packs.findOne({ _id: args.packId });
     if (!pack) {
       log(`pack ${args.packId} is not published — nothing to remove.`);
+      return;
+    }
+
+    if (args.includingHistory) {
+      const ctx = createContext(store, config);
+      const footprint = await countPackFootprint(ctx, args.packId);
+      log(`${args.packId} — everything below goes, learner history included:\n`);
+      for (const [what, count] of Object.entries(footprint)) log(`  ${what.padEnd(14)} ${count}`);
+      if (args.dryRun) {
+        log('\n--dry-run: nothing was written.');
+        return;
+      }
+      const removed = await removePackWithHistory(ctx, args.packId);
+      log(
+        `\nremoved ${args.packId} and ${Object.values(removed).reduce((sum, n) => sum + n, 0)} documents from ${config.mongoDb}.`,
+      );
       return;
     }
 

@@ -20,7 +20,7 @@ on:
         description: "Directory under packs/ holding the manifest to publish"
         type: string
         required: true
-        default: dutch-conversation-nl
+        default: woordtrainer-nl
       dry_run:
         description: "Parse and report, publish nothing"
         type: boolean

@@ -56,7 +56,8 @@ method:                      # optional — how the material should be taught, s
   rules: { newTermsPerLesson: "8–12, as chunks with the article" }
   sequencing: { article: "drilled as a chunk, never taught as a rule" }
 
-errorCategories:             # THE STABLE VOCABULARY — see below
+errorCategories:             # THE STABLE VOCABULARY — see below. Optional for a skill with
+                             # nothing to correct: a word deck, a reading list (ADR-0022)
   - id: word-order-sub
     label: { nl: Woordvolgorde bijzin, en: Subclause word order }
 
@@ -160,6 +161,22 @@ They are the join key between correction, drilling and next-block generation. **
 published, do not rename one.** A rename orphans every existing entry: the old id keeps its history
 and never joins anything, while new corrections accumulate under the new one. Adding a category is
 always safe.
+
+## A skill that is only a deck, or only a reading list
+
+Not every skill is a course ([ADR-0022](../architecture/decisions/0022-a-skill-can-be-only-a-deck-or-a-library.md)).
+`packs/woordtrainer-nl` is only a word deck and `packs/lezen-nieuws-nl` only a reading library: no
+lessons, no error categories, and a `surfaces` list naming the one thing each does.
+
+- **A deck skill** keeps every learner's words in one block with no lessons — its deck block,
+  `woordenlijst`, order 1. The words are all learners' own (ADR-0012), so nothing is authored into it
+  and no publish can touch them. `npm run migrate:to-skills` creates the deck block the first time it
+  runs; publishing a block with `lessons: []` does the same.
+- **A library skill** needs no block at all. Articles arrive per learner through `load-reading.yml`,
+  exactly as before.
+
+Forking a programme's words and reading into such skills, and removing the programme afterwards, is
+the `maintain-skills` workflow — see ADR-0022 for what each task copies and what it deletes.
 
 ## Lessons
 

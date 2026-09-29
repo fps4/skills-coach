@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { packManifestSchema } from '../../src/domain/schemas.js';
+import { packManifestSchema, publishBlockSchema } from '../../src/domain/schemas.js';
 
 const base = {
   packId: 'test-pack',
@@ -114,5 +114,18 @@ describe('pack manifest method', () => {
     const parsed = packManifestSchema.parse({ ...base, method: { lessonArc: ['input'], tone: 'friendly' } });
 
     expect(parsed.method).toEqual({ lessonArc: ['input'] });
+  });
+
+  it('accepts a skill with no error categories — a word deck has nothing to correct (ADR-0022)', () => {
+    const { errorCategories: _dropped, ...withoutCategories } = base;
+    expect(packManifestSchema.parse(withoutCategories).errorCategories).toEqual([]);
+  });
+});
+
+describe('publishing a block', () => {
+  it('accepts a block that is only a deck, with no lessons (ADR-0022)', () => {
+    const parsed = publishBlockSchema.parse({ order: 1, slug: 'word-list', title: 'Word list' });
+    expect(parsed.lessons).toEqual([]);
+    expect(parsed.drillItems).toEqual([]);
   });
 });

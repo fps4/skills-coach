@@ -1,0 +1,72 @@
+name: maintain-skills
+
+# One-off data maintenance on the ds1 deployment, run inside the api container.
+#
+# Two tasks, both named here rather than taken as free text, so nothing but these can be run:
+#
+#   migrate-dutch-to-skills  copy every learner's words, word progress and reading library out of
+#                            `dutch-conversation-nl` into `woordtrainer-nl` and `lezen-nieuws-nl`
+#                            (ADR-0022). Copies, never deletes; idempotent.
+#   remove-pack              delete a pack. With `including_history`, every learner's work in it
+#                            goes too — the one irreversible thing this repository can do to a
+#                            deployment, and only for a pack whose learners asked for it.
+#
+# Both talk to MongoDB directly through the api container's own environment, so no credential is
+# minted, typed or printed. Both default to reporting only: `apply` must be ticked to write.
+#
+# Manually dispatched, always. Runs on the ds1 runner because that is where the container is.
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What to run"
+        type: choice
+        options: [migrate-dutch-to-skills, remove-pack]
+        required: true
+      pack:
+        description: "remove-pack only: the pack to remove"
+        type: string
+        required: false
+      including_history:
+        description: "remove-pack only: delete every learner's work in the pack as well"
+        type: boolean
+        default: false
+      apply:
+        description: "Write. Unticked, the task only reports what it would do."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maintain-skills
+  cancel-in-progress: false
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+  API_CONTAINER: skills-coach-api
+
+jobs:
+  run:
+    runs-on: [self-hosted, ds1]
+    timeout-minutes: 30
+    steps:
+      - name: Migrate the Dutch programme's words and reading into skills
+        if: inputs.task == 'migrate-dutch-to-skills'
+        run: |
+          docker exec "$API_CONTAINER" node dist/importer/migrate-to-skills.js \
+            --from dutch-conversation-nl --words woordtrainer-nl --reading lezen-nieuws-nl \
+            ${{ inputs.apply && '--apply' || '' }}
+
+      - name: Remove a pack
+        if: inputs.task == 'remove-pack'
+        env:
+          PACK: ${{ inputs.pack }}
+        run: |
+          # Slug-shaped or nothing: this value reaches a command line.
+          [[ "$PACK" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "pack must be a packId, got '$PACK'"; exit 1; }
+          docker exec "$API_CONTAINER" node dist/importer/remove-pack.js --pack "$PACK" \
+            ${{ inputs.including_history && '--including-history' || '' }} \
+            ${{ !inputs.apply && '--dry-run' || '' }}

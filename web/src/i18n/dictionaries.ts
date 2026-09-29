@@ -72,6 +72,7 @@ const nl = {
     startPack: 'Beginnen',
     lessonsDone: 'lessen afgerond',
     openPack: 'Open vaardigheid',
+    unread: 'ongelezen',
   },
   pack: {
     blocks: 'Blokken',
@@ -452,6 +453,7 @@ const en: Dictionary = {
     startPack: 'Start',
     lessonsDone: 'lessons done',
     openPack: 'Open skill',
+    unread: 'unread',
   },
   pack: {
     blocks: 'Blocks',

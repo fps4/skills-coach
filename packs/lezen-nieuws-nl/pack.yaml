@@ -1,0 +1,34 @@
+# Lezen · nieuws — a skill that is only a reading library (ADR-0022).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill, and it names no
+# person. The articles are loaded per learner by `load-reading.yml` from outside the repository and
+# never live in it (ADR-0006, ADR-0017). `.gitignore` un-ignores this one file.
+#
+# It was forked out of `dutch-conversation-nl`, whose reading library it replaces: a learner's
+# articles and what they had read were copied here.
+
+packId: lezen-nieuws-nl
+
+title:
+  nl: Lezen · nieuws
+  en: Reading · news
+
+description:
+  nl: Artikelen uit je eigen vakgebied, in het Nederlands, naast het origineel.
+  en: Articles from your own field, in Dutch, next to the original.
+
+contentLanguage: nl
+translationLanguage: en
+skill: reading # free label, descriptive only — nothing branches on it
+
+framework:
+  id: cefr
+  levels: [B1, B2]
+
+presentation:
+  palette: orange
+  icon: book-open
+  tagline:
+    nl: Lezen over werk dat je echt doet.
+    en: Reading about work you actually do.
+  surfaces: [reading]

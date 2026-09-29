@@ -53,6 +53,10 @@ api/src/
     quiz.ts            sittings: start, answer, finish. Grading delegates to drills.ts,
                        so a question answered in a sitting and one answered outside it
                        move identical state
+    skill-migration.ts forking a programme's words and reading into skills of their own — copies
+                       every learner's words, progress and library, never deletes (ADR-0022)
+    pack-removal.ts    deleting a pack *with* everyone's history in it — reachable only through
+                       `remove-pack --including-history`, never through an API (ADR-0022)
     archive.ts         a learner's work in and out of a file: gathers everything of
                        theirs, carries no pack material and no owner-scoped id, and
                        re-derives every reference on the way back in (ADR-0020)
@@ -63,6 +67,8 @@ api/src/
   importer/          local markdown/CSV → pack payload → coach API
                      (also `validate-manifests.ts`, the linter CI runs over every
                       committed `packs/*/pack.yaml` — ADR-0008)
+                     `migrate-to-skills.ts` runs services/skill-migration.ts; `remove-pack.ts` deletes a
+                      pack — both inside the api container, via the `maintain-skills` workflow
                      `reading-source.ts` / `import-reading.ts` are the same idea for a
                       library: `<slug>.<lang>.md` files → articles → coach API
 ```

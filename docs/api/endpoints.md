@@ -326,7 +326,11 @@ The only way content and corrections enter the system
 ### `POST /coach/v1/packs/:packId/blocks`
 
 Idempotent. Identifiers are derived from position and content, so republishing a block updates it in
-place and a drill item whose text is unchanged **keeps its learner progress**. Vocabulary sections
+place and a drill item whose text is unchanged **keeps its learner progress**.
+
+`lessons` may be empty: a block can be only a deck, the place a word skill's words live
+([ADR-0022](../architecture/decisions/0022-a-skill-can-be-only-a-deck-or-a-library.md)). Likewise a
+manifest (`POST /coach/v1/packs`) may omit `errorCategories` — a skill with nothing to correct. Vocabulary sections
 also contribute `term` drills, so an author never writes a word twice.
 
 An `mcq` drill item carries its own answer key:
