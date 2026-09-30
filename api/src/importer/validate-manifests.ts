@@ -14,9 +14,10 @@
  * valid and still wrong at runtime — silently, which is the only reason it is worth a check here.
  */
 
-import { readdir, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parse as parseYaml } from 'yaml';
 import { ZodError } from 'zod';
 
 import type { PackManifestInput } from '../domain/schemas.js';
@@ -88,6 +89,25 @@ function lint(manifest: PackManifestInput): string[] {
   return problems;
 }
 
+/**
+ * Keys with no value in the raw YAML.
+ *
+ * The usual cause is a comma inside an unquoted flow mapping: `{ en: who decides, owns it }` parses
+ * as `{ en: "who decides", "owns it": null }`. The schema then strips the unknown key, so the label
+ * publishes cut short and nothing complains. Checked on the raw document because by the time the
+ * schema has parsed it, the evidence is gone.
+ */
+function emptyKeys(value: unknown, path = ''): string[] {
+  if (Array.isArray(value)) return value.flatMap((item, index) => emptyKeys(item, `${path}[${index}]`));
+  if (value === null || typeof value !== 'object') return [];
+  return Object.entries(value).flatMap(([key, child]) => {
+    const here = path ? `${path}.${key}` : key;
+    return child === null
+      ? [`"${here}" has no value — a comma in an unquoted {…} value splits it; quote the value`]
+      : emptyKeys(child, here);
+  });
+}
+
 async function main(): Promise<void> {
   const packsDir = process.argv[2] ? resolve(process.argv[2]) : DEFAULT_PACKS_DIR;
 
@@ -113,7 +133,7 @@ async function main(): Promise<void> {
 
     try {
       const manifest = await loadManifest(manifestPath);
-      const problems = lint(manifest);
+      const problems = [...emptyKeys(parseYaml(await readFile(manifestPath, 'utf8'))), ...lint(manifest)];
       const ramp = manifest.framework.ramp?.length ?? 0;
 
       log(
