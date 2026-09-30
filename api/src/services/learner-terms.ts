@@ -41,6 +41,8 @@ export async function addTerm(
     term: parsed.term,
     translation: parsed.translation,
     ...(parsed.example ? { example: parsed.example } : {}),
+    // Shown after an answer, never graded; carried as given (ADR-0023).
+    ...(parsed.details ? { details: parsed.details } : {}),
   };
 
   const drillItemId = drillIdFor(blockId, payload, learnerId);

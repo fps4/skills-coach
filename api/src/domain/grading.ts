@@ -13,6 +13,7 @@ import { acceptedForms, matches, type MatchOptions } from './matching.js';
 import { checkMcq, isMultipleResponse, optionsText, requiredCount, shuffleOptions } from './mcq.js';
 import { checkOrder, leadCueForStage, partsForStage, renderOrder, shuffleParts, stageCount } from './word-order.js';
 import type { DrillItem, McqOption, Stage } from './types.js';
+import type { TermDetails } from './term-request.js';
 
 /**
  * How many stages this item offers. `term` items always drill both directions.
@@ -124,6 +125,9 @@ export interface GradeResult {
   expected: string;
   /** Every form that would have been accepted — a `term` item only. */
   acceptedAlso?: string[];
+  /** The card's example sentence and its details, revealed once answered — a `term` item only. */
+  example?: string;
+  details?: TermDetails;
   /** Per-chunk verdict — a `word-order` item only. */
   marks?: boolean[];
   /** The learner produced the other valid order: correct Dutch, wrong round. */
@@ -177,6 +181,9 @@ export function grade(input: GradeInput, progress: DrillProgress): GradeResult {
       overridden: !matched && override,
       expected,
       acceptedAlso: [...acceptedForms(expected, input.matchOptions)].sort(),
+      // After the verdict the whole card is fair game — the example is no longer a hint (ADR-0023).
+      ...(item.payload.example ? { example: item.payload.example } : {}),
+      ...(item.payload.details ? { details: item.payload.details } : {}),
       progress: applyAttempt(progress, correct, stagesFor(item)),
     };
   }

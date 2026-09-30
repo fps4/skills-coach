@@ -17,6 +17,7 @@ import { getEnrollment, listEnrollments } from './learners.js';
 import { packBreakdown } from './quiz.js';
 import { counts as readingCountsFor } from './reading.js';
 import { blockSubmissionState } from './submissions.js';
+import { countRequests } from './term-requests.js';
 import type { CategoryBreakdown, QuizScore } from '../domain/quiz.js';
 import type { ServiceContext } from './context.js';
 
@@ -28,6 +29,8 @@ export interface PackProgress {
   decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary };
   /** How much is in this learner's library and how much is unread — what the rail shows (ADR-0017). */
   reading: ReadingCounts;
+  /** Words asked to be filled in: waiting on a coach, and ready for the learner to review (ADR-0023). */
+  wordRequests: { waiting: number; ready: number };
   /** Per-category accuracy across every sitting. Advisory, derived on read (ADR-0014). */
   quiz: { byCategory: CategoryBreakdown[]; sessions: number; score: QuizScore };
   errorLog: {
@@ -72,6 +75,7 @@ export async function packProgress(ctx: ServiceContext, learnerId: string, packI
       quiz: await deckSummary(ctx, learnerId, { packId, kind: 'mcq' }),
     },
     reading: await readingCountsFor(ctx, learnerId, packId),
+    wordRequests: await countRequests(ctx, learnerId, packId),
     quiz: await packBreakdown(ctx, learnerId, packId),
     errorLog: {
       entries,

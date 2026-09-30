@@ -13,10 +13,12 @@
  * Everything here is advisory: a sequencing signal, never a grade.
  */
 
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { BarChart3, ListChecks, Newspaper, Puzzle, Sparkles } from 'lucide-react';
 
 import { Meter, PageShell, Pill, Stat } from '@/components/atoms';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { formatDate, statusLabel, statusTone } from '@/lib/text';
@@ -104,6 +106,25 @@ export default async function ProgressPage({
           />
         ) : null}
       </div>
+
+      {/* Words a coach filled in, waiting on the learner (ADR-0023). */}
+      {entry.wordRequests.ready > 0 && entry.currentBlock ? (
+        <Card className="border-primary/40">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-5">
+            <p className="flex items-center gap-2 text-sm">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>
+                <span className="font-semibold tabular-nums">{entry.wordRequests.ready}</span> {dictionary.assist.readyCallout}
+              </span>
+            </p>
+            <Button asChild size="sm">
+              <Link href={`/${locale}/drills/words?blockId=${encodeURIComponent(entry.currentBlock.blockId)}&view=add`}>
+                {dictionary.assist.review}
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {hasDecks ? (
         <Card>

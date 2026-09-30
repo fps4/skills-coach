@@ -44,6 +44,8 @@ async function railPacks(): Promise<{ packs: RailPack[]; palettes: Record<string
         title: entry.pack.title,
         icon: entry.pack.presentation?.icon,
         currentBlockId: entry.currentBlock?.blockId ?? null,
+        // Words a coach has filled in that wait on the learner (ADR-0023).
+        ready: entry.wordRequests?.ready ?? 0,
         surfaces: entry.pack.presentation?.surfaces,
         // Pack-wide totals, which is what these already are: the deck summaries are counted per pack
         // and per learner, never per block, so what the rail offers cannot flicker as the learner

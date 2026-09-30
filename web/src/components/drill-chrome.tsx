@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { AttemptResult, DeckSummary, Stage } from '@/lib/types';
+import { TermCard } from './term-card';
 
 export function DrillShell({
   title,
@@ -141,12 +142,15 @@ export function Feedback({
   result,
   dictionary,
   contentLanguage,
+  translationLanguage,
   onNext,
   onOverride,
 }: {
   result: AttemptResult;
   dictionary: Dictionary;
   contentLanguage: string;
+  /** Where a word's glosses are written; only a word's card needs it. */
+  translationLanguage?: string;
   onNext: () => void;
   onOverride: () => void;
 }) {
@@ -191,6 +195,15 @@ export function Feedback({
           {t.alsoAccepted}: {result.acceptedAlso.join(' · ')}
         </p>
       ) : null}
+
+      {/* The rest of a word's card, now that the answer is out (ADR-0023). */}
+      <TermCard
+        example={result.example}
+        details={result.details}
+        contentLanguage={contentLanguage}
+        translationLanguage={translationLanguage ?? contentLanguage}
+        dictionary={dictionary}
+      />
 
       <div className="flex flex-wrap gap-2">
         <Button onClick={onNext} autoFocus>

@@ -97,6 +97,9 @@ export async function ensureIndexes(db: Db, auditRetentionDays: number): Promise
 
   await c.readingState.createIndex({ learnerId: 1, articleId: 1 }, { unique: true, name: 'reading_state_unique' });
   await c.readingState.createIndex({ learnerId: 1, packId: 1 }, { name: 'reading_state_by_pack' });
+  // Word requests (ADR-0023): the learner's list per deck, and the coach's queue oldest-first.
+  await c.termRequests.createIndex({ learnerId: 1, blockId: 1, status: 1 }, { name: 'term_request_by_deck' });
+  await c.termRequests.createIndex({ status: 1, requestedAt: 1 }, { name: 'term_request_queue' });
 
   // Retention rather than pruning logic — the whole point of the TTL index.
   await c.auditEvents.createIndex(

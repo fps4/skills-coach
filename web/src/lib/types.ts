@@ -271,12 +271,48 @@ export interface DueItem {
 }
 
 /** A word the learner added themselves — a `term` item they own (ADR-0012). */
+/** What a word's card can carry beyond the pair that is practised (ADR-0023). Shown, never graded. */
+export interface TermDetails {
+  partOfSpeech?: string;
+  forms?: { label: string; value: string }[];
+  exampleTranslation?: string;
+  synonyms?: string[];
+  antonyms?: string[];
+  note?: string;
+}
+
 export interface LearnerTerm {
   drillItemId: string;
   blockId: string;
   packId: string;
-  payload: { kind: 'term'; term: string; translation: string; example?: string };
+  payload: { kind: 'term'; term: string; translation: string; example?: string; details?: TermDetails };
 }
+
+/** What a coach proposed for a word the learner asked to have filled in. */
+export interface TermSuggestion {
+  translation: string;
+  example?: string;
+  details?: TermDetails;
+}
+
+export type TermRequestStatus = 'requested' | 'suggested' | 'added' | 'discarded';
+
+/** A word the learner asked to have filled in, and where it has got to (ADR-0023). */
+export interface TermRequest {
+  requestId: string;
+  packId: string;
+  blockId: string;
+  term: string;
+  status: TermRequestStatus;
+  suggestion?: TermSuggestion;
+  requestedAt: string;
+  suggestedAt?: string;
+  resolvedAt?: string;
+  drillItemId?: string;
+}
+
+/** A field the learner can leave off the card; the translation is not one. */
+export type OptionalTermField = 'example' | keyof TermDetails;
 
 export interface DeckPage {
   items: DueItem[];
@@ -289,6 +325,9 @@ export interface AttemptResult {
   overridden: boolean;
   expected: string;
   acceptedAlso?: string[];
+  /** The whole card, once answered — a `term` item only (ADR-0023). */
+  example?: string;
+  details?: TermDetails;
   marks?: boolean[];
   otherValidOrder?: boolean;
   alternative?: string;
@@ -385,6 +424,8 @@ export interface PackProgress {
   blocks: { block: Block; progress: BlockProgress }[];
   decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary };
   reading: ReadingCounts;
+  /** Words this learner asked to have filled in: waiting on a coach, and waiting on them (ADR-0023). */
+  wordRequests: { waiting: number; ready: number };
   quiz: { byCategory: CategoryBreakdown[]; sessions: number; score: QuizScore };
   errorLog: {
     entries: ErrorLogEntry[];

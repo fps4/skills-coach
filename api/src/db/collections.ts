@@ -26,6 +26,7 @@ import type {
   Submission,
 } from '../domain/types.js';
 import type { DrillProgress } from '../domain/drill-progress.js';
+import type { TermRequestStatus, TermSuggestion } from '../domain/term-request.js';
 
 export const COLLECTIONS = {
   packs: 'packs',
@@ -43,6 +44,7 @@ export const COLLECTIONS = {
   quizSessions: 'quizSessions',
   articles: 'articles',
   readingState: 'readingState',
+  termRequests: 'termRequests',
   auditEvents: 'auditEvents',
 } as const;
 
@@ -62,6 +64,27 @@ export type QuizSessionDoc = Omit<QuizSession, 'sessionId'> & { _id: string };
 export type ArticleDoc = Omit<Article, 'articleId'> & { _id: string };
 /** Per learner, per article. Present means read — there is no "unread" row to write (ADR-0017). */
 export type ReadingStateDoc = ReadingState & { _id: string };
+
+/**
+ * A learner's request to have a word filled in, and what a coach suggested for it (ADR-0023).
+ * Private to the learner; the coach sees the word and the languages, never who asked.
+ */
+export interface TermRequestDoc {
+  _id: string;
+  learnerId: string;
+  packId: string;
+  /** The deck the word joins once accepted. */
+  blockId: string;
+  term: string;
+  status: TermRequestStatus;
+  suggestion?: TermSuggestion;
+  requestedAt: Date;
+  suggestedAt?: Date;
+  /** When it was added or discarded. */
+  resolvedAt?: Date;
+  /** The word it became, once added. */
+  drillItemId?: string;
+}
 
 /** Per learner, per drill item: the spaced-repetition state. */
 export type DrillStateDoc = DrillProgress & {
@@ -99,6 +122,7 @@ export interface Collections {
   quizSessions: Collection<QuizSessionDoc>;
   articles: Collection<ArticleDoc>;
   readingState: Collection<ReadingStateDoc>;
+  termRequests: Collection<TermRequestDoc>;
   auditEvents: Collection<AuditEventDoc>;
 }
 
@@ -131,6 +155,7 @@ export function collections(db: Db): Collections {
     quizSessions: db.collection<QuizSessionDoc>(COLLECTIONS.quizSessions),
     articles: db.collection<ArticleDoc>(COLLECTIONS.articles),
     readingState: db.collection<ReadingStateDoc>(COLLECTIONS.readingState),
+    termRequests: db.collection<TermRequestDoc>(COLLECTIONS.termRequests),
     auditEvents: db.collection<AuditEventDoc>(COLLECTIONS.auditEvents),
   };
 }

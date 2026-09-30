@@ -144,7 +144,7 @@ describe('the catalogue', () => {
   it('describes every tool it lists', async () => {
     const response = await send(
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
-      caller('lesson:read', 'pack:publish', 'submission:read-all', 'correction:write', 'review:write'),
+      caller('lesson:read', 'pack:publish', 'submission:read-all', 'correction:write', 'review:write', 'term:suggest'),
     );
     const tools = (response?.result as { tools: { name: string; description: string; inputSchema: unknown }[] }).tools;
 

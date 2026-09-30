@@ -18,7 +18,7 @@ Every request carries `Authorization: Bearer <token>` issued by identity-service
 | Role | Capabilities |
 |---|---|
 | `learner` | `lesson:read` `drill:practice` `drill:curate` `reading:track` `submission:write` `progress:read` `progress:restore` |
-| `coach` | `lesson:read` `pack:publish` `submission:read-all` `correction:write` `review:write` |
+| `coach` | `lesson:read` `pack:publish` `submission:read-all` `correction:write` `review:write` `term:suggest` |
 
 An unrecognised role grants nothing and is logged. An absent `roles` claim is treated as `learner`.
 
@@ -67,6 +67,11 @@ reach another's work.
 | POST | `/blocks/:blockId/terms` | `drill:curate` | Add a word of your own to this block's deck → `201` |
 | GET | `/blocks/:blockId/terms` | `drill:curate` | The words you added to this block |
 | DELETE | `/terms/:drillItemId` | `drill:curate` | Remove one of your words, and its progress → `204` |
+| POST | `/blocks/:blockId/term-requests` | `drill:curate` | `{ terms }` — ask a coach to fill words in → `201` |
+| GET | `/blocks/:blockId/term-requests` | `drill:curate` | Your requests for this deck: open ones, and what was resolved in the last week |
+| POST | `/term-requests/:requestId/accept` | `drill:curate` | Add the suggestion, with your edits, to the deck |
+| POST | `/term-requests/:requestId/retry` | `drill:curate` | Send it back to the coach, dropping the suggestion |
+| DELETE | `/term-requests/:requestId` | `drill:curate` | Throw it away. It can be asked for again |
 | GET | `/packs/:packId/reading` | `lesson:read` | Your reading library for this pack. `?labels`, `?sources`, `?unread`, `?language` |
 | GET | `/reading/:articleId` | `lesson:read` | One article, in the resolved language. `?language` |
 | POST | `/reading/:articleId/read` | `reading:track` | `{ read: boolean }` — mark read, or put it back |
@@ -254,6 +259,44 @@ another learner cannot list it, practise it or delete it even knowing its id, an
 on the coach surface. **A republish of the block never deletes it**; the publish sweep only removes
 what the pack itself no longer defines.
 
+### Word requests — `/blocks/:blockId/term-requests` and `/coach/v1/term-requests`
+
+A learner names words; a coach fills them in; the learner decides
+([ADR-0023](../architecture/decisions/0023-a-coach-fills-in-a-word-the-learner-asked-for.md)).
+
+```jsonc
+// POST /api/v1/blocks/woordtrainer-nl.b1/term-requests
+{ "terms": ["verdwijnen", "ondanks"] }        // trimmed, deduplicated case-insensitively, at most 50
+
+// GET /coach/v1/term-requests — what a coach sees. No learner, no deck.
+{ "requests": [{ "requestId": "…", "term": "verdwijnen", "contentLanguage": "nl",
+                 "translationLanguage": "en", "status": "requested", "requestedAt": "…" }] }
+
+// PUT /coach/v1/term-requests/:requestId/suggestion
+{
+  "translation": "to disappear, to vanish",
+  "example": "De kat verdween achter het huis.",
+  "details": {
+    "partOfSpeech": "verb — strong",
+    "forms": [{ "label": "past", "value": "verdween, verdwenen" }, { "label": "perfect", "value": "is verdwenen" }],
+    "exampleTranslation": "The cat disappeared behind the house.",
+    "synonyms": ["wegraken"], "antonyms": ["verschijnen"],
+    "note": "Perfect tense takes zijn."
+  }
+}
+
+// POST /api/v1/term-requests/:requestId/accept — edits win field by field; `omit` leaves fields off
+{ "translation": "to disappear", "omit": ["antonyms"] }
+```
+
+`requested → suggested → added`, or `discarded`; `retry` sends a suggested or discarded request back
+to `requested`. Accepting what was never suggested, or touching an added one, is a `409`. Asking for a
+word already waiting returns the existing request. Another learner's request is a `404`.
+
+The accepted card becomes an ordinary own word — the same as `POST /blocks/:blockId/terms`, which
+also takes `details` now. Details are shown after an answer (`example` and `details` on a term's
+attempt result) and never graded.
+
 ### `GET /packs/:packId/reading`
 
 `?labels=a,b` · `?sources=a,b` · `?unread=true|false` · `?language=nl`
@@ -322,6 +365,8 @@ The only way content and corrections enter the system
 | GET | `/blocks/:blockId/review` | `submission:read-all` | Read a review back |
 | GET | `/blocks/:blockId/brief` | `submission:read-all` | The assembled brief for the next block |
 | GET | `/learners` | `submission:read-all` | Learner ids and display names. No email |
+| GET | `/term-requests` | `term:suggest` | Words waiting to be filled in, oldest first. `?status=requested\|suggested`, `?limit`. No learner |
+| PUT | `/term-requests/:requestId/suggestion` | `term:suggest` | Propose the card for one word |
 
 ### `POST /coach/v1/packs/:packId/blocks`
 
@@ -477,6 +522,8 @@ Streamable HTTP, JSON responses, no session. Mounted only when `MCP_RESOURCE_URL
 | `remove_reading` | `pack:publish` | `DELETE /coach/v1/reading/:articleId` |
 | `post_correction` | `correction:write` | `POST /coach/v1/submissions/:id/correction` |
 | `post_block_review` | `review:write` | `POST /coach/v1/blocks/:blockId/review` |
+| `list_term_requests` | `term:suggest` | `GET /coach/v1/term-requests` |
+| `suggest_term` | `term:suggest` | `PUT /coach/v1/term-requests/:requestId/suggestion` |
 
 Two gates. The endpoint refuses a token holding no coach capability at all, and each tool then checks
 its own — `tools/list` shows only what the caller could actually run. There are no learner tools: a

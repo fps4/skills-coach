@@ -12,7 +12,9 @@ import { requireCapability } from '../auth/plugin.js';
 import { forbidden, invalid } from './errors.js';
 import {
   answerQuizSchema,
+  acceptTermRequestSchema,
   createLearnerTermSchema,
+  requestTermsSchema,
   createSubmissionSchema,
   menuSchema,
   patchMeSchema,
@@ -24,6 +26,7 @@ import type { Learner } from '../domain/types.js';
 import * as content from '../services/content.js';
 import * as drills from '../services/drills.js';
 import * as learnerTerms from '../services/learner-terms.js';
+import * as termRequests from '../services/term-requests.js';
 import * as learners from '../services/learners.js';
 import * as progress from '../services/progress.js';
 import * as quiz from '../services/quiz.js';
@@ -301,6 +304,54 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const learner = await caller(request, 'drill:practice');
     const { sessionId } = request.params as { sessionId: string };
     return quiz.finish(ctx, learner.learnerId, sessionId);
+  });
+
+  // --- word requests (ADR-0023) ----------------------------------------------
+  //
+  // The learner names words; a coach fills them in through /coach/v1; the learner accepts, edits or
+  // throws away what came back. Accepting goes through the same path as adding a word by hand.
+
+  app.post('/api/v1/blocks/:blockId/term-requests', async (request, reply) => {
+    const learner = await caller(request, 'drill:curate');
+    const { blockId } = request.params as { blockId: string };
+    const requests = await termRequests.requestTerms(
+      ctx,
+      learner.learnerId,
+      blockId,
+      requestTermsSchema.parse(request.body),
+    );
+    return reply.code(201).send({ requests });
+  });
+
+  app.get('/api/v1/blocks/:blockId/term-requests', async (request) => {
+    const learner = await caller(request, 'drill:curate');
+    const { blockId } = request.params as { blockId: string };
+    // What was resolved in the last week stays in view, so "added today" is still there tomorrow.
+    const resolvedSince = new Date(ctx.now().getTime() - 7 * 24 * 60 * 60 * 1000);
+    return { requests: await termRequests.listRequests(ctx, learner.learnerId, blockId, { resolvedSince }) };
+  });
+
+  app.post('/api/v1/term-requests/:requestId/accept', async (request) => {
+    const learner = await caller(request, 'drill:curate');
+    const { requestId } = request.params as { requestId: string };
+    return termRequests.acceptRequest(
+      ctx,
+      learner.learnerId,
+      requestId,
+      acceptTermRequestSchema.parse(request.body ?? {}),
+    );
+  });
+
+  app.post('/api/v1/term-requests/:requestId/retry', async (request) => {
+    const learner = await caller(request, 'drill:curate');
+    const { requestId } = request.params as { requestId: string };
+    return { request: await termRequests.retryRequest(ctx, learner.learnerId, requestId) };
+  });
+
+  app.delete('/api/v1/term-requests/:requestId', async (request) => {
+    const learner = await caller(request, 'drill:curate');
+    const { requestId } = request.params as { requestId: string };
+    return { request: await termRequests.discardRequest(ctx, learner.learnerId, requestId) };
   });
 
   // --- the learner's own words ----------------------------------------------

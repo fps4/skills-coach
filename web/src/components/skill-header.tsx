@@ -20,7 +20,7 @@ import { pickTitle } from '@/lib/text';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { LearnerMenu } from '@/lib/types';
-import type { RailPack } from './learner-rail';
+import { ReadyBadge, type RailPack } from './learner-rail';
 
 interface Props {
   locale: Locale;
@@ -89,6 +89,9 @@ export function SkillHeader({ locale, dictionary, packs, menu }: Props) {
               >
                 <Icon className="h-4 w-4" />
                 {label}
+                {tab.id === 'drills:terms' && skill.ready ? (
+                  <ReadyBadge count={skill.ready} label={dictionary.assist.ready} />
+                ) : null}
               </Link>
             );
           })}
