@@ -2,17 +2,16 @@ name: maintain-skills
 
 # One-off data maintenance on the ds1 deployment, run inside the api container.
 #
-# Two tasks, both named here rather than taken as free text, so nothing but these can be run:
+# Named tasks rather than free text, so nothing but these can be run. The one-off fork of the Dutch
+# programme into `woordtrainer-nl` and `lezen-nieuws-nl` ran on 2026-09-30 and has been removed;
+# `npm run migrate:to-skills` still does it for any other programme (ADR-0022).
 #
-#   migrate-dutch-to-skills  copy every learner's words, word progress and reading library out of
-#                            `dutch-conversation-nl` into `woordtrainer-nl` and `lezen-nieuws-nl`
-#                            (ADR-0022). Copies, never deletes; idempotent.
 #   remove-pack              delete a pack. With `including_history`, every learner's work in it
 #                            goes too — the one irreversible thing this repository can do to a
 #                            deployment, and only for a pack whose learners asked for it.
 #
-# Both talk to MongoDB directly through the api container's own environment, so no credential is
-# minted, typed or printed. Both default to reporting only: `apply` must be ticked to write.
+# It talks to MongoDB directly through the api container's own environment, so no credential is
+# minted, typed or printed. It defaults to reporting only: `apply` must be ticked to write.
 #
 # Manually dispatched, always. Runs on the ds1 runner because that is where the container is.
 
@@ -22,7 +21,7 @@ on:
       task:
         description: "What to run"
         type: choice
-        options: [migrate-dutch-to-skills, remove-pack]
+        options: [remove-pack]
         required: true
       pack:
         description: "remove-pack only: the pack to remove"
@@ -53,13 +52,6 @@ jobs:
     runs-on: [self-hosted, ds1]
     timeout-minutes: 30
     steps:
-      - name: Migrate the Dutch programme's words and reading into skills
-        if: inputs.task == 'migrate-dutch-to-skills'
-        run: |
-          docker exec "$API_CONTAINER" node dist/importer/migrate-to-skills.js \
-            --from dutch-conversation-nl --words woordtrainer-nl --reading lezen-nieuws-nl \
-            ${{ inputs.apply && '--apply' || '' }}
-
       - name: Remove a pack
         if: inputs.task == 'remove-pack'
         env:

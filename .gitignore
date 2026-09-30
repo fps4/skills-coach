@@ -31,14 +31,6 @@ web/content/*
 # Three lines, in this order, because git does not descend into an excluded directory: re-include
 # the directory so it is walked, ignore everything inside it again, then un-ignore the one file.
 # Last match wins — reordering these silently commits a learner's lessons.
-!packs/dutch-conversation-nl/
-packs/dutch-conversation-nl/*
-!packs/dutch-conversation-nl/pack.yaml
-
-!packs/aws-sap-c02/
-packs/aws-sap-c02/*
-!packs/aws-sap-c02/pack.yaml
-
 !packs/woordtrainer-nl/
 packs/woordtrainer-nl/*
 !packs/woordtrainer-nl/pack.yaml
