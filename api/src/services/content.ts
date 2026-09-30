@@ -137,8 +137,13 @@ export interface DrillQuery {
   kind?: DrillKind;
   /**
    * Whose deck this is. The pack's own items are always included; this adds the words *this* learner
-   * added themselves. Omitting it yields pack content only — which is what every coach-side caller
-   * wants, and means a learner's own words cannot leak into one by forgetting a filter (ADR-0012).
+   * added themselves. Omitting it yields published content only — which is what every coach-side
+   * caller wants, and means a learner's own words cannot leak into one by forgetting a filter
+   * (ADR-0012).
+   *
+   * Without a learner, "published" is decided by `origin`, not by the absence of a `learnerId`: the
+   * published items of a block written for one learner carry that learner's id too (ADR-0015), and
+   * the absence test hid the whole deck of every such block from the coach who wrote it.
    */
   learnerId?: string;
 }
@@ -149,9 +154,7 @@ export async function listDrillItems(ctx: ServiceContext, query: DrillQuery): Pr
   if (query.packId) filter.packId = query.packId;
   if (query.lessonOrder !== undefined) filter.lessonOrder = query.lessonOrder;
   if (query.kind) filter['payload.kind'] = query.kind;
-  filter.$or = query.learnerId
-    ? [{ learnerId: { $exists: false } }, { learnerId: query.learnerId }]
-    : [{ learnerId: { $exists: false } }];
+  filter.$or = query.learnerId ? [{ learnerId: { $exists: false } }, { learnerId: query.learnerId }] : FROM_PACK.$or;
 
   const docs = await ctx.store.collections.drillItems.find(filter).sort({ lessonOrder: 1, _id: 1 }).toArray();
   return docs.map(toDrillItem);
