@@ -28,9 +28,10 @@ export interface ArrangedRail<T> {
  * Group the skills the rail knows about by the learner's menu.
  *
  * A skill the rail has but the menu does not place — started after the menu was fetched — shows
- * loose rather than disappearing; one the menu places but the rail does not know is skipped. A
- * folder with nothing shown in it is left out of the rail, because an empty heading in a menu is
- * noise; it still exists, and the organise page still lists it.
+ * loose rather than disappearing; one the menu places but the rail does not know is skipped. Every
+ * folder is kept, even one with nothing shown in it: a folder the learner just made has to appear
+ * where they made it, or it looks as if creating it failed (ADR-0024). A caller that only wants the
+ * folders with something in them — the start page — filters for itself.
  */
 export function arrangeRail<T extends { packId: string }>(menu: LearnerMenu | null, items: readonly T[]): ArrangedRail<T> {
   const byId = new Map(items.map((item) => [item.packId, item]));
@@ -54,5 +55,5 @@ export function arrangeRail<T extends { packId: string }>(menu: LearnerMenu | nu
 
   for (const item of items) if (!placed.has(item.packId)) loose.push(item);
 
-  return { folders: folders.filter((folder) => folder.items.length > 0), loose, hidden };
+  return { folders, loose, hidden };
 }

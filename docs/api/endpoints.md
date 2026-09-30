@@ -48,6 +48,7 @@ reach another's work.
 | PATCH | `/me` | `progress:read` | `{ uiLanguage?, displayName? }` |
 | GET | `/me/menu` | `progress:read` | Your folders and which skills show — every started skill placed exactly once |
 | PUT | `/me/menu` | `progress:read` | Replace the menu wholesale. Reconciled with what you have started, never refused for it |
+| POST | `/me/menu/skills` | `lesson:read` | `{ packId, folderId? }` — add a skill from the library: **enrols** and shows it. `404` for an unpublished skill |
 | GET | `/packs` | `lesson:read` | Every published pack |
 | GET | `/packs/:packId` | `lesson:read` | Pack and its blocks. **Enrols the learner** |
 | GET | `/packs/:packId/blocks` | `lesson:read` | Published blocks only |
@@ -101,6 +102,15 @@ placement for a skill they have not started is dropped, and one naming a missing
 it. A `PUT` is therefore never refused for naming the wrong skills — it is corrected, and the
 corrected menu is what comes back. Private to the learner; not on the coach surface. Travels in the
 archive under `learner.menu`.
+
+### `POST /me/menu/skills`
+
+`{ "packId": "knowledge-graphs", "folderId": "arch" }` → `{ "menu": … }`, the whole reconciled menu.
+
+Adding a skill from the "All my skills" page ([ADR-0024](../architecture/decisions/0024-a-skill-is-added-from-the-library-and-the-start-page-is-the-menu.md)).
+Enrols the learner exactly as opening the skill would, then places it **shown** — in `folderId` if
+that folder exists, otherwise outside any folder. For a skill already started it shows it again and,
+when `folderId` is given, moves it there; progress is untouched. `404` if no such skill is published.
 
 ### `GET /drills`
 

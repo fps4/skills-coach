@@ -12,8 +12,10 @@ import { randomUUID } from 'node:crypto';
 import { notFound } from '../http/errors.js';
 import type { Principal } from '../auth/verifier.js';
 import {
+  addSkillSchema,
   learnerProfileSchema,
   menuSchema,
+  type AddSkillInput,
   type LearnerProfileInput,
   type MenuInput,
   type PatchMeInput,
@@ -21,6 +23,7 @@ import {
 import { normalizeMenu, type LearnerMenu } from '../domain/menu.js';
 import { DEFAULT_LOCALE, type Enrollment, type Learner, type LearnerProfile } from '../domain/types.js';
 import type { LearnerDoc } from '../db/collections.js';
+import { getPack, listBlocks } from './content.js';
 import { enrollmentIdFor, type ServiceContext } from './context.js';
 
 const toLearner = (doc: LearnerDoc): Learner => {
@@ -182,6 +185,30 @@ export async function setMenu(ctx: ServiceContext, learnerId: string, input: Men
   const result = await ctx.store.collections.learners.updateOne({ _id: learnerId }, { $set: { menu } });
   if (result.matchedCount === 0) throw notFound(`learner ${learnerId}`);
   return menu;
+}
+
+/**
+ * Add a skill to the menu from the library (ADR-0024) — which is also what starts it.
+ *
+ * Starting a skill used to be a side effect of opening it, so the library could only list what was
+ * already started. Now the library lists every published skill and this is its "add": the learner
+ * is enrolled exactly as opening the skill would, and the skill is shown — in the folder it was added
+ * from, if one is named and still exists. Adding one already started shows it again and, when a
+ * folder is named, moves it there; its progress is not touched either way.
+ */
+export async function addSkill(ctx: ServiceContext, learnerId: string, input: AddSkillInput): Promise<LearnerMenu> {
+  const { packId, folderId } = addSkillSchema.parse(input);
+  await getPack(ctx, packId);
+  const blocks = await listBlocks(ctx, packId, { learnerId });
+  await enroll(ctx, learnerId, packId, blocks[0]?.blockId);
+
+  const menu = await getMenu(ctx, learnerId);
+  const placements = menu.placements.map((entry) =>
+    entry.packId === packId
+      ? { ...entry, hidden: false, folderId: folderId === undefined ? entry.folderId : folderId }
+      : entry,
+  );
+  return setMenu(ctx, learnerId, { ...menu, placements });
 }
 
 // ---------------------------------------------------------------------------

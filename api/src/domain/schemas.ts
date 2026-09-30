@@ -570,6 +570,15 @@ export const menuSchema = z.object({
     .max(1000),
 });
 
+/**
+ * Adding a skill from the library (ADR-0024): which one, and optionally the folder it was added from.
+ * A folder that no longer exists is not an error — the skill lands outside any folder instead.
+ */
+export const addSkillSchema = z.object({
+  packId: z.string().min(1).max(120),
+  folderId: z.string().max(40).nullable().optional(),
+});
+
 export const patchMeSchema = z.object({
   uiLanguage: localeSchema.optional(),
   displayName: z.string().max(120).optional(),
@@ -774,6 +783,7 @@ export type CreateLearnerTermInput = z.infer<typeof createLearnerTermSchema>;
 export type PostAttemptInput = z.infer<typeof postAttemptSchema>;
 export type PatchMeInput = z.infer<typeof patchMeSchema>;
 export type MenuInput = z.infer<typeof menuSchema>;
+export type AddSkillInput = z.infer<typeof addSkillSchema>;
 export type TermSuggestionInput = z.infer<typeof termSuggestionSchema>;
 export type AcceptTermRequestInput = z.infer<typeof acceptTermRequestSchema>;
 export type StartQuizInput = z.infer<typeof startQuizSchema>;

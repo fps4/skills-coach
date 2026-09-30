@@ -14,7 +14,9 @@ trainer, one set of verbs, a reading list.
 
 **Menu** — the learner's own arrangement of the skills they have started: **folders** they name and
 order, and for each skill which folder it is in and whether it is **hidden**. Belongs to the learner,
-never to a pack. A hidden skill keeps its progress and waits on the "All my skills" page.
+never to a pack. A hidden skill keeps its progress and waits on the "All my skills" page, which also
+lists every skill not added yet — adding one is what starts it — and the start page shows exactly
+the menu's shown skills ([ADR-0024](docs/architecture/decisions/0024-a-skill-is-added-from-the-library-and-the-start-page-is-the-menu.md)).
 
 **Pack** — a complete training program for one skill, e.g. Dutch conversation B1→B2. A pack declares
 its own **content language**, its competency **framework**, its **error categories** and its section
