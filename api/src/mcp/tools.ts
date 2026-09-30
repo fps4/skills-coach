@@ -25,6 +25,7 @@ import {
   postBlockReviewSchema,
   postCorrectionSchema,
   publishBlockSchema,
+  termSuggestionSchema,
 } from '../domain/schemas.js';
 import * as brief from '../services/brief.js';
 import * as content from '../services/content.js';
@@ -32,6 +33,7 @@ import * as corrections from '../services/corrections.js';
 import * as learners from '../services/learners.js';
 import * as reading from '../services/reading.js';
 import * as submissions from '../services/submissions.js';
+import * as termRequests from '../services/term-requests.js';
 import type { ServiceContext } from '../services/context.js';
 
 export interface AuditEntry {
@@ -370,6 +372,42 @@ export const TOOLS: ToolDef[] = [
         },
       };
     },
+  }),
+
+  // --- word requests (ADR-0023) ---------------------------------------------
+
+  tool({
+    name: 'list_term_requests',
+    description:
+      'Words learners asked to have filled in, oldest first. Each carries the word, the language it is in and the ' +
+      'language to write the translation and glosses in — and nothing about who asked. Fill each one in with ' +
+      '`suggest_term`; the learner reviews every line before anything reaches their deck.',
+    capability: 'term:suggest',
+    input: z.object({
+      status: z.enum(['requested', 'suggested']).default('requested'),
+      limit: z.number().int().positive().max(200).default(50),
+    }),
+    readOnly: true,
+    run: async (ctx, query) => ({ result: { requests: await termRequests.listQueue(ctx, query) } }),
+  }),
+
+  tool({
+    name: 'suggest_term',
+    description:
+      'Propose the card for one requested word: the translation (what gets practised — give the common meanings, ' +
+      'separated by "," or "/"), one natural example sentence in the word’s language, and details: part of speech, ' +
+      'the forms a learner needs (article and plural for a noun; past tense and participle, with the auxiliary, for ' +
+      'a verb) as labelled forms, the example’s translation, synonyms, antonyms and a short usage note. Write the ' +
+      'labels, glosses and note in the translation language. Leave out anything you are not sure of — the learner ' +
+      'can add it, but should never have to find and remove a wrong form. Replaces an earlier suggestion that has ' +
+      'not been acted on.',
+    capability: 'term:suggest',
+    input: z.object({ requestId: z.string().min(1), suggestion: termSuggestionSchema }),
+    readOnly: false,
+    run: async (ctx, { requestId, suggestion }) => ({
+      result: { request: await termRequests.suggest(ctx, requestId, suggestion) },
+      audit: { action: 'term.suggest', resource: `term-request/${requestId}` },
+    }),
   }),
 ];
 

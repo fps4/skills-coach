@@ -7,6 +7,7 @@
  */
 
 import type { LearnerMenu } from './menu.js';
+import type { TermDetails } from './term-request.js';
 
 /** Interface languages the product ships. Distinct from a pack's content language — ADR-0005. */
 export const LOCALES = ['nl', 'en'] as const;
@@ -343,6 +344,8 @@ export interface TermPayload {
   term: string;
   translation: string;
   example?: string;
+  /** Forms, synonyms, a note — shown after answering, never graded (ADR-0023). */
+  details?: TermDetails;
 }
 
 export interface McqOption {

@@ -38,6 +38,8 @@ export interface RailPack {
   surfaces?: PackSurface[];
   /** What the skill actually holds, which is what decides a tab is there at all (ADR-0019). */
   material: PackMaterial;
+  /** Words a coach filled in that are waiting for the learner to review (ADR-0023). */
+  ready?: number;
 }
 
 interface Props {
@@ -101,7 +103,10 @@ export function LearnerRail({ locale, dictionary, packs, menu }: Props) {
         nested={nested}
       >
         {/* The skill's own name — localized metadata, resolved here, never translated (ADR-0005). */}
-        {pickTitle(pack.title, locale)}
+        <span className="flex items-center justify-between gap-2">
+          <span className="truncate">{pickTitle(pack.title, locale)}</span>
+          {pack.ready ? <ReadyBadge count={pack.ready} label={dictionary.assist.ready} /> : null}
+        </span>
       </RailItem>
     );
   };
@@ -224,5 +229,17 @@ function RailItem({
       {icon}
       <span className="min-w-0 flex-1 truncate">{children}</span>
     </Link>
+  );
+}
+
+/** How many filled-in words wait for the learner. A count, so it says something without being opened. */
+export function ReadyBadge({ count, label }: { count: number; label: string }) {
+  return (
+    <span
+      title={`${count} ${label.toLocaleLowerCase()}`}
+      className="min-w-5 shrink-0 rounded-full bg-primary px-1.5 text-center text-[11px] font-semibold leading-5 text-primary-foreground"
+    >
+      {count}
+    </span>
   );
 }

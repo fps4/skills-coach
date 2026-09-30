@@ -224,6 +224,7 @@ export async function exportArchive(ctx: ServiceContext, learnerId: string, gene
           term: item.payload.term,
           translation: item.payload.translation,
           ...(item.payload.example ? { example: item.payload.example } : {}),
+          ...(item.payload.details ? { details: item.payload.details } : {}),
         },
       ];
     }),
@@ -417,6 +418,7 @@ export async function importArchive(
       term: entry.term,
       translation: entry.translation,
       ...(entry.example ? { example: entry.example } : {}),
+      ...(entry.details ? { details: entry.details } : {}),
     };
     const _id = drillIdWithDigest(blockId, contentDigest(payload), learnerId);
     ownTermIds.set(itemRefKey({ ...entry, kind: 'term', digest: contentDigest(payload), own: true }), _id);

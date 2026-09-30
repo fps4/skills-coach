@@ -196,6 +196,7 @@ export function WordDrill({ blockId, contentLanguage, translationLanguage, dicti
               result={result}
               dictionary={dictionary}
               contentLanguage={contentLanguage}
+              translationLanguage={translationLanguage}
               onNext={advance}
               onOverride={() => void check(true)}
             />

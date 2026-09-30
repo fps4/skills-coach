@@ -251,6 +251,8 @@ describeIfMongo('mcp', () => {
         'GET /coach/v1/learners': 'list_learners',
         'GET /coach/v1/learners/:learnerId/profile': 'get_learner_profile',
         'PUT /coach/v1/learners/:learnerId/profile': 'set_learner_profile',
+        'GET /coach/v1/term-requests': 'list_term_requests',
+        'PUT /coach/v1/term-requests/:requestId/suggestion': 'suggest_term',
       };
 
       expect(routes.length).toBeGreaterThan(0);

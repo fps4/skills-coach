@@ -94,12 +94,29 @@ export const lessonSchema = z.object({
 // Drill deck
 // ---------------------------------------------------------------------------
 
+/**
+ * What a word's card can carry beyond the pair that is practised (ADR-0023). Shown, never graded.
+ * Language-neutral: a past tense and a plural are both just labelled forms.
+ */
+export const termDetailsSchema = z.object({
+  partOfSpeech: z.string().trim().max(120).optional(),
+  forms: z
+    .array(z.object({ label: z.string().trim().max(60), value: z.string().trim().min(1).max(200) }))
+    .max(12)
+    .optional(),
+  exampleTranslation: z.string().trim().max(500).optional(),
+  synonyms: z.array(z.string().trim().min(1).max(120)).max(12).optional(),
+  antonyms: z.array(z.string().trim().min(1).max(120)).max(12).optional(),
+  note: z.string().trim().max(500).optional(),
+});
+
 export const drillPayloadSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('term'),
     term: nonEmpty,
     translation: nonEmpty,
     example: z.string().optional(),
+    details: termDetailsSchema.optional(),
   }),
   z.object({
     kind: z.literal('word-order'),
@@ -455,6 +472,33 @@ export const createLearnerTermSchema = z.object({
   term: nonEmpty.max(200),
   translation: nonEmpty.max(200),
   example: z.string().trim().max(500).optional(),
+  details: termDetailsSchema.optional(),
+});
+
+// ---------------------------------------------------------------------------
+// Word requests (ADR-0023)
+// ---------------------------------------------------------------------------
+
+/** A learner asking for words to be filled in: one, or a pasted list. Cleaned by `requestedTerms`. */
+export const requestTermsSchema = z.object({
+  terms: z.array(z.string().max(500)).min(1).max(500),
+});
+
+/** What a coach proposes for one requested word. */
+export const termSuggestionSchema = z.object({
+  translation: nonEmpty.max(200),
+  example: z.string().trim().max(500).optional(),
+  details: termDetailsSchema.optional(),
+});
+
+/** The learner's decision: their edits over the suggestion, and the fields to leave off the card. */
+export const acceptTermRequestSchema = z.object({
+  translation: z.string().trim().max(200).optional(),
+  example: z.string().trim().max(500).optional(),
+  details: termDetailsSchema.optional(),
+  omit: z
+    .array(z.enum(['example', 'exampleTranslation', 'partOfSpeech', 'forms', 'synonyms', 'antonyms', 'note']))
+    .default([]),
 });
 
 /**
@@ -730,6 +774,8 @@ export type CreateLearnerTermInput = z.infer<typeof createLearnerTermSchema>;
 export type PostAttemptInput = z.infer<typeof postAttemptSchema>;
 export type PatchMeInput = z.infer<typeof patchMeSchema>;
 export type MenuInput = z.infer<typeof menuSchema>;
+export type TermSuggestionInput = z.infer<typeof termSuggestionSchema>;
+export type AcceptTermRequestInput = z.infer<typeof acceptTermRequestSchema>;
 export type StartQuizInput = z.infer<typeof startQuizSchema>;
 export type AnswerQuizInput = z.infer<typeof answerQuizSchema>;
 export type LearnerProfileInput = z.infer<typeof learnerProfileSchema>;

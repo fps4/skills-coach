@@ -6,6 +6,10 @@ date: 2026-08-05
 
 # ADR-0012 — A learner may add to their own deck
 
+> **Narrowed by [ADR-0023](0023-a-coach-fills-in-a-word-the-learner-asked-for.md).** A learner may send
+> one of their words to the coach to have it filled in; the coach then sees that word and its
+> languages, never the learner or the rest of their deck. Otherwise this stands.
+
 ## Context
 
 Until now every drill item arrived through a publish ([ADR-0001](0001-runtime-not-agent.md)): content

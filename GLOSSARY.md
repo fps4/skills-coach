@@ -54,6 +54,11 @@ correct option and no incorrect one. There is no partial credit and no override.
 modes. `practice` grades each answer as it is given; `exam` withholds every verdict until the end.
 Its score and per-category breakdown are derived on read, never stored.
 
+**Word request** — a learner asking for a word's card to be filled in: its translation, forms,
+example, synonyms and a note. A coach proposes a **suggestion**; the learner edits it, leaves lines
+out, and accepts it into their deck as an own word — or asks again, or discards it
+([ADR-0023](docs/architecture/decisions/0023-a-coach-fills-in-a-word-the-learner-asked-for.md)).
+
 **Own word** — a `term` item a learner added themselves rather than one that arrived with the pack.
 It practises identically and lives in the same deck, but only its owner can see it and a republish of
 the block never removes it. See [ADR-0012](docs/architecture/decisions/0012-a-learner-may-add-to-their-own-deck.md).

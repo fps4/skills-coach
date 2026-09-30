@@ -17,6 +17,7 @@ import {
   postBlockReviewSchema,
   postCorrectionSchema,
   publishBlockSchema,
+  termSuggestionSchema,
   upsertReadingSchema,
 } from '../domain/schemas.js';
 import * as audit from '../services/audit.js';
@@ -26,6 +27,7 @@ import * as corrections from '../services/corrections.js';
 import * as learners from '../services/learners.js';
 import * as reading from '../services/reading.js';
 import * as submissions from '../services/submissions.js';
+import * as termRequests from '../services/term-requests.js';
 import type { ServiceContext } from '../services/context.js';
 
 const learnerQuerySchema = z.object({ learnerId: z.string().optional() });
@@ -129,6 +131,36 @@ export function registerCoachRoutes(app: FastifyInstance, ctx: ServiceContext): 
       updated: result.updated,
       articleIds: result.articles.map((article) => article.articleId),
     });
+  });
+
+  // --- word requests (ADR-0023) ----------------------------------------------
+  //
+  // Words learners asked to have filled in. The queue names the word and its languages and nothing
+  // about who asked — see services/term-requests.ts for why that projection is the privacy boundary.
+
+  app.get('/coach/v1/term-requests', async (request) => {
+    requireCapability(request, 'term:suggest');
+    const query = z
+      .object({
+        status: z.enum(['requested', 'suggested']).default('requested'),
+        limit: z.coerce.number().int().positive().max(200).default(50),
+      })
+      .parse(request.query);
+    return { requests: await termRequests.listQueue(ctx, query) };
+  });
+
+  app.put('/coach/v1/term-requests/:requestId/suggestion', async (request) => {
+    const auth = requireCapability(request, 'term:suggest');
+    const { requestId } = request.params as { requestId: string };
+    const result = await termRequests.suggest(ctx, requestId, termSuggestionSchema.parse(request.body));
+
+    await audit.record(ctx, {
+      principal: auth.principal,
+      action: 'term.suggest',
+      resource: `term-request/${requestId}`,
+      meta: { ...HTTP },
+    });
+    return { request: result };
   });
 
   /** What a learner has been given, titles and labels only. About a person, so gated as one. */

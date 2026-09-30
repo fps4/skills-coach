@@ -29,6 +29,9 @@ export const CAPABILITIES = [
   'submission:read-all',
   'correction:write',
   'review:write',
+  // Proposing a card for a word a learner asked to have filled in (ADR-0023). A coach's, and separate
+  // from `pack:publish`: it writes a suggestion into one learner's queue, not content into a pack.
+  'term:suggest',
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -48,7 +51,7 @@ export const ROLE_CAPABILITIES: Record<string, readonly Capability[]> = {
     'progress:read',
     'progress:restore',
   ],
-  coach: ['lesson:read', 'pack:publish', 'submission:read-all', 'correction:write', 'review:write'],
+  coach: ['lesson:read', 'pack:publish', 'submission:read-all', 'correction:write', 'review:write', 'term:suggest'],
 };
 
 /**

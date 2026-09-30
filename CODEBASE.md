@@ -39,11 +39,15 @@ api/src/
     progression.ts     next lesson, block completion, answer references
     ramp.ts            position on a pack's competency ramp
     menu.ts            the learner's folders of skills: every started skill placed exactly once (ADR-0021)
+    term-request.ts    a word asked for, suggested by a coach, accepted by the learner — the lifecycle,
+                       and how an accepted card is assembled from suggestion and edits (ADR-0023)
     portable.ts        what a reference is, once it has to outlive a learner id —
                        content digests, and the never-demote merge rule (ADR-0020)
 
   db/                collections, indexes, the Mongo client
   services/          domain rules + persistence, transport-agnostic
+    term-requests.ts   word requests: the learner's queue, and the coach's view of it — which names
+                       the word and its languages and never the learner (ADR-0023)
     learner-terms.ts   the words a learner adds themselves — owned, private, and
                        untouched by a republish (ADR-0012)
     error-log.ts       the ONE place counters are written — a coach's correction and a
@@ -112,6 +116,8 @@ web/src/
     menu-editor.tsx  "All my skills": folders, which folder a skill is in, and what shows
     wiki-filters.tsx the chip rows and search box — writes the query string, filters nothing
     own-words.tsx    the entry form for your own words, inside the word trainer
+    word-assist.tsx  "Add words": ask a coach to fill words in, then review each card before it lands
+    term-card.tsx    a word's example, forms, synonyms and note — shown once it has been answered
     read-toggle.tsx  marking an article read, and putting it back. Never inferred from scrolling
     quiz-runner.tsx  the practice-test surface: practice / exam modes, an optional clock
     quiz-results.tsx score, per-category breakdown, and every question back for review

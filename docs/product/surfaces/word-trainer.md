@@ -23,6 +23,11 @@ the learner's own words ([ADR-0022](../../architecture/decisions/0022-a-skill-ca
 The surface is the same one either way; a programme skill shows it as a tab beside its lessons, the
 word skill shows it as the one thing it does.
 
+**Adding words** is the trainer's second view (`?view=add`): name a word, a coach fills its card
+in, and the learner checks every line before accepting it into the deck
+([ADR-0023](../../architecture/decisions/0023-a-coach-fills-in-a-word-the-learner-asked-for.md)).
+A word's details — forms, example, synonyms, a note — show after it has been answered.
+
 ## What it is for
 
 A vocabulary deck with spaced-repetition-style gating, prompting in both directions. It replaces a
