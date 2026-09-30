@@ -208,7 +208,7 @@ Then:
 
 ```sh
 cd api && npm run import:reading -- \
-  --source ~/reading/aws --pack dutch-conversation-nl --learner "$LEARNER" --dry-run
+  --source ~/reading/aws --pack lezen-nieuws-nl --learner "$LEARNER" --dry-run
 ```
 
 `--dry-run` reports what it found, which single-language articles the switch will not flip, and which

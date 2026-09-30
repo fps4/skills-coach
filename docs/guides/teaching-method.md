@@ -176,8 +176,9 @@ the same reason a ramp's `dials` are: a language pack, a certification syllabus 
 share a lesson shape, and a schema that insisted they did would be the runtime holding an opinion
 about didactics it cannot act on.
 
-`packs/demo-conversation-nl/pack.yaml` carries a short one; `packs/dutch-conversation-nl/pack.yaml`
-carries the real one, including the Dutch sequencing notes.
+`packs/demo-conversation-nl/pack.yaml` carries a short one. The fullest one written so far, with the
+Dutch sequencing notes, belonged to `dutch-conversation-nl`; that programme was retired on 2026-09-30
+(ADR-0022) and its manifest is in the git history, in the commit that removed it.
 
 ## Where these come from
 
