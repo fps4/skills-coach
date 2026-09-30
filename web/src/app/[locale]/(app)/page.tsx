@@ -1,27 +1,26 @@
 /**
- * Home — one tile per pack the learner can reach.
+ * Home — the skills the learner has turned on, arranged as their menu is (ADR-0024).
  *
- * The landing surface after sign-in. A tile is a pack: what it is, how far in they are, and the one
- * action that continues it. Detail belongs on the pack page, so a tile stays readable at a glance
- * whether the learner has one pack or six.
- *
- * The catalogue is fetched every time, not only when nothing is enrolled: a learner who has opened
- * one pack must still be able to see and start another.
+ * A version of the menu, not a catalogue: one tile per skill that shows in the menu, grouped under
+ * the learner's own folders in the learner's order, each with the one action that continues it.
+ * Finding and adding a skill is the "All my skills" page's job, so a hidden or not-yet-added skill
+ * has no tile here. A folder with nothing shown in it has no heading either — unlike the rail, which
+ * keeps an empty folder so a new one is visible where it was made.
  */
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { ArrowRight, BookOpen, CircleDashed } from 'lucide-react';
-
+import { ArrowRight, BookOpen, Folder } from 'lucide-react';
 import { PageShell, Meter, Pill } from '@/components/atoms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { arrangeRail } from '@/lib/menu';
 import { packIcon } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
 import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import type { Enrollment, Learner, Pack, PackProgress } from '@/lib/types';
+import type { Enrollment, Learner, LearnerMenu, PackProgress } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,16 +29,79 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
   const dictionary = getDictionary(locale);
   const t = dictionary.home;
 
-  const [{ learner }, overview, catalogue] = await Promise.all([
+  const [{ learner }, overview, { menu }] = await Promise.all([
     api<{ learner: Learner; enrollments: Enrollment[] }>('/api/v1/me'),
     api<{ packs: PackProgress[] }>('/api/v1/progress'),
-    api<{ packs: Pack[] }>('/api/v1/packs'),
+    api<{ menu: LearnerMenu }>('/api/v1/me/menu'),
   ]);
 
-  // Started packs first, then everything published the learner has not opened yet.
-  const started = overview.packs;
-  const startedIds = new Set(started.map((entry) => entry.pack.packId));
-  const available = catalogue.packs.filter((pack) => !startedIds.has(pack.packId));
+  const arranged = arrangeRail(
+    menu,
+    overview.packs.map((entry) => ({ packId: entry.pack.packId, entry })),
+  );
+  const folders = arranged.folders.filter((folder) => folder.items.length > 0);
+  const nothingShown = folders.length === 0 && arranged.loose.length === 0;
+
+  const tile = (entry: PackProgress) => {
+    const block = entry.currentBlock;
+    const progress = entry.blockProgress;
+    const next = progress?.nextLessonOrder ?? null;
+    const packHref = `/${locale}/packs/${entry.pack.packId}`;
+
+    return (
+      <Tile
+        key={entry.pack.packId}
+        href={packHref}
+        icon={entry.pack.presentation?.icon}
+        title={pickTitle(entry.pack.title, locale)}
+        pill={block?.level ? <Pill className="shrink-0 whitespace-nowrap">{block.level}</Pill> : null}
+        // The block's own title, unprefixed: pack authors habitually name it "Blok 01 — …"
+        // already, and a runtime prefix would say it twice.
+        caption={block ? pickTitle(block.title, locale) : undefined}
+      >
+        {progress && progress.lessonCount > 0 ? (
+          <div>
+            <Meter value={progress.completed} total={progress.lessonCount} />
+            <div className="mt-2 flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
+              <span>
+                {progress.completed}/{progress.lessonCount} {t.lessonsDone}
+              </span>
+              <span>
+                {entry.decks.terms.mastered}/{entry.decks.terms.total} {dictionary.progress.words.toLowerCase()}
+              </span>
+            </div>
+            {progress.pendingOrders.length > 0 ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {dictionary.pack.waitingOnCoach}: {dictionary.common.lesson} {progress.pendingOrders.join(', ')}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* A skill without lessons says what it holds instead (ADR-0022). */}
+        {!progress || progress.lessonCount === 0 ? <SkillHoldings entry={entry} dictionary={dictionary} /> : null}
+
+        {/* `relative` lifts the action above the tile-wide link behind it. */}
+        {block && next ? (
+          <Button asChild size="sm" className="relative w-full">
+            <Link href={`/${locale}/lessons/${block.blockId}.l${next}`}>
+              {t.continueLesson} {next} <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        ) : (
+          <Button asChild size="sm" variant="outline" className="relative w-full">
+            <Link href={packHref}>
+              <BookOpen className="h-4 w-4" /> {t.openPack}
+            </Link>
+          </Button>
+        )}
+      </Tile>
+    );
+  };
+
+  const grid = (items: { entry: PackProgress }[]) => (
+    <div className="grid gap-4 sm:grid-cols-2">{items.map(({ entry }) => tile(entry))}</div>
+  );
 
   return (
     <PageShell
@@ -51,93 +113,32 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
       }
       subtitle={t.subtitle}
     >
-      {started.length === 0 && available.length === 0 ? (
+      {nothingShown ? (
         <Card>
-          <CardContent className="pt-5">
-            <p className="text-sm">{t.noPacks}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{t.noPacksHint}</p>
+          <CardContent className="space-y-3 pt-5">
+            <p className="text-sm">{t.emptyMenu}</p>
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/${locale}/skills`}>
+                {t.addSkills} <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {started.map((entry) => {
-          const block = entry.currentBlock;
-          const progress = entry.blockProgress;
-          const next = progress?.nextLessonOrder ?? null;
-          const packHref = `/${locale}/packs/${entry.pack.packId}`;
-
-          return (
-            <Tile
-              key={entry.pack.packId}
-              href={packHref}
-              icon={entry.pack.presentation?.icon}
-              title={pickTitle(entry.pack.title, locale)}
-              pill={block?.level ? <Pill className="shrink-0 whitespace-nowrap">{block.level}</Pill> : null}
-              // The block's own title, unprefixed: pack authors habitually name it "Blok 01 — …"
-              // already, and a runtime prefix would say it twice.
-              caption={block ? pickTitle(block.title, locale) : undefined}
-            >
-              {progress && progress.lessonCount > 0 ? (
-                <div>
-                  <Meter value={progress.completed} total={progress.lessonCount} />
-                  <div className="mt-2 flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
-                    <span>
-                      {progress.completed}/{progress.lessonCount} {t.lessonsDone}
-                    </span>
-                    <span>
-                      {entry.decks.terms.mastered}/{entry.decks.terms.total} {dictionary.progress.words.toLowerCase()}
-                    </span>
-                  </div>
-                  {progress.pendingOrders.length > 0 ? (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {dictionary.pack.waitingOnCoach}: {dictionary.common.lesson} {progress.pendingOrders.join(', ')}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {/* A skill without lessons says what it holds instead (ADR-0022). */}
-              {!progress || progress.lessonCount === 0 ? <SkillHoldings entry={entry} dictionary={dictionary} /> : null}
-
-              {/* `relative` lifts the action above the tile-wide link behind it. */}
-              {block && next ? (
-                <Button asChild size="sm" className="relative w-full">
-                  <Link href={`/${locale}/lessons/${block.blockId}.l${next}`}>
-                    {t.continueLesson} {next} <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              ) : (
-                <Button asChild size="sm" variant="outline" className="relative w-full">
-                  <Link href={packHref}>
-                    <BookOpen className="h-4 w-4" /> {t.openPack}
-                  </Link>
-                </Button>
-              )}
-            </Tile>
-          );
-        })}
-
-        {available.map((pack) => (
-          <Tile
-            key={pack.packId}
-            href={`/${locale}/packs/${pack.packId}`}
-            icon={pack.presentation?.icon}
-            title={pickTitle(pack.title, locale)}
-            pill={
-              <Pill className="shrink-0 whitespace-nowrap">
-                <CircleDashed className="mr-1 h-3 w-3 shrink-0" /> {dictionary.pack.notStarted}
-              </Pill>
-            }
-            caption={pickTitle(pack.presentation?.tagline ?? pack.description ?? {}, locale) || undefined}
-          >
-            <Button asChild size="sm" variant="outline" className="relative w-full">
-              <Link href={`/${locale}/packs/${pack.packId}`}>
-                {t.startPack} <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </Tile>
+      <div className="space-y-6">
+        {folders.map((folder) => (
+          <section key={folder.folderId} aria-labelledby={`folder-${folder.folderId}`} className="space-y-3">
+            <h2 id={`folder-${folder.folderId}`} className="flex items-center gap-2 text-sm font-semibold">
+              <Folder className="h-4 w-4 text-muted-foreground" aria-hidden />
+              {/* The learner's own name for it — neither chrome nor pack content. */}
+              {folder.name}
+            </h2>
+            {grid(folder.items)}
+          </section>
         ))}
+
+        {arranged.loose.length > 0 ? grid(arranged.loose) : null}
       </div>
     </PageShell>
   );

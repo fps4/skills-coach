@@ -45,13 +45,23 @@ describe('arrangeRail', () => {
     expect(arrangeRail(menu, [skill('a'), skill('b')])).toEqual({ folders: [], loose: [skill('b')], hidden: 1 });
   });
 
-  it('leaves a folder with nothing shown out of the rail', () => {
+  it('shows a folder the moment it exists, even with nothing in it', () => {
+    const menu: LearnerMenu = { folders: [{ folderId: 'aws', name: 'AWS' }], placements: [] };
+
+    expect(arrangeRail(menu, []).folders).toEqual([{ folderId: 'aws', name: 'AWS', items: [] }]);
+  });
+
+  it('keeps a folder whose skills are all hidden, with nothing listed under it', () => {
     const menu: LearnerMenu = {
       folders: [{ folderId: 'nl', name: 'Nederlands' }],
       placements: [{ packId: 'a', folderId: 'nl', hidden: true }],
     };
 
-    expect(arrangeRail(menu, [skill('a')]).folders).toEqual([]);
+    expect(arrangeRail(menu, [skill('a')])).toEqual({
+      folders: [{ folderId: 'nl', name: 'Nederlands', items: [] }],
+      loose: [],
+      hidden: 1,
+    });
   });
 
   it('shows a skill the menu does not know yet, loose, rather than losing it', () => {

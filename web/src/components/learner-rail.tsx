@@ -153,7 +153,8 @@ export function LearnerRail({ locale, dictionary, packs, menu }: Props) {
               <span className="flex-1 truncate">{folder.name}</span>
               <span className="text-xs tabular-nums text-muted-foreground">{folder.items.length}</span>
             </button>
-            {open ? (
+            {/* A folder just made has nothing to open onto yet; its heading and count of 0 say so. */}
+            {open && folder.items.length > 0 ? (
               <div className="my-0.5 ml-4 space-y-0.5 border-l border-border pl-2">
                 {folder.items.map((pack) => skillItem(pack, true))}
               </div>

@@ -16,6 +16,7 @@ import {
   createLearnerTermSchema,
   requestTermsSchema,
   createSubmissionSchema,
+  addSkillSchema,
   menuSchema,
   patchMeSchema,
   postAttemptSchema,
@@ -121,6 +122,13 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
   app.put('/api/v1/me/menu', async (request) => {
     const learner = await caller(request, 'progress:read');
     return { menu: await learners.setMenu(ctx, learner.learnerId, menuSchema.parse(request.body)) };
+  });
+
+  // Adding a skill from the library starts it (ADR-0024). `lesson:read`, like opening one — which
+  // enrols the same way.
+  app.post('/api/v1/me/menu/skills', async (request) => {
+    const learner = await caller(request, 'lesson:read');
+    return { menu: await learners.addSkill(ctx, learner.learnerId, addSkillSchema.parse(request.body)) };
   });
 
   // --- content --------------------------------------------------------------

@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * Organising the menu: folders, which folder a skill is in, and which skills show (ADR-0021).
+ * Organising the menu: folders, which folder a skill is in, and which skills show (ADR-0021) — and
+ * adding the skills not in it yet, which is what starts them (ADR-0024).
  *
  * Every change saves at once — the whole menu, replaced, which is what the api takes — and then
  * refreshes the shell so the rail follows. The api reconciles whatever is sent with what the learner
@@ -15,7 +16,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowDown, ArrowUp, Folder, FolderPlus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Folder, FolderPlus, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -40,6 +41,7 @@ interface Props {
   locale: Locale;
   dictionary: Dictionary;
   initial: LearnerMenu;
+  /** Every published skill — the ones in the menu and the ones that can still be added. */
   skills: MenuSkill[];
 }
 
@@ -52,6 +54,8 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
   const [menu, setMenu] = useState<LearnerMenu>(initial);
   const [error, setError] = useState<string | null>(null);
   const [focusFolder, setFocusFolder] = useState<string | null>(null);
+  /** Which folder each not-yet-added skill will land in. Absent means outside any folder. */
+  const [target, setTarget] = useState<Record<string, string>>({});
 
   const skillById = new Map(skills.map((skill) => [skill.packId, skill]));
 
@@ -65,6 +69,21 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
       router.refresh();
     } catch {
       setMenu(previous);
+      setError(t.saveFailed);
+    }
+  };
+
+  /** Add a skill from the library: the api starts it and places it, and returns the whole menu. */
+  const addToMenu = async (packId: string): Promise<void> => {
+    setError(null);
+    try {
+      const { menu: saved } = await clientApi<{ menu: LearnerMenu }>('/v1/me/menu/skills', {
+        method: 'POST',
+        body: { packId, folderId: target[packId] || null },
+      });
+      setMenu(saved);
+      router.refresh();
+    } catch {
       setError(t.saveFailed);
     }
   };
@@ -137,22 +156,9 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
           ) : null}
         </div>
 
-        <label className="sr-only" htmlFor={`folder-${placement.packId}`}>
-          {t.folder}: {title}
-        </label>
-        <select
-          id={`folder-${placement.packId}`}
-          value={placement.folderId ?? ''}
-          onChange={(event) => updatePlacement(placement.packId, { folderId: event.target.value || null })}
-          className="h-9 max-w-44 rounded-md border border-border bg-background px-2 text-sm"
-        >
-          <option value="">{t.noFolder}</option>
-          {menu.folders.map((folder) => (
-            <option key={folder.folderId} value={folder.folderId}>
-              {folder.name}
-            </option>
-          ))}
-        </select>
+        {folderSelect(`folder-${placement.packId}`, title, placement.folderId ?? '', (folderId) =>
+          updatePlacement(placement.packId, { folderId: folderId || null }),
+        )}
 
         <button
           type="button"
@@ -203,6 +209,29 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
   };
 
   const loose = group(null);
+  const placed = new Set(menu.placements.map((entry) => entry.packId));
+  const available = skills.filter((skill) => !placed.has(skill.packId));
+
+  const folderSelect = (id: string, label: string, value: string, onChange: (folderId: string) => void) => (
+    <>
+      <label className="sr-only" htmlFor={id}>
+        {t.folder}: {label}
+      </label>
+      <select
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-9 max-w-44 rounded-md border border-border bg-background px-2 text-sm"
+      >
+        <option value="">{t.noFolder}</option>
+        {menu.folders.map((folder) => (
+          <option key={folder.folderId} value={folder.folderId}>
+            {folder.name}
+          </option>
+        ))}
+      </select>
+    </>
+  );
 
   return (
     <div className="space-y-4">
@@ -283,7 +312,45 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
         </Card>
       ) : null}
 
-      {menu.placements.length === 0 ? <p className="text-sm text-muted-foreground">{t.empty}</p> : null}
+      {available.length > 0 ? (
+        <Card className="overflow-hidden">
+          <p className="border-b border-border bg-muted/40 px-4 py-2.5 text-sm font-semibold">{t.available}</p>
+          <ul>
+            {available.map((skill) => {
+              const Icon = packIcon(skill.icon);
+              const title = pickTitle(skill.title, locale);
+              return (
+                <li
+                  key={skill.packId}
+                  className="flex flex-wrap items-center gap-3 border-t border-border/60 px-4 py-3 first:border-t-0"
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{title}</p>
+                    {skill.description ? (
+                      <p className="truncate text-xs text-muted-foreground">{pickTitle(skill.description, locale)}</p>
+                    ) : null}
+                  </div>
+                  {folderSelect(`add-${skill.packId}`, title, target[skill.packId] ?? '', (folderId) =>
+                    setTarget((current) => ({ ...current, [skill.packId]: folderId })),
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={`${t.add}: ${title}`}
+                    onClick={() => void addToMenu(skill.packId)}
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    {t.add}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : null}
+
+      {skills.length === 0 ? <p className="text-sm text-muted-foreground">{t.empty}</p> : null}
     </div>
   );
 }

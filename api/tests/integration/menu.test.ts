@@ -36,6 +36,9 @@ describeIfMongo('the learner menu', () => {
   const start = async (packId: string, token = 'learner-token') =>
     harness.app.inject({ method: 'GET', url: `/api/v1/packs/${packId}`, headers: auth(token) });
 
+  const addSkill = async (payload: Record<string, unknown>, token = 'learner-token') =>
+    harness.app.inject({ method: 'POST', url: '/api/v1/me/menu/skills', headers: auth(token), payload });
+
   beforeEach(async () => {
     await harness.reset();
     for (const pack of [TEST_PACK, SECOND_PACK]) {
@@ -110,6 +113,68 @@ describeIfMongo('the learner menu', () => {
   it('refuses a folder id that is not slug-shaped', async () => {
     const saved = await putMenu({ folders: [{ folderId: 'has spaces', name: 'x' }], placements: [] });
     expect(saved.statusCode).toBe(400);
+  });
+
+  // --- adding a skill from the library (ADR-0024) ---------------------------
+
+  it('adds a skill the learner has never opened, shown and outside any folder', async () => {
+    const added = await addSkill({ packId: 'second-pack' });
+
+    expect(added.statusCode).toBe(200);
+    expect(added.json().menu.placements).toEqual([{ packId: 'second-pack', folderId: null, hidden: false }]);
+
+    const overview = await harness.app.inject({
+      method: 'GET',
+      url: '/api/v1/progress',
+      headers: auth('learner-token'),
+    });
+    expect(overview.json().packs.map((entry: { pack: { packId: string } }) => entry.pack.packId)).toEqual([
+      'second-pack',
+    ]);
+  });
+
+  it('files the added skill straight into the folder it was added from', async () => {
+    await start('test-pack');
+    await putMenu({ folders: [{ folderId: 'aws', name: 'AWS' }], placements: [] });
+
+    const added = await addSkill({ packId: 'second-pack', folderId: 'aws' });
+
+    expect(added.json().menu).toEqual({
+      folders: [{ folderId: 'aws', name: 'AWS' }],
+      placements: [
+        { packId: 'test-pack', folderId: null, hidden: false },
+        { packId: 'second-pack', folderId: 'aws', hidden: false },
+      ],
+    });
+  });
+
+  it('adds it loose when the folder named does not exist, rather than refusing', async () => {
+    const added = await addSkill({ packId: 'second-pack', folderId: 'gone' });
+
+    expect(added.statusCode).toBe(200);
+    expect(added.json().menu.placements).toEqual([{ packId: 'second-pack', folderId: null, hidden: false }]);
+  });
+
+  it('shows a skill already started but hidden, keeping where it was filed', async () => {
+    await start('second-pack');
+    await putMenu({
+      folders: [{ folderId: 'aws', name: 'AWS' }],
+      placements: [{ packId: 'second-pack', folderId: 'aws', hidden: true }],
+    });
+
+    const added = await addSkill({ packId: 'second-pack' });
+
+    expect(added.json().menu.placements).toEqual([{ packId: 'second-pack', folderId: 'aws', hidden: false }]);
+  });
+
+  it('is a 404 for a skill that is not published', async () => {
+    expect((await addSkill({ packId: 'no-such-skill' })).statusCode).toBe(404);
+  });
+
+  it('adds to the calling learner only', async () => {
+    await addSkill({ packId: 'second-pack' });
+
+    expect((await menu('other-token')).json().menu.placements).toEqual([]);
   });
 
   it('is private to the learner', async () => {

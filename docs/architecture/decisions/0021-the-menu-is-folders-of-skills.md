@@ -1,6 +1,6 @@
 ---
 title: The menu is folders of skills; a skill's surfaces are its tabs
-status: accepted
+status: accepted; amended by 0024
 date: 2026-09-29
 supersedes: 0018
 ---
