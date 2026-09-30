@@ -134,6 +134,42 @@ describeIfMongo('mcp', () => {
       expect(overHttp.json().block.slug).toBe('second');
     });
 
+    it('shows the deck of a block written for one learner, and not the words they added to it', async () => {
+      const { packId } = await seed(harness);
+      const me = await harness.app.inject({ method: 'GET', url: '/api/v1/me', headers: auth('learner-token') });
+      const learnerId = me.json().learner.learnerId as string;
+
+      const published = await call(
+        'coach-token',
+        rpc('tools/call', {
+          name: 'publish_block',
+          arguments: { packId, block: { ...TEST_BLOCK, order: 2, slug: 'theirs', learnerId } },
+        }),
+      );
+      const { block, drillItemsPublished } = resultOf(published) as {
+        block: { blockId: string };
+        drillItemsPublished: number;
+      };
+      const blockId = block.blockId;
+
+      const added = await harness.app.inject({
+        method: 'POST',
+        url: `/api/v1/blocks/${blockId}/terms`,
+        headers: auth('learner-token'),
+        payload: { term: 'de etalage', translation: 'the shop window' },
+      });
+      expect(added.statusCode).toBeLessThan(300);
+
+      // The published items of an owned block carry the owner's `learnerId` too, so filtering on
+      // "no learnerId" hid the whole deck. What keeps the learner's own word out is where it came from.
+      const read = await call('coach-token', rpc('tools/call', { name: 'get_block', arguments: { blockId } }));
+      const items = resultOf(read).drillItems as { payload: { kind: string; sentence?: string; term?: string } }[];
+
+      expect(drillItemsPublished).toBeGreaterThan(0);
+      expect(items).toHaveLength(drillItemsPublished);
+      expect(items.map((item) => item.payload.term)).not.toContain('de etalage');
+    });
+
     it('records the write in the same audit trail, saying which door it came through', async () => {
       const { packId } = await seed(harness);
 
