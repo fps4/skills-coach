@@ -131,13 +131,13 @@ errorCategories:
     label: { en: "RDF data model — triples, IRIs, literals, blank nodes, named graphs" }
     group: { en: Foundations }
   - id: rdf-vs-property-graph
-    label: { en: RDF versus property graphs — when each, and what each costs }
+    label: { en: "RDF versus property graphs — when each, and what each costs" }
     group: { en: Foundations }
   - id: owl-inference
     label: { en: "OWL — classes, properties, inference, open world" }
     group: { en: Semantics }
   - id: skos-taxonomy
-    label: { en: SKOS — taxonomies and controlled vocabularies, and why they are not ontologies }
+    label: { en: "SKOS — taxonomies and controlled vocabularies, and why they are not ontologies" }
     group: { en: Semantics }
   - id: shacl-validation
     label: { en: "SHACL — shapes, closed-world validation, the graph's test suite" }
@@ -158,13 +158,13 @@ errorCategories:
     label: { en: "Ontology engineering — competency questions, reuse before invention, governance" }
     group: { en: Design }
   - id: access-control
-    label: { en: Access in a graph — policy as data, subgraph expansion, explaining a deny }
+    label: { en: "Access in a graph — policy as data, subgraph expansion, explaining a deny" }
     group: { en: Design }
   - id: graph-and-ai
     label: { en: "Graphs and AI — knowledge graph versus GraphRAG, graph versus search, grounding" }
     group: { en: Design }
   - id: platform-choice
-    label: { en: Platforms — triple stores, property graph databases, what decides between them }
+    label: { en: "Platforms — triple stores, property graph databases, what decides between them" }
     group: { en: Design }
   # Written answers — what a coach finds in a `write` section beyond the concept areas above.
   - id: unexplained-term

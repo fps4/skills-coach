@@ -99,7 +99,7 @@ errorCategories:
   - id: not-the-question
     label: { nl: Ander antwoord dan gevraagd, en: Answers a different question than the one asked }
   - id: no-owner
-    label: { nl: Geen eigenaar of beslisser, en: No one named who decides, owns or has to agree }
+    label: { nl: Geen eigenaar of beslisser, en: "No one named who decides, owns or has to agree" }
   - id: too-long
     label: { nl: Te lang, en: Too long for a spoken answer }
 
