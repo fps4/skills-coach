@@ -91,7 +91,8 @@ jobs:
         run: |
           SUFFIX=${{ github.run_id }}-${{ github.run_attempt }}
           docker inspect -f 'state={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' "sc-mongo-$SUFFIX" || true
-          docker logs --tail 60 "sc-mongo-$SUFFIX" 2>&1 | cut -c1-400 || true
+          # Errors and fatals only: an abort is followed by a hundred lines of stack frames.
+          docker logs "sc-mongo-$SUFFIX" 2>&1 | grep -E '"s":"(F|E)"' | tail -20 | cut -c1-800 || true
       - name: Cleanup
         if: always()
         run: |
