@@ -1,0 +1,32 @@
+# Dependency update PRs land on `pre-release`, never straight on `main`: `main` deploys to ds1 on a
+# green `dod` (deploy-ds1.yml), and an upgrade should be exercised together with whatever else is
+# queued before it gets there.
+#
+# `target-branch` governs *version* updates only. GitHub opens *security* updates against the default
+# branch regardless of this file — and this file itself is only read from the default branch, which
+# is why it lives on `main`.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /api
+    target-branch: pre-release
+    schedule: { interval: weekly }
+    groups:
+      api-minor-and-patch: { update-types: [minor, patch] }
+
+  - package-ecosystem: npm
+    directory: /web
+    target-branch: pre-release
+    schedule: { interval: weekly }
+    groups:
+      web-minor-and-patch: { update-types: [minor, patch] }
+
+  - package-ecosystem: docker
+    directory: /infra/docker
+    target-branch: pre-release
+    schedule: { interval: weekly }
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: pre-release
+    schedule: { interval: weekly }
