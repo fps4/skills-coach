@@ -71,7 +71,12 @@ jobs:
           MONGO=sc-mongo-$SUFFIX
 
           docker network create "$NET"
+          # `nofile` raised to what MongoDB recommends: every test file gets its own database, and
+          # every collection and index in it is a file WiredTiger keeps open. At the daemon's default
+          # the suite outgrew it and mongod aborted mid-run ("Too many open files"), which the tests
+          # only ever saw as the host `mongo` vanishing.
           docker run -d --name "$MONGO" --network "$NET" --network-alias mongo \
+            --ulimit nofile=64000:64000 \
             -e MONGO_INITDB_ROOT_USERNAME=coach -e MONGO_INITDB_ROOT_PASSWORD=coach \
             --health-cmd "mongosh --quiet --eval \"db.adminCommand('ping').ok\"" \
             --health-interval 3s --health-timeout 3s --health-retries 20 mongo:7
