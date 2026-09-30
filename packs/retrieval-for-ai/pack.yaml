@@ -1,0 +1,184 @@
+# Retrieval for AI — how the "R" in RAG is actually built: chunking, embeddings, vector indexes,
+# hybrid search, reranking, access control and evaluation, and when a graph or plain search wins.
+#
+# COMMITTED, deliberately (ADR-0008): the program — ramp, method and the vocabulary of mistakes — and
+# nothing that names a person, employer or client. The questions and scenarios are content, authored
+# per learner around their own work (ADR-0015), and stay out of the tree. `.gitignore` un-ignores
+# this one file.
+#
+# Written for an architect, not a model trainer: the questions are about the retrieval system's
+# design and its failure modes, not about how an embedding model is trained.
+
+packId: retrieval-for-ai
+
+title:
+  nl: Retrieval voor AI
+  en: Retrieval for AI
+
+description:
+  nl: Chunking, embeddings, vectorindexen, hybride zoeken, reranking en evaluatie — ontwerpen en verdedigen.
+  en: Chunking, embeddings, vector indexes, hybrid search, reranking and evaluation — designed and defended.
+
+contentLanguage: en
+translationLanguage: en
+skill: ai-architecture # free label, descriptive only — nothing branches on it
+
+goal:
+  en: >-
+    Design the retrieval layer of an enterprise AI assistant — what is indexed, how, who may see
+    it, and how anyone knows it works — and name its failure modes before they are asked about.
+
+framework:
+  id: retrieval-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+  ramp:
+    - fromBlock: 1
+      toBlock: 2
+      level: vocabulary
+      phase: The pipeline end to end, one stage at a time
+      dials:
+        terms: 25–35 per block — each defined in one sentence with the trade-off it carries
+        questionStyle: one stage per question; wrong options are real techniques from another stage
+        bankSize: 20 questions
+        writing: one `write` section — the path of one question from user to grounded answer, in eight sentences
+        milestone: 80% over a sitting, and the whole pipeline drawn from memory
+
+    - fromBlock: 3
+      toBlock: 5
+      level: mechanism
+      phase: How each stage behaves, and what its knobs cost
+      dials:
+        questionStyle: short scenario with numbers — corpus size, latency budget, recall target — the answer turns on behaviour
+        bankSize: 20 questions
+        exercises: compute it — recall@k and MRR from a ranked list, reciprocal rank fusion of two lists, an index memory estimate
+        writing: two `write` sections — HNSW versus IVF for a stated corpus, and why hybrid beats either half alone
+        milestone: 75% over a sitting, and each calculation correct by hand
+
+    - fromBlock: 6
+      toBlock: 9
+      level: design
+      phase: Decisions under constraint — access, freshness, cost, evaluation
+      dials:
+        questionStyle: 120–200-word enterprise scenario with a binding constraint; every option would work, one meets it
+        bankSize: 20 questions
+        writing: a design decision per lesson, with the rejected alternative and when it breaks
+        milestone: an evaluation plan for one real assistant — gold set, metrics, the release gate
+
+    - fromBlock: 10
+      toBlock: 12
+      level: defence
+      phase: Under questioning
+      dials:
+        questionStyle: the follow-up question — "the answer was confidently wrong; where did it go wrong?"
+        bankSize: 15 questions
+        writing: most of the block; three-sentence answers, corrected for mechanism and overclaim
+        milestone: a retrieval design walked through aloud with every failure mode named before it is asked
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows: search as an index and a ranking problem,
+      evaluation as a test suite, access control as a policy decision. Vectors are one more index
+      with its own trade-offs, not a new discipline.
+    - >-
+      Every stage is taught with its failure mode. Chunking loses context across boundaries, dense
+      retrieval misses exact identifiers, ANN trades recall for speed, reranking costs latency,
+      post-filtering starves top-k, stale indexes serve deleted documents. An architect is asked
+      about the failure, not the feature.
+    - >-
+      Numbers, not adjectives. A design answer names the corpus size, the latency budget, the k, the
+      recall target. "Fast" and "accurate" are corrected.
+    - >-
+      Retrieval is judged separately from generation. A wrong answer is diagnosed by stage — not
+      retrieved, retrieved but ranked out, retrieved but ignored, retrieved but not permitted —
+      before anyone blames the model.
+    - >-
+      Questions test judgement, not recall; the explanation says why each wrong option fails; a
+      stem is answerable with the options covered. The same authoring discipline as any exam bank.
+    - >-
+      Weak categories come back interleaved, not batched, and the runtime's sitting does the
+      emphasis (ADR-0014). Write the bank for coverage.
+
+  lessonArc:
+    - review — what the last sitting and the last corrections got wrong, by category
+    - concept — the stage the weak categories sit in, with its knobs and its failure mode
+    - worked example — one query traced through the pipeline, with the numbers
+    - exercise — a calculation or a diagnosis; the key follows under `### Antwoorden`
+    - write — defend one decision to a named audience; corrected by a coach
+
+  rules:
+    sources: >-
+      every question is written from primary sources — the papers that define the technique (HNSW,
+      BM25, RRF, ColBERT and the like) or the vendor's own documentation — and cites them in `sourceRefs`
+    coverage: every block's bank touches every concept category at least once before the surplus goes to weak ones
+    distractors: a wrong option is a real technique applied at the wrong stage or scale — never an invented one
+    vendorNeutral: >-
+      questions are about the technique; a vendor product (Azure AI Search, OpenSearch, pgvector,
+      Vertex, Bedrock Knowledge Bases) appears only when the scenario names the estate, and then as
+      that estate's way of doing the technique
+    currency: >-
+      anything that changes quickly — a product's limits, a model's dimensions — carries its source
+      date; a block republished later re-checks it
+    scenarioDomain: scenarios come from the learner's profile — the domains of the roles they are pursuing
+    noOverclaim: >-
+      a design answer that claims production experience the profile does not show is corrected under
+      `overclaim`, even when the technical content is right
+
+errorCategories:
+  - id: chunking
+    label: { en: "Chunking — size, overlap, structure-aware splitting, parent/child retrieval" }
+    group: { en: Indexing }
+  - id: embeddings
+    label: { en: "Embeddings — what they capture and miss, dimensions, model choice, re-embedding cost" }
+    group: { en: Indexing }
+  - id: ann-indexes
+    label: { en: "Vector indexes — HNSW, IVF, quantisation; the recall, latency and memory triangle" }
+    group: { en: Indexing }
+  - id: freshness
+    label: { en: "Freshness — incremental indexing, deletes, versioning, index drift" }
+    group: { en: Indexing }
+  - id: lexical-search
+    label: { en: "Lexical search — BM25, analysers, exact identifiers, where it beats vectors" }
+    group: { en: Retrieving }
+  - id: hybrid-fusion
+    label: { en: "Hybrid search — combining lexical and dense, reciprocal rank fusion, weighting" }
+    group: { en: Retrieving }
+  - id: reranking
+    label: { en: "Reranking — cross-encoders, late interaction, the latency it costs" }
+    group: { en: Retrieving }
+  - id: query-shaping
+    label: { en: "Query shaping — rewriting, decomposition, HyDE, routing between indexes" }
+    group: { en: Retrieving }
+  - id: filtering-access
+    label: { en: "Filtering and access — metadata filters, pre- versus post-filtering, security trimming" }
+    group: { en: Governing }
+  - id: grounding
+    label: { en: "Grounding — context assembly, citations, refusal when nothing relevant is found" }
+    group: { en: Governing }
+  - id: retrieval-eval
+    label: { en: "Evaluation — gold sets, recall@k, MRR, nDCG, faithfulness, the release gate" }
+    group: { en: Governing }
+  - id: graph-vs-search
+    label: { en: "Structure — when a graph, SQL or a knowledge graph answers better than retrieval" }
+    group: { en: Governing }
+  - id: cost-latency
+    label: { en: "Cost and latency — index size, query cost, caching, where the milliseconds go" }
+    group: { en: Governing }
+  # Written answers — what a coach finds in a `write` section beyond the concept areas above.
+  - id: unexplained-term
+    label: { en: Term used without being able to explain it }
+    group: { en: Explaining }
+  - id: overclaim
+    label: { en: Claims more certainty or experience than the evidence supports }
+    group: { en: Explaining }
+  - id: no-numbers
+    label: { en: Adjectives where the design needs numbers }
+    group: { en: Explaining }
+
+presentation:
+  palette: blue
+  icon: list-checks
+  tagline:
+    en: The part of RAG that decides whether the answer is right.
+  surfaces: [lessons, drills:terms, quiz]

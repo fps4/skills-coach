@@ -1,0 +1,112 @@
+# Defend the design — practise explaining a design's decisions before someone else asks about them.
+#
+# COMMITTED, deliberately (ADR-0008): this is the program — the method and the vocabulary of
+# mistakes — and it names no person, employer or client. Every block is one design the learner is
+# about to present (a proposal, an architecture, a tailored CV), so every block is content, owned by
+# that learner (ADR-0015), and never lives in the tree. `.gitignore` un-ignores this one file.
+#
+# Why it exists: a written design can be more sophisticated than what its author can explain when
+# questioned. Reading the document again does not close that gap. Writing each decision out, and
+# having a coach take the answer apart, does. This skill is the step between "the document is
+# finished" and "the document is sent".
+
+packId: defend-the-design
+
+title:
+  nl: Verdedig het ontwerp
+  en: Defend the design
+
+description:
+  nl: Elke ontwerpbeslissing uitleggen, met het alternatief, de kosten en wanneer het breekt — voordat iemand ernaar vraagt.
+  en: Explain every design decision — the alternative, the cost and when it breaks — before someone asks.
+
+# Designs are presented in English here. A block for a design presented in Dutch is still possible:
+# the section text is what the learner answers in, and a coach corrects in that language.
+contentLanguage: en
+translationLanguage: en
+skill: design-defence # free label, descriptive only — nothing branches on it
+
+goal:
+  en: >-
+    Every decision in a design I am about to present can be explained two follow-up questions deep:
+    why this, what was rejected, what it costs, and when it breaks.
+
+# Blocks are not a progression. Each one is a different design, so there is no ramp: block 7 is not
+# harder than block 3, it is about something else. The levels are how deep one answer goes, and they
+# are what a coach's review names when it says where an answer stopped.
+framework:
+  id: defence-depth
+  levels: [states-it, explains-it, defends-it, holds-under-follow-up]
+
+method:
+  principles:
+    - >-
+      One lesson per decision. A decision is the unit a questioner attacks, so it is the unit that is
+      practised. A document with ten decisions is a block of ten lessons.
+    - >-
+      The lesson quotes the decision as the document states it, verbatim, and says where it is. The
+      learner defends what was actually sent, not a cleaner version of it.
+    - >-
+      The lesson never contains the model answer. An answer that has been read is recognised, not
+      produced, and recognition is the thing this skill exists to get past. The model answer arrives
+      in the coach's correction, after the learner has written their own.
+    - >-
+      Follow-ups escalate. The first asks why; the second asks what happens when the reason stops
+      holding; the third is the question the learner would least like to be asked. A lesson that
+      stops at "why" is practising the part that was already easy.
+    - >-
+      A term the learner cannot explain is a finding, not a failure. The correction says so plainly
+      and the result is either study or taking the term out of the document — both are fine. Keeping
+      it in and hoping nobody asks is not.
+    - >-
+      Short answers. A spoken answer to a follow-up is about three sentences. A written answer that
+      needs a paragraph to say why is usually hiding that the reason is not clear yet.
+
+  lessonArc:
+    - the decision — quoted from the document, with where it sits and what it commits to
+    - explain it — a `write` section, three to five sentences, to the person who will be in the room
+    - the alternative — a `write` section naming what was rejected and the one reason it lost
+    - the follow-ups — a `questions` section, escalating, the last one the hardest
+    - when it breaks — a `write` section on the condition under which this decision is wrong
+
+  rules:
+    sourceQuote: every lesson opens with the decision quoted verbatim and a pointer to its place in the document
+    audience: >-
+      each block names who the design is presented to and what they care about, and every `write`
+      section is addressed to that person — a Head of Data does not need the same answer as a
+      principal engineer
+    followUps: three per lesson, in escalating order; the third is the one the learner would least like to be asked
+    vocabularyCheck: >-
+      every standard or technology named in the decision gets one question of the form "what does it
+      do, in one sentence, and why this one" — a name with no mechanism behind it is where these
+      sessions come apart
+    noModelAnswer: the lesson never contains the answer; the correction carries it
+    blockMilestone: the whole design walked through aloud in the time the real session allows, with no decision skipped
+
+errorCategories:
+  - id: unexplained-term
+    label: { nl: Term zonder uitleg, en: Term used without being able to explain it }
+  - id: wrong-mechanism
+    label: { nl: Mechanisme onjuist, en: Mechanism stated incorrectly }
+  - id: no-alternative
+    label: { nl: Geen alternatief genoemd, en: No rejected alternative named }
+  - id: no-cost
+    label: { nl: Kosten of nadeel ontbreken, en: No cost or trade-off stated }
+  - id: no-failure-mode
+    label: { nl: Geen faalscenario, en: No condition under which it breaks }
+  - id: overclaim
+    label: { nl: Meer beweerd dan onderbouwd, en: Claims more certainty or experience than the evidence supports }
+  - id: not-the-question
+    label: { nl: Ander antwoord dan gevraagd, en: Answers a different question than the one asked }
+  - id: no-owner
+    label: { nl: Geen eigenaar of beslisser, en: No one named who decides, owns or has to agree }
+  - id: too-long
+    label: { nl: Te lang, en: Too long for a spoken answer }
+
+presentation:
+  palette: violet
+  icon: shield-check
+  tagline:
+    nl: Eerst uitleggen, dan versturen.
+    en: Explain it before you send it.
+  surfaces: [lessons]

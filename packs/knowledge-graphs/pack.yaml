@@ -1,0 +1,182 @@
+# Knowledge graphs & semantic modelling — for a data architect who knows relational and dimensional
+# modelling and needs the graph and ontology layer to the same depth.
+#
+# COMMITTED, deliberately (ADR-0008): the program — ramp, method and the vocabulary of mistakes — and
+# nothing that names a person, employer or client. The terms, questions and exercises are content,
+# authored per learner around their own work (ADR-0015), and stay out of the tree. `.gitignore`
+# un-ignores this one file.
+#
+# The error categories are the concept areas an interviewer probes, and several of them are named
+# after the pair that is confused rather than the topic: that is where the wrong answers actually
+# come from.
+
+packId: knowledge-graphs
+
+title:
+  nl: Kennisgrafen & semantische modellering
+  en: Knowledge graphs & semantic modelling
+
+description:
+  nl: RDF, OWL, SKOS, SHACL en SPARQL — wat ze doen, wanneer je ze kiest en hoe je het verdedigt.
+  en: RDF, OWL, SKOS, SHACL and SPARQL — what each one does, when to choose it, and how to defend it.
+
+# The standards are specified and discussed in English; translating them would teach words nobody
+# uses. A term drill's "translation" is its one-line definition.
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture # free label, descriptive only — nothing branches on it
+
+goal:
+  en: >-
+    Design a knowledge graph for an enterprise domain and defend each choice — model, standards,
+    identity, provenance, access — to a Head of Data, two follow-up questions deep.
+
+framework:
+  id: kg-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+  ramp:
+    - fromBlock: 1
+      toBlock: 2
+      level: vocabulary
+      phase: What each standard is for, and which pairs get confused
+      dials:
+        terms: 25–35 per block, each defined in one sentence and used in one example
+        questionStyle: one concept per question; wrong options are other real standards used for the wrong job
+        bankSize: 20 questions
+        exercises: read-only — read a small Turtle file and a SPARQL query and say what they mean
+        writing: one `write` section — explain RDF versus a property graph to a data engineer, in five sentences
+        milestone: 80% over a sitting, and every standard explained in one sentence without notes
+
+    - fromBlock: 3
+      toBlock: 5
+      level: mechanism
+      phase: How it behaves — inference, validation, identity, time
+      dials:
+        questionStyle: short scenario; the answer turns on how a mechanism behaves, not what it is called
+        bankSize: 20 questions
+        exercises: write it — a SPARQL query with OPTIONAL and a property path, a SHACL shape, a SKOS scheme, a Cypher query for the same question
+        writing: two `write` sections — open- versus closed-world, and `owl:sameAs` versus a merge
+        milestone: 75% over a sitting, and each exercise correct without looking up syntax
+
+    - fromBlock: 6
+      toBlock: 9
+      level: design
+      phase: Decisions under constraint — scope, platform, extraction, access
+      dials:
+        questionStyle: 120–200-word enterprise scenario with a binding constraint; every option would work, one meets the constraint
+        bankSize: 20 questions
+        exercises: model a small domain from competency questions — classes, properties, identifiers, shapes
+        writing: a design decision per lesson, with the rejected alternative and when it breaks
+        milestone: a ten-competency-question model that answers all ten in SPARQL
+
+    - fromBlock: 10
+      toBlock: 12
+      level: defence
+      phase: Under questioning
+      dials:
+        questionStyle: the follow-up question, not the first question — "what happens when…"
+        bankSize: 15 questions
+        writing: most of the block; each answer three sentences, corrected for mechanism and overclaim
+        milestone: a design walked through aloud with no term the learner cannot explain
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Every new idea is introduced against its relational
+      or dimensional counterpart first — a triple against a row, SHACL against a constraint, SPARQL
+      against SQL, an ontology against a conceptual model — and then by where the analogy breaks.
+    - >-
+      Name the confusion, then separate it. RDF and property graphs, OWL and SKOS, OWL's open world
+      and SHACL's closed one, `owl:sameAs` and a merge, a knowledge graph and GraphRAG, SPARQL and
+      GraphQL. Most wrong interview answers are one of these pairs.
+    - >-
+      Mechanism before vocabulary. A term is known when the learner can say what it does, what it
+      costs, and when it is the wrong choice — not when they can define it.
+    - >-
+      Every block produces something: a query that runs, a shape that validates, a model that
+      answers its competency questions. Reading about graphs is the first rung, not the method.
+    - >-
+      Questions test judgement, not recall; the explanation says why each wrong option fails; a
+      stem is answerable with the options covered. The same authoring discipline as any exam bank.
+    - >-
+      Weak categories come back interleaved, not batched, and the runtime's sitting does the
+      emphasis (ADR-0014). Write the bank for coverage.
+
+  lessonArc:
+    - review — what the last sitting and the last corrections got wrong, by category
+    - concept — the two or three ideas the weak categories turn on, each against its relational counterpart
+    - worked example — one small graph or query reasoned through in full
+    - exercise — the learner writes the query, shape or model; the key follows under `### Antwoorden`
+    - write — explain one decision to a named audience; corrected by a coach
+
+  rules:
+    sources: >-
+      every question and definition is written from the W3C specifications (RDF 1.1, OWL 2, SKOS,
+      SHACL, SPARQL 1.1, PROV-O, R2RML) or a vendor's own documentation, and cites it in `sourceRefs`
+    coverage: every block's bank touches every error category at least once before the surplus goes to weak ones
+    distractors: a wrong option is a real standard or pattern applied to the wrong job — never an invented one
+    syntax: >-
+      exercises use Turtle for data and shapes, SPARQL 1.1 for queries, openCypher where a property
+      graph is compared; every exercise has a key that runs
+    scenarioDomain: >-
+      scenarios come from the learner's profile — the domains of the roles they are pursuing — so a
+      question about a legal matter graph and one about a retail product graph test the same idea
+    noOverclaim: >-
+      a design answer that claims production experience the profile does not show is corrected under
+      `overclaim`, even when the technical content is right
+
+errorCategories:
+  - id: rdf-model
+    label: { en: "RDF data model — triples, IRIs, literals, blank nodes, named graphs" }
+    group: { en: Foundations }
+  - id: rdf-vs-property-graph
+    label: { en: RDF versus property graphs — when each, and what each costs }
+    group: { en: Foundations }
+  - id: owl-inference
+    label: { en: "OWL — classes, properties, inference, open world" }
+    group: { en: Semantics }
+  - id: skos-taxonomy
+    label: { en: SKOS — taxonomies and controlled vocabularies, and why they are not ontologies }
+    group: { en: Semantics }
+  - id: shacl-validation
+    label: { en: "SHACL — shapes, closed-world validation, the graph's test suite" }
+    group: { en: Semantics }
+  - id: sparql-querying
+    label: { en: "SPARQL — patterns, OPTIONAL, property paths, aggregation, federation" }
+    group: { en: Querying }
+  - id: identity-resolution
+    label: { en: "Identity — canonical IRIs, entity resolution, owl:sameAs versus a merge" }
+    group: { en: Building }
+  - id: provenance-time
+    label: { en: "Provenance and time — PROV-O, named graphs, confidence, valid time" }
+    group: { en: Building }
+  - id: mapping-extraction
+    label: { en: "Getting data in — R2RML mapping, extraction pipelines, gold sets, precision and recall" }
+    group: { en: Building }
+  - id: ontology-engineering
+    label: { en: "Ontology engineering — competency questions, reuse before invention, governance" }
+    group: { en: Design }
+  - id: access-control
+    label: { en: Access in a graph — policy as data, subgraph expansion, explaining a deny }
+    group: { en: Design }
+  - id: graph-and-ai
+    label: { en: "Graphs and AI — knowledge graph versus GraphRAG, graph versus search, grounding" }
+    group: { en: Design }
+  - id: platform-choice
+    label: { en: Platforms — triple stores, property graph databases, what decides between them }
+    group: { en: Design }
+  # Written answers — what a coach finds in a `write` section beyond the concept areas above.
+  - id: unexplained-term
+    label: { en: Term used without being able to explain it }
+    group: { en: Explaining }
+  - id: overclaim
+    label: { en: Claims more certainty or experience than the evidence supports }
+    group: { en: Explaining }
+
+presentation:
+  palette: emerald
+  icon: sparkles
+  tagline:
+    en: The layer between the data and the AI.
+  surfaces: [lessons, drills:terms, quiz]
