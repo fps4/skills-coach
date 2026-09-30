@@ -84,6 +84,14 @@ jobs:
           docker run --rm --network "$NET" \
             -e MONGO_URI=mongodb://coach:coach@mongo:27017/?authSource=admin \
             sc-ci:$SUFFIX bash -lc "cd api && npm run lint && npm run typecheck && npm test && cd ../web && npm test"
+      - name: Show MongoDB's side when the tests failed
+        # A mongod that dies mid-run surfaces in the tests only as "ENOTFOUND mongo"; its own log is
+        # the only place that says why, and the cleanup below deletes it.
+        if: failure()
+        run: |
+          SUFFIX=${{ github.run_id }}-${{ github.run_attempt }}
+          docker inspect -f 'state={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' "sc-mongo-$SUFFIX" || true
+          docker logs --tail 60 "sc-mongo-$SUFFIX" 2>&1 | cut -c1-400 || true
       - name: Cleanup
         if: always()
         run: |
