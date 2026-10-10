@@ -36,7 +36,6 @@ on:
         description: "Skill the library belongs to"
         type: string
         required: true
-        default: lezen-nieuws-nl
       only:
         description: "Load a single slug, leaving the rest of the library alone"
         type: string

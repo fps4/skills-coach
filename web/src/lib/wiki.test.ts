@@ -23,12 +23,13 @@ const guides = files.map((name) => {
 });
 
 describe('the wiki corpus', () => {
-  it('is not empty', () => {
-    // Cheap, and the only check that catches a corpus which failed to arrive at all — most likely
-    // a `.gitignore` regression, since ADR-0006's `content/` rule matches at any depth and would
-    // exclude every guide. Every other assertion here passes happily on zero files, which is
-    // exactly how an empty library reaches production unnoticed.
-    expect(files.length).toBeGreaterThan(0);
+  it('has its directory in the tree', () => {
+    // The corpus is empty on purpose while the library is reworked into flashcard material — the
+    // guides were removed, the folder and the code that renders it were kept. What this still
+    // catches is a `.gitignore` regression: ADR-0006's `content/` rule matches at any depth, and
+    // without the un-ignore the directory (and its `.gitkeep`) would not arrive at all. When guides
+    // come back, restore the `files.length > 0` assertion.
+    expect(readdirSync(DIRECTORY)).toContain('.gitkeep');
   });
 
   it('parses every guide against the frontmatter contract', () => {
@@ -90,6 +91,11 @@ const FORBIDDEN: { pattern: RegExp; why: string }[] = [
 ];
 
 describe('no guide names a real employer, person, or job posting', () => {
+  // Keeps the suite non-empty while the corpus is, and proves the guard still bites.
+  it('rejects a synthetic guide that names an employer', () => {
+    expect(FORBIDDEN.some(({ pattern }) => pattern.test('Notes from my time at Accenture'))).toBe(true);
+  });
+
   for (const { slug, source } of guides) {
     it(slug, () => {
       const hits = FORBIDDEN.filter(({ pattern }) => pattern.test(source)).map(
