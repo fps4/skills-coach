@@ -89,7 +89,7 @@ capability gate and writing the same audit trail, not a fork.
 ## `web/` — the learner surface
 
 ```
-web/content/wiki/    the reference library — 28 markdown guides, committed (ADR-0016)
+web/content/wiki/    the reference library — empty while it is reworked; the route and the guard remain (ADR-0016)
 
 web/src/
   app/[locale]/      all routes live under a locale segment (`nl` | `en`)
