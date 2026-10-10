@@ -35,21 +35,9 @@ web/content/*
 packs/woordtrainer-nl/*
 !packs/woordtrainer-nl/pack.yaml
 
-!packs/lezen-nieuws-nl/
-packs/lezen-nieuws-nl/*
-!packs/lezen-nieuws-nl/pack.yaml
-
-!packs/defend-the-design/
-packs/defend-the-design/*
-!packs/defend-the-design/pack.yaml
-
 !packs/knowledge-graphs/
 packs/knowledge-graphs/*
 !packs/knowledge-graphs/pack.yaml
-
-!packs/retrieval-for-ai/
-packs/retrieval-for-ai/*
-!packs/retrieval-for-ai/pack.yaml
 
 # A reading library is content twice over (ADR-0017): somebody else's articles, kept for one
 # learner. The per-pack stanzas above already exclude it — but only while their three lines stay in
