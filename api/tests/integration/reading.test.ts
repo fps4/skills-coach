@@ -241,7 +241,21 @@ describeIfMongo('the reading library', () => {
 
   // --- language -------------------------------------------------------------
 
-  it('serves the language the interface is in — the switch changes content here', async () => {
+  it('opens an article in the language the pack teaches when no language is asked for (ADR-0025)', async () => {
+    // English listed first, so the default is the content language and not merely the first variant.
+    const failover = bilingual('failover');
+    await load([{ ...failover, bodies: [...failover.bodies].reverse() }]);
+    const articleId = (await library()).json().articles[0].articleId as string;
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/api/v1/reading/${articleId}`,
+      headers: auth('learner-token'),
+    });
+    expect(response.json().article).toMatchObject({ language: 'nl', body: NL, inRequestedLanguage: true });
+  });
+
+  it('serves the variant asked for by name — the article page links to the others', async () => {
     await load([bilingual('failover')]);
     const articleId = (await library()).json().articles[0].articleId as string;
 
