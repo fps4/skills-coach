@@ -34,11 +34,11 @@ existing folder of lessons usually imports without being renamed.
 
 ```yaml
 packId: your-pack            # lower-case slug; also the URL segment
-title: { nl: …, en: … }
+title: Dutch in conversation  # one string — a skill is written in one language (ADR-0026)
 contentLanguage: nl          # what the material is written in — never translated (ADR-0005)
 translationLanguage: en      # what a term's translation is written in
 skill: conversation          # descriptive only
-goal: { en: … }              # flows into every next-block brief
+goal: …                      # flows into every next-block brief
 
 framework:
   id: cefr
@@ -59,7 +59,7 @@ method:                      # optional — how the material should be taught, s
 errorCategories:             # THE STABLE VOCABULARY — see below. Optional for a skill with
                              # nothing to correct: a word deck, a reading list (ADR-0022)
   - id: word-order-sub
-    label: { nl: Woordvolgorde bijzin, en: Subclause word order }
+    label: Subclause word order
 
 sectionMap:                  # optional — override how headings map to section kinds
   - { match: dictee, kind: dictation }
@@ -70,9 +70,15 @@ matchArticles:               # optional — leading words ignored when matching 
 presentation:                # optional — how the pack presents itself past the landing page
   palette: blue
   icon: message-circle
-  tagline: { nl: …, en: … }
+  tagline: …
   surfaces: [lessons, drills:terms, drills:word-order]
 ```
+
+Every text field — `title`, `description`, `goal`, `tagline`, a category's `label` and `group`, and
+a block's or lesson's `title` — is **one string**, never one per language
+([ADR-0026](../architecture/decisions/0026-a-skill-is-written-in-one-language.md)). The material is in
+`contentLanguage`; the name and labels are read inside the English interface, so they are usually
+English. A `{ nl: …, en: … }` value is refused with a message saying so.
 
 The runtime never interprets a dial. It carries them into the brief, so whoever writes the next
 block knows which rung they are aiming at.

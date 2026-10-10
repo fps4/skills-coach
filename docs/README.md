@@ -45,6 +45,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0023](architecture/decisions/0023-a-coach-fills-in-a-word-the-learner-asked-for.md) | A coach fills in a word the learner asked for; the learner decides what reaches the deck |
 | [0024](architecture/decisions/0024-a-skill-is-added-from-the-library-and-the-start-page-is-the-menu.md) | A skill is added from the library, and the start page is the menu — amends 0021 |
 | [0025](architecture/decisions/0025-the-interface-is-english-only.md) | The interface is English only — supersedes the interface-language part of 0005 |
+| [0026](architecture/decisions/0026-a-skill-is-written-in-one-language.md) | A skill is written in one language: its titles and labels are one string each |
 
 ## Reference
 

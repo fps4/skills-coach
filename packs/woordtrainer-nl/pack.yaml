@@ -11,13 +11,11 @@
 
 packId: woordtrainer-nl
 
-title:
-  nl: Woordtrainer
-  en: Word trainer
+# One string each, not one per language (ADR-0026). The words are Dutch — that is the point of the
+# skill — but the name and the lines around it are read in the English interface (ADR-0025).
+title: Woordtrainer
 
-description:
-  nl: Jouw eigen Nederlandse woorden, twee kanten op geoefend tot ze blijven hangen.
-  en: Your own Dutch words, practised both ways until they stick.
+description: Your own Dutch words, practised both ways until they stick.
 
 contentLanguage: nl
 translationLanguage: en
@@ -40,7 +38,5 @@ matchArticles:
 presentation:
   palette: orange
   icon: languages
-  tagline:
-    nl: Jouw woorden, jouw tempo.
-    en: Your words, your pace.
+  tagline: Your words, your pace.
   surfaces: [drills:terms]

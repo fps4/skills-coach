@@ -8,25 +8,21 @@
 
 packId: demo-conversation-nl
 
-title:
-  nl: Demo — Nederlands in gesprek
-  en: Demo — Dutch in conversation
+# A skill is written in one language (ADR-0026): every text field here is one string, never one per
+# language. The material is Dutch; the name, description and labels are read in the English
+# interface (ADR-0025), so they are English.
+title: Demo — Dutch in conversation
 
-description:
-  nl: Een klein voorbeeldpakket dat elke soort lesonderdeel laat zien.
-  en: A small example pack that demonstrates every kind of lesson section.
+description: A small example pack that demonstrates every kind of lesson section.
 
-# The language the material is written in. Never translated — the interface language is separate
-# and independent (ADR-0005).
+# The language the material is written in. Never translated (ADR-0005).
 contentLanguage: nl
 # The language a term's translation is written in.
 translationLanguage: en
 
 skill: conversation
 
-goal:
-  nl: Een gesprek van vijf minuten voeren zonder vast te lopen.
-  en: Hold a five-minute conversation without freezing.
+goal: Hold a five-minute conversation without freezing.
 
 framework:
   id: cefr
@@ -77,19 +73,19 @@ method:
 # and next-block generation — once published, they must not be renamed.
 errorCategories:
   - id: word-order-main
-    label: { nl: Woordvolgorde hoofdzin, en: Main-clause word order }
+    label: Main-clause word order
   - id: word-order-sub
-    label: { nl: Woordvolgorde bijzin, en: Subclause word order }
+    label: Subclause word order
   - id: verb-tense
-    label: { nl: Werkwoordstijd, en: Verb tense }
+    label: Verb tense
   - id: article
-    label: { nl: Lidwoord (de/het), en: Article }
+    label: "Article (de/het)"
   - id: preposition
-    label: { nl: Voorzetsel, en: Preposition }
+    label: Preposition
   - id: word-choice
-    label: { nl: Woordkeuze, en: Word choice }
+    label: Word choice
   - id: spelling
-    label: { nl: Spelling, en: Spelling }
+    label: Spelling
 
 # Leading words ignored when matching an answer, per language. Defaults cover Dutch and English;
 # a pack in another language overrides them here.
@@ -103,9 +99,7 @@ matchArticles:
 presentation:
   palette: blue # a key into the viewer's palettes; an unknown one falls back to the default
   icon: message-circle # likewise, a key into its icon registry
-  tagline:
-    nl: Een rondleiding door elk soort lesonderdeel.
-    en: A tour of every kind of lesson section.
+  tagline: A tour of every kind of lesson section.
   # The surfaces this pack offers. Omit the list entirely and a pack gets all of them; naming them
   # is how a pack opts *out* of one it *does* have material for. There is no need to leave out what
   # the pack simply has not got — a surface with no material behind it is absent either way

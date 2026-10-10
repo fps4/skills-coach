@@ -1,20 +1,10 @@
 /**
  * Small helpers shared by the surfaces.
- *
- * `pickTitle` resolves a pack's localized *metadata* — a block title a pack chose to author in both
- * languages — to its English form, the interface being English only (ADR-0025). This is the one
- * place localized pack data exists, and it is metadata, never material: lesson prose, terms and
- * translations are content and pass through untouched (ADR-0005).
+
  */
 
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { ErrorStatus, TitleText } from './types';
-
-export function pickTitle(title: TitleText | undefined): string {
-  if (!title) return '';
-  if (typeof title === 'string') return title;
-  return title.en ?? title.nl ?? '';
-}
+import type { ErrorStatus } from './types';
 
 /**
  * Roughly how long a piece of text takes to read.

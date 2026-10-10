@@ -27,6 +27,8 @@ api/src/
 
   domain/            PURE. No I/O, no database, no fastify. This is the spec.
     types.ts           core entities and the nine section kinds
+    pack-text.ts       a skill is written in one language: reading a legacy `{nl, en}` title or label as
+                       one string, at the read boundary in services/content.ts (ADR-0026)
     schemas.ts         zod — the validation boundary for everything entering the system
     matching.ts        tolerant answer comparison
     drill-progress.ts  the stage/streak/mastery machine, shared by all drill kinds

@@ -168,7 +168,7 @@ describeIfMongo('the coaching loop', () => {
     const body = brief.json();
 
     // The three inputs the brief exists to assemble.
-    expect(body.goal.en).toBe(TEST_PACK.goal.en); //                (3) the program goal
+    expect(body.goal).toBe(TEST_PACK.goal); //                      (3) the program goal
     expect(body.nextBlock.ramp.level).toBe('B1.1'); //               (2) the ramp
     expect(body.evidence.errorLog[0].category).toBe('word-order'); //(1) how the learner did
     expect(body.evidence.lessons[0]).toMatchObject({ lessonOrder: 1, status: 'corrected' });

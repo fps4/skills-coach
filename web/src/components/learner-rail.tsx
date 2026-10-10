@@ -20,15 +20,14 @@ import { ChevronRight, Folder, HardDriveDownload, LayoutGrid, Library, ListTree,
 import { cn } from '@/lib/utils';
 import { arrangeRail } from '@/lib/menu';
 import { packIcon, packIdFromUrl, packLanding, type PackMaterial } from '@/lib/pack-scope';
-import { pickTitle } from '@/lib/text';
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { LearnerMenu, PackSurface, TitleText } from '@/lib/types';
+import type { LearnerMenu, PackSurface } from '@/lib/types';
 
 /** What the shell knows about one of the learner's skills. */
 export interface RailPack {
   packId: string;
   /** The skill's own name, which is what the learner sees. */
-  title: TitleText;
+  title: string;
   /** A key into the icon registry; unknown ones fall back rather than leaving a gap (ADR-0009). */
   icon?: string;
   /** The block they are working through in that skill, when they have one. */
@@ -100,9 +99,9 @@ export function LearnerRail({ dictionary, packs, menu }: Props) {
         active={pack.packId === scoped}
         nested={nested}
       >
-        {/* The skill's own name — localized metadata, resolved here, never translated (ADR-0005). */}
+        {/* The skill's own name, as the pack wrote it — never translated (ADR-0005, ADR-0026). */}
         <span className="flex items-center justify-between gap-2">
-          <span className="truncate">{pickTitle(pack.title)}</span>
+          <span className="truncate">{pack.title}</span>
           {pack.ready ? <ReadyBadge count={pack.ready} label={dictionary.assist.ready} /> : null}
         </span>
       </RailItem>

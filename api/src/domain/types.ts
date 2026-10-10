@@ -9,23 +9,6 @@
 import type { LearnerMenu } from './menu.js';
 import type { TermDetails } from './term-request.js';
 
-/**
- * The languages pack metadata may be authored in, side by side. Not interface languages — the
- * interface is English only (ADR-0025) — and distinct from a pack's content language (ADR-0005).
- */
-export const LOCALES = ['nl', 'en'] as const;
-export type Locale = (typeof LOCALES)[number];
-
-/** A string authored per language. Used for chrome-adjacent pack metadata only. */
-export type LocalizedText = Partial<Record<Locale, string>>;
-
-/** Resolve localized text, falling back to the other locale rather than rendering nothing. */
-export function pickText(text: LocalizedText | string | undefined, locale: Locale): string {
-  if (typeof text === 'string') return text;
-  if (!text) return '';
-  return text[locale] ?? text[locale === 'nl' ? 'en' : 'nl'] ?? '';
-}
-
 // ---------------------------------------------------------------------------
 // Pack
 // ---------------------------------------------------------------------------
@@ -57,13 +40,14 @@ export interface RampStep {
  */
 export interface ErrorCategoryDef {
   id: string;
-  label?: LocalizedText;
+  /** A display name, in the skill's own language (ADR-0026). */
+  label?: string;
   /**
    * A free label the pack groups its categories under, e.g. an exam domain. Carried to the viewer
    * and into the brief; never interpreted here. Grouping by parsing an id would make the id's shape
    * load-bearing, and ids are frozen once a pack has been corrected against.
    */
-  group?: LocalizedText;
+  group?: string;
 }
 
 /** Maps a source document's headings onto section kinds, so the importer is not language-specific. */
@@ -85,7 +69,7 @@ export type PackSurface = 'lessons' | 'reading' | 'drills:terms' | 'drills:word-
 export interface PackPresentation {
   palette?: string;
   icon?: string;
-  tagline?: LocalizedText;
+  tagline?: string;
   /** Omitted means "everything the platform offers" — a pack opts out, not in. */
   surfaces?: PackSurface[];
 }
@@ -114,15 +98,20 @@ export interface PackMethod {
 
 export interface PackManifest {
   packId: string;
-  title: LocalizedText;
-  description?: LocalizedText;
+  /**
+   * The skill's name, description and goal, each one string in the skill's one language
+   * (ADR-0026). Packs stored before that may still hold `{ nl, en }`; `domain/pack-text.ts` reads
+   * them as a string, so nothing past the read boundary sees the old shape.
+   */
+  title: string;
+  description?: string;
   /** BCP-47 language the pack's material is written in. Never translated — ADR-0005. */
   contentLanguage: string;
   /** Language the `translation` side of a term drill is written in. */
   translationLanguage: string;
   /** Free label, e.g. 'conversation'. Descriptive only; the runtime never branches on it. */
   skill: string;
-  goal?: LocalizedText;
+  goal?: string;
   framework: Framework;
   /** How to teach this pack's material. Carried into every brief; never interpreted. */
   method?: PackMethod;
@@ -145,7 +134,7 @@ export interface Block {
   packId: string;
   order: number;
   slug: string;
-  title: LocalizedText | string;
+  title: string;
   level?: string;
   theme?: string;
   /** What this block drills, e.g. re-drilled error categories or grammar topics. */
@@ -253,7 +242,7 @@ export interface Lesson {
   blockId: string;
   packId: string;
   order: number;
-  title: LocalizedText | string;
+  title: string;
   level?: string;
   estimatedMinutes?: number;
   focus?: string;

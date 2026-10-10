@@ -129,11 +129,11 @@ export const auth = (token: string) => ({ authorization: `Bearer ${token}` });
 
 export const TEST_PACK = {
   packId: 'test-pack',
-  title: { en: 'Test pack', nl: 'Testpakket' },
+  title: 'Test pack',
   contentLanguage: 'nl',
   translationLanguage: 'en',
   skill: 'conversation',
-  goal: { en: 'Reach the top of the test ladder.' },
+  goal: 'Reach the top of the test ladder.',
   framework: {
     id: 'cefr',
     levels: ['A2', 'B1.1', 'B1.2', 'B2.1'],
@@ -143,16 +143,16 @@ export const TEST_PACK = {
     ],
   },
   errorCategories: [
-    { id: 'word-order', label: { en: 'Word order' } },
-    { id: 'spelling', label: { en: 'Spelling' } },
-    { id: 'articles', label: { en: 'Articles' } },
+    { id: 'word-order', label: 'Word order' },
+    { id: 'spelling', label: 'Spelling' },
+    { id: 'articles', label: 'Articles' },
   ],
 };
 
 export const TEST_BLOCK = {
   order: 1,
   slug: 'first-block',
-  title: { en: 'First block', nl: 'Eerste blok' },
+  title: 'First block',
   level: 'B1.1',
   focus: ['category:word-order'],
   milestone: 'Say three sentences without freezing.',
@@ -160,7 +160,7 @@ export const TEST_BLOCK = {
   lessons: [
     {
       order: 1,
-      title: { en: 'Lesson one' },
+      title: 'Lesson one',
       estimatedMinutes: 20,
       sections: [
         { id: 'tekst', kind: 'text' as const, body: 'Een korte tekst om hardop te lezen.' },
@@ -179,7 +179,7 @@ export const TEST_BLOCK = {
     },
     {
       order: 2,
-      title: { en: 'Lesson two' },
+      title: 'Lesson two',
       sections: [
         { id: 'regels', kind: 'rules' as const, body: 'De regel van deze les.' },
         {

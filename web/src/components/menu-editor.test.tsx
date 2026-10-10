@@ -19,8 +19,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 const dictionary = getDictionary();
 
 const SKILLS: MenuSkill[] = [
-  { packId: 'words', title: { en: 'Word trainer' } },
-  { packId: 'graphs', title: { en: 'Graphs' } },
+  { packId: 'words', title: 'Word trainer' },
+  { packId: 'graphs', title: 'Graphs' },
 ];
 
 const MENU: LearnerMenu = {

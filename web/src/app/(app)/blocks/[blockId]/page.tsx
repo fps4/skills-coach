@@ -10,7 +10,6 @@ import { Check, Clock, ListChecks, Puzzle, Sparkles } from 'lucide-react';
 import { Meter, PageShell, Pill } from '@/components/atoms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
-import { pickTitle } from '@/lib/text';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Block, BlockProgress, DeckSummary, LessonSummary } from '@/lib/types';
 import type { Dictionary } from '@/i18n/dictionaries';
@@ -73,7 +72,7 @@ export default async function BlockPage({ params }: { params: Promise<{ blockId:
 
   return (
     <PageShell
-      title={pickTitle(data.block.title)}
+      title={data.block.title}
       subtitle={
         <>
           {dictionary.common.block} {data.block.order}
@@ -130,7 +129,7 @@ export default async function BlockPage({ params }: { params: Promise<{ blockId:
                 <Card className="transition-colors hover:border-primary/50">
                   <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-1 p-4">
                     <span className="w-6 shrink-0 tabular-nums text-muted-foreground">{lesson.order}</span>
-                    <span className="font-medium">{pickTitle(lesson.title)}</span>
+                    <span className="font-medium">{lesson.title}</span>
                     {lesson.estimatedMinutes ? (
                       <span className="text-sm text-muted-foreground">
                         {lesson.estimatedMinutes} {dictionary.common.minutes}
