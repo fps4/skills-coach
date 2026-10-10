@@ -97,7 +97,7 @@ export default async function BlockPage({ params }: { params: Promise<{ blockId:
             title={dictionary.block.wordDeck}
             icon={<Sparkles className="h-4 w-4 text-primary" />}
             summary={data.decks.terms}
-            href={`/drills/words?blockId=${blockId}`}
+            href={`/flashcards?blockId=${blockId}`}
             dictionary={dictionary}
           />
           <DeckCard

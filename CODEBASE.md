@@ -3,7 +3,7 @@
 Orientation for humans and agents. Read [`GLOSSARY.md`](GLOSSARY.md) first for what the domain terms
 mean, then this for where they live.
 
-For what each function of the product actually *does* — the Woordtrainer's streak machine, the
+For what each function of the product actually *does* — the flashcards' streak machine, the
 quiz's selection rule, the reading library's filters — see
 [`docs/product/surfaces/`](docs/product/surfaces/README.md). One file per function, each written to
 be enough to rebuild it.
@@ -32,11 +32,14 @@ api/src/
     schemas.ts         zod — the validation boundary for everything entering the system
     matching.ts        tolerant answer comparison
     drill-progress.ts  the stage/streak/mastery machine, shared by all drill kinds
+    flashcards.ts      a card answered typed or self-graded, per pack; the reveal and learn mode, which
+                       record nothing; the one builder every card payload goes through (ADR-0027)
     word-order.ts      order checking, alternative orders, per-chunk marks
     mcq.ts             answer keys: set-equality grading, deterministic option shuffle
     reading.ts         which language variant a learner is shown, and the library's three filters
     quiz.ts            assembling a sitting from weakness, and scoring one
-    grading.ts         what to ask, what counts, what the learner is told
+    grading.ts         what to ask (masking a cue that holds the answer), what counts — typed,
+                       overridden or self-graded — and what the learner is told
     error-log.ts       counter and status-transition rules
     progression.ts     next lesson, block completion, answer references
     ramp.ts            position on a pack's competency ramp
@@ -118,8 +121,11 @@ web/src/
     skill-header.tsx a skill's name, its folder, and its surfaces as tabs (ADR-0021)
     menu-editor.tsx  "All my skills": folders, which folder a skill is in, and what shows
     wiki-filters.tsx the chip rows and search box — writes the query string, filters nothing
-    own-words.tsx    the entry form for your own words, inside the word trainer
-    word-assist.tsx  "Add words": ask a coach to fill words in, then review each card before it lands
+    flashcards.tsx   the flashcard surface: practise (typed or self-graded) and learn, one card at a
+                     time, every action on a key (ADR-0027). The keyboard map and the status line are
+                     pure, in lib/flashcards.ts
+    own-words.tsx    the entry form for your own words, under a typed deck
+    word-assist.tsx  "Add cards": ask a coach to fill cards in, then review each one before it lands
     term-card.tsx    a word's example, forms, synonyms and note — shown once it has been answered
     read-toggle.tsx  marking an article read, and putting it back. Never inferred from scrolling
     quiz-runner.tsx  the practice-test surface: practice / exam modes, an optional clock
@@ -161,7 +167,7 @@ executable:
 | "EN→NL is gated behind NL→EN" | same — the `stage` concept, one machine for both drills |
 | "a wrong answer resets that word's streak to 0" | same |
 | "answers are matched tolerantly (case, articles, `to …`, `a / b`)" | `domain/matching.ts`, `tests/unit/matching.test.ts` — a key listing several meanings (`/`, `,`, `;`) is satisfied by any one of them |
-| "for anything it wrongly rejects, hit 'I was right'" | `domain/grading.ts` — `override`, recorded as one |
+| "for anything it wrongly rejects, hit 'I was right'" | `domain/grading.ts` — `override`, recorded as one; labelled *Accept anyway* on the flashcards (ADR-0027) |
 | "DelenB must be a permutation of the same chunks, else ignored" | `domain/word-order.ts::usableAlternative` |
 | "↔ ook goed Nederlands — but this round we practise the other order" | same — `otherValidOrder` in the result |
 | "each part turns green/red so you see where the order went wrong" | same — `marks` |

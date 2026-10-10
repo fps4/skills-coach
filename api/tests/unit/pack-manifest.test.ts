@@ -167,3 +167,61 @@ describe('a skill in one language', () => {
     ).toBe(false);
   });
 });
+
+describe('flashcards (ADR-0027)', () => {
+  it('leaves the grading mode out when the manifest says nothing — typed is the default', () => {
+    expect(packManifestSchema.parse(base).flashcards).toBeUndefined();
+  });
+
+  it('takes self-grading', () => {
+    expect(packManifestSchema.parse({ ...base, flashcards: { grading: 'self' } }).flashcards).toEqual({
+      grading: 'self',
+    });
+  });
+
+  it('defaults an empty flashcards block to typed', () => {
+    expect(packManifestSchema.parse({ ...base, flashcards: {} }).flashcards).toEqual({ grading: 'typed' });
+  });
+
+  it('refuses a grading mode it cannot run', () => {
+    expect(packManifestSchema.safeParse({ ...base, flashcards: { grading: 'peer' } }).success).toBe(false);
+  });
+
+  const card = {
+    kind: 'term',
+    term: 'Widget join',
+    translation: 'Matching two widget lists on a shared key.',
+    hint: 'A zipper.',
+    group: 'Basics',
+    details: {
+      analogy: 'Like a SQL inner join.',
+      code: '  left JOIN right',
+      source: 'Widgets guide · Joining',
+    },
+  };
+
+  const block = (drillItems: unknown[]) => ({ order: 1, slug: 'deck', title: 'Deck', drillItems });
+
+  it('publishes a card with a cue, a section, an analogy, code and a source', () => {
+    expect(publishBlockSchema.parse(block([{ payload: card }])).drillItems[0]?.payload).toEqual(card);
+  });
+
+  it('takes the same fields on a vocabulary row', () => {
+    const { kind: _kind, ...row } = card;
+    const parsed = publishBlockSchema.parse({
+      order: 1,
+      slug: 'deck',
+      title: 'Deck',
+      lessons: [{ order: 1, title: 'L', sections: [{ id: 'v', kind: 'vocabulary', items: [row] }] }],
+    });
+    const section = parsed.lessons[0]?.sections[0];
+    expect(section?.kind === 'vocabulary' ? section.items[0] : null).toEqual(row);
+  });
+
+  it('refuses blank code and an oversized cue', () => {
+    const blank = { ...card, details: { code: '   ' } };
+    expect(publishBlockSchema.safeParse(block([{ payload: blank }])).success).toBe(false);
+    const long = { ...card, hint: 'x'.repeat(301) };
+    expect(publishBlockSchema.safeParse(block([{ payload: long }])).success).toBe(false);
+  });
+});

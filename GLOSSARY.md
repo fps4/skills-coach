@@ -41,9 +41,25 @@ array of typed **sections**.
 own way; `write` sections are what produce a submission.
 
 **Drill item** — one practisable atom, held in a deck separate from lesson prose so it can be
-scheduled independently. Three kinds today: `term` (a word or phrase with its translation and an
-example), `word-order` (a sentence, its correct chunk order, a translation and a grammar tip), and
-`mcq` (a question, its options, its answer key, an explanation, and the error categories it tests).
+scheduled independently. Three kinds today: `term` (a **flashcard** — a front and a back), `word-order`
+(a sentence, its correct chunk order, a translation and a grammar tip), and `mcq` (a question, its
+options, its answer key, an explanation, and the error categories it tests).
+
+**Flashcard** *(card)* — a `term` drill item: a front (`term`) and a back (`translation` — for a
+concept, its meaning), practised in both directions. Optionally a **cue** (`hint`), a section label
+(`group`), an example, and details shown after answering — an analogy (*map onto what you know*),
+code, a source, and a word's forms, synonyms and note. A word and a concept are the same thing to the
+runtime ([ADR-0027](docs/architecture/decisions/0027-flashcards-are-one-engine-with-two-ways-of-answering.md)).
+The learner-facing surface is called *Flashcards*; the Woordtrainer is a skill that is one deck of them.
+
+**Grading mode** — how a pack's cards are answered, declared in its manifest
+(`flashcards.grading`). **Typed**: the learner types the back and the server matches it tolerantly,
+with *Accept anyway* (an override). **Self-graded**: the learner turns the card over — a **reveal**,
+which records nothing — and says *Got it* or *Missed it*. Typed is the default.
+
+**Learn mode** — the flashcards shown with their answers, to study rather than be tested. Records
+nothing: no attempt, no streak. The one place the back of a card reaches the page before the learner
+has committed to an answer, because they asked for it.
 
 **Answer key** — the `correct` options an `mcq` carries. Held on the server and revealed only after
 the learner commits. Because the key is authored in advance, a wrong answer records an error-log
@@ -108,15 +124,16 @@ corrected translation must not arrive as something unread. Reversible: read is a
 sets, never a measurement of them.
 
 **Stage** — a direction of practice for one drill item. Stage 2 is gated behind mastering stage 1.
-For `term` items: stage 1 is content-language → translation, stage 2 the reverse (which drills
-spelling). For `word-order` items: stage 1 is the primary correct order, stage 2 an alternative valid
+For `term` items: stage 1 is term → meaning (content language → translation), stage 2 the reverse
+(which, typed, drills spelling). The flashcards call them *direction 1* and *direction 2*. For `word-order` items: stage 1 is the primary correct order, stage 2 an alternative valid
 order of the same chunks.
 
 **Streak** — consecutive correct answers at the current stage. Two clears the stage. Any wrong answer
 resets it to zero — a near-miss is not partial credit.
 
 **Attempt** — an append-only record of one answer to one drill item: what was given, whether it was
-correct, and whether the learner overrode a rejection.
+correct, whether the learner overrode a rejection, and whether the verdict was their own
+(`selfGraded`). A reveal and learn mode are not attempts.
 
 ## The coaching loop
 

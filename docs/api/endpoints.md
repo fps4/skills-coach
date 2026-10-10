@@ -57,8 +57,9 @@ reach another's work.
 | POST | `/lessons/:lessonId/submissions` | `submission:write` | Submit written answers → `201` |
 | GET | `/submissions` | `submission:write` | Own submissions. `?lessonId`, `?blockId`, `?status` |
 | GET | `/submissions/:id` | `submission:write` | The session log. `403` for another learner's |
-| GET | `/drills` | `drill:practice` | Due items as **prompts**. Requires `blockId` or `packId` |
-| POST | `/drills/:drillItemId/attempts` | `drill:practice` | Grade an attempt |
+| GET | `/drills` | `drill:practice` | Due items as **prompts**. Requires `blockId` or `packId`. `?mode=learn` adds each card's back and records nothing |
+| POST | `/drills/:drillItemId/attempts` | `drill:practice` | Grade an attempt — typed, or `{ self: got\|missed }` on a self-graded skill |
+| POST | `/drills/:drillItemId/reveal` | `drill:practice` | `{ stage }` — the back of a card on a self-graded skill. Records nothing |
 | POST | `/drills/reset` | `drill:practice` | Clear progress for a scope. Refuses an unscoped reset |
 | POST | `/quiz/sessions` | `drill:practice` | Start a sitting → `201` |
 | GET | `/quiz/sessions` | `drill:practice` | Own sittings, newest first. `?packId`, `?blockId`, `?limit` |
@@ -114,13 +115,23 @@ when `folderId` is given, moves it there; progress is untouched. `404` if no suc
 
 ### `GET /drills`
 
-`?blockId` · `?packId` · `?lessonOrder` · `?kind=term|word-order|mcq` · `?stage=1|2` · `?limit`
+`?blockId` · `?packId` · `?lessonOrder` · `?kind=term|word-order|mcq` · `?stage=1|2` · `?limit` ·
+`?mode=practice|learn`
 
 Returns `{ items: DueItem[], summary: DeckSummary }`, ordered least-practised first.
 
 **A prompt never contains its answer.** The trainers this replaces had to ship the answer to the
 page in order to check it; here grading is server-side, so the answer arrives only after the learner
 commits. An integration test asserts this.
+
+A `term` prompt carries `hint` — the card's authored cue, or failing that its example — masked
+wherever it contains the answer of the stage being asked, and `group`, the section the card belongs
+to ([ADR-0027](../architecture/decisions/0027-flashcards-are-one-engine-with-two-ways-of-answering.md)).
+
+**`?mode=learn`** is the one deliberate exception, and only because the learner asked for it: each
+item also carries `card` — `{ expected, hint?, group?, example?, details? }`, the back of the card,
+unmasked. Only `term` items are served in learn mode (a question bank in learn mode would be an
+answer sheet), the stage gate still holds, and **nothing is written**: no attempt, no streak.
 
 ```jsonc
 {
@@ -154,6 +165,31 @@ the disagreement would be worse than recording it.
 
 Returns the verdict, the expected answer, `acceptedAlso` (every form that would have been taken),
 `marks` (per-chunk verdict), `otherValidOrder`, `alternative`, `tip`, and the new `progress`.
+
+**Self-graded cards** ([ADR-0027](../architecture/decisions/0027-flashcards-are-one-engine-with-two-ways-of-answering.md)).
+On a skill whose manifest says `flashcards: { grading: self }`, a card is answered with the learner's
+own verdict after turning it over:
+
+```jsonc
+{ "stage": 1, "self": "got" }          // or "missed"; `given` may be omitted
+```
+
+It moves the same streak machine a typed answer does, and the attempt row records
+`selfGraded: true`. A `self` grade is a `400` on a typed skill, on anything but a `term` item, and
+alongside `override: true`. The response carries `selfGraded` (`false` for a typed answer).
+
+### `POST /drills/:drillItemId/reveal`
+
+```jsonc
+{ "stage": 1 }
+// → { "drillItemId": "…", "stage": 1, "expected": "…", "hint": "…", "group": "…",
+//     "example": "…", "details": { "analogy": "…", "code": "…", "source": "…", "note": "…" } }
+```
+
+Turns a card over on a self-graded skill. **Records nothing** — no attempt, no drill state; the
+learner's `self` attempt that follows is what moves the streak. It is logged at `info` like any read.
+The gates an attempt passes apply: someone else's own word is a `404`, stage 2 before stage 1 is
+cleared is a `400`, and a typed skill's card is a `400` — it is revealed by answering it.
 
 `otherValidOrder: true` with `correct: false` means the learner built the *other* correct order —
 good material, wrong round. Requesting stage 2 before stage 1 is cleared is a `400`.
@@ -257,6 +293,7 @@ Idempotent: finishing twice keeps the first `finishedAt`.
 
 ```jsonc
 { "term": "de begroting", "translation": "the budget", "example": "De begroting klopt." }
+// optional, as on any card: "hint", "group", "details": { …, "analogy", "code", "source" }
 ```
 
 A word the learner adds themselves ([ADR-0012](../architecture/decisions/0012-a-learner-may-add-to-their-own-deck.md)).
@@ -298,6 +335,10 @@ A learner names words; a coach fills them in; the learner decides
 // POST /api/v1/term-requests/:requestId/accept — edits win field by field; `omit` leaves fields off
 { "translation": "to disappear", "omit": ["antonyms"] }
 ```
+
+A suggestion may also carry `hint`, and `details.analogy`, `details.code` and `details.source` — the
+lines of a concept card ([ADR-0027](../architecture/decisions/0027-flashcards-are-one-engine-with-two-ways-of-answering.md));
+`omit` takes each of them too.
 
 `requested → suggested → added`, or `discarded`; `retry` sends a suggested or discarded request back
 to `requested`. Accepting what was never suggested, or touching an added one, is a `409`. Asking for a
@@ -411,6 +452,29 @@ An `mcq` drill item carries its own answer key:
     "distractors": [{ "ref": "a", "why": "S3 CRR replicates objects, not the transactional store." }],
     "categories": ["d1-3-reliable-resilient"],   // pack-declared ids — the join key
     "sourceRefs": ["https://docs.aws.amazon.com/…"]
+  }
+}
+```
+
+A `term` drill item — and a `vocabulary` row, which becomes one — is a flashcard
+([ADR-0027](../architecture/decisions/0027-flashcards-are-one-engine-with-two-ways-of-answering.md)).
+Beyond `term` and `translation` every field is optional, and only the pair is ever graded:
+
+```jsonc
+{
+  "payload": {
+    "kind": "term",
+    "term": "Widget join",                                   // the front
+    "translation": "Matching two widget lists on a key.",    // the back — "translation" for a concept too
+    "hint": "Works like a zipper.",                          // ≤ 300; masked where it holds the answer
+    "group": "Basics",                                       // ≤ 120; the section, shown on the front
+    "example": "A widget join pairs each left widget with its twin.",
+    "details": {
+      "analogy": "Like a SQL inner join, but for widgets.",  // ≤ 1000; "map onto what you know"
+      "code": "left JOIN right USING (key)",                 // ≤ 4000; monospace, indentation kept
+      "source": "Widgets guide · Joining",                   // ≤ 300; "from the guide · …"
+      "note": "…", "forms": [], "synonyms": [], "antonyms": [], "partOfSpeech": "…"
+    }
   }
 }
 ```

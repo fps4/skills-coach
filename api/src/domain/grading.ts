@@ -14,6 +14,7 @@ import { checkMcq, isMultipleResponse, optionsText, requiredCount, shuffleOption
 import { checkOrder, leadCueForStage, partsForStage, renderOrder, shuffleParts, stageCount } from './word-order.js';
 import type { DrillItem, McqOption, Stage } from './types.js';
 import type { TermDetails } from './term-request.js';
+import type { SelfGrade } from './flashcards.js';
 
 /**
  * How many stages this item offers. `term` items always drill both directions.
@@ -32,8 +33,13 @@ export interface TermPrompt {
   stage: Stage;
   /** Stage 1 asks content → translation; stage 2 the reverse, which is where spelling gets drilled. */
   prompt: string;
-  /** The example sentence, with the answer masked when it would give the game away. */
+  /**
+   * The card's cue — its authored `hint`, or failing that its example — with the answer masked
+   * wherever it would give the game away.
+   */
   hint?: string;
+  /** The section of the source the card belongs to. Says where you are, not what the answer is. */
+  group?: string;
 }
 
 export interface WordOrderPrompt {
@@ -72,13 +78,17 @@ function maskTerm(example: string, term: string): string {
 
 export function promptFor(item: DrillItem, stage: Stage, seed = 1): DrillPrompt {
   if (item.payload.kind === 'term') {
-    const { term, translation, example } = item.payload;
+    const { term, translation, example, hint, group } = item.payload;
+    const answer = stage === 1 ? translation : term;
     return {
       kind: 'term',
       stage,
       prompt: stage === 1 ? term : translation,
-      // In the reverse round the example contains the answer, so it gets masked.
-      hint: example ? (stage === 1 ? example : maskTerm(example, term)) : undefined,
+      // An authored cue is masked for whichever side is being asked for (ADR-0027). The example keeps
+      // its old rule: as-is in the forward round, where it is in the prompt's language, and masked in
+      // the reverse round, where it contains the answer.
+      hint: hint ? maskTerm(hint, answer) : example ? (stage === 1 ? example : maskTerm(example, term)) : undefined,
+      ...(group ? { group } : {}),
     };
   }
 
@@ -114,6 +124,11 @@ export interface GradeInput {
   given: string | string[];
   /** The learner asserted the grading was wrong. Recorded, and counts as correct. */
   override?: boolean;
+  /**
+   * The learner turned the card over and graded themselves (ADR-0027). Only for a `term` item, and
+   * only on a pack that declares self-grading — `flashcards.ts::checkAnswerMode` is the gate.
+   */
+  self?: SelfGrade;
   matchOptions?: MatchOptions;
 }
 
@@ -121,6 +136,8 @@ export interface GradeResult {
   correct: boolean;
   /** True when `correct` is only true because the learner overrode a rejection. */
   overridden: boolean;
+  /** The verdict is the learner's own, given after turning the card over (ADR-0027). A `term` item only. */
+  selfGraded?: boolean;
   /** The canonical right answer, revealed after grading. */
   expected: string;
   /** Every form that would have been accepted — a `term` item only. */
@@ -171,6 +188,21 @@ export function grade(input: GradeInput, progress: DrillProgress): GradeResult {
     };
   }
 
+  if (item.payload.kind === 'term' && input.self !== undefined) {
+    // Nothing to match: the learner saw the back and said whether they had it. The verdict moves the
+    // same machine a typed answer does — one streak, one gate, one definition of mastered.
+    const correct = input.self === 'got';
+    return {
+      correct,
+      overridden: false,
+      selfGraded: true,
+      expected: stage === 1 ? item.payload.translation : item.payload.term,
+      ...(item.payload.example ? { example: item.payload.example } : {}),
+      ...(item.payload.details ? { details: item.payload.details } : {}),
+      progress: applyAttempt(progress, correct, stagesFor(item)),
+    };
+  }
+
   if (item.payload.kind === 'term') {
     const expected = stage === 1 ? item.payload.translation : item.payload.term;
     const answer = typeof given === 'string' ? given : given.join(' ');
@@ -179,6 +211,7 @@ export function grade(input: GradeInput, progress: DrillProgress): GradeResult {
     return {
       correct,
       overridden: !matched && override,
+      selfGraded: false,
       expected,
       acceptedAlso: [...acceptedForms(expected, input.matchOptions)].sort(),
       // After the verdict the whole card is fair game — the example is no longer a hint (ADR-0023).

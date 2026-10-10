@@ -31,26 +31,37 @@ export interface TermDetails {
   synonyms?: string[];
   antonyms?: string[];
   note?: string;
+  /** "Map onto what you know" — the idea in terms the learner already has (ADR-0027). */
+  analogy?: string;
+  /** A snippet that shows the idea, rendered monospace and never reflowed. */
+  code?: string;
+  /** Where in the source the card came from — "the guide's section on joins". */
+  source?: string;
 }
 
 /** What a coach proposes for a requested word. */
 export interface TermSuggestion {
   translation: string;
   example?: string;
+  hint?: string;
   details?: TermDetails;
 }
 
 /** A field the learner can leave off the card. The translation is not one: it is what is practised. */
-export type OptionalTermField = 'example' | keyof TermDetails;
+export type OptionalTermField = 'example' | 'hint' | keyof TermDetails;
 
 export const OPTIONAL_TERM_FIELDS: readonly OptionalTermField[] = [
   'example',
+  'hint',
   'exampleTranslation',
   'partOfSpeech',
   'forms',
   'synonyms',
   'antonyms',
   'note',
+  'analogy',
+  'code',
+  'source',
 ];
 
 export type TermRequestStatus = 'requested' | 'suggested' | 'added' | 'discarded';
@@ -107,6 +118,7 @@ export interface AcceptedTerm {
   term: string;
   translation: string;
   example?: string;
+  hint?: string;
   details?: TermDetails;
 }
 
@@ -131,11 +143,13 @@ export function acceptedTerm(
   if (left.has('example')) left.add('exampleTranslation');
 
   const example = left.has('example') ? undefined : clean(edits.example ?? suggestion.example);
+  const hint = left.has('hint') ? undefined : clean(edits.hint ?? suggestion.hint);
   const merged: TermDetails = { ...suggestion.details, ...edits.details };
   const details: TermDetails = {};
   for (const field of OPTIONAL_TERM_FIELDS) {
-    if (field === 'example' || left.has(field)) continue;
-    const value = cleanDetail(merged[field]);
+    if (field === 'example' || field === 'hint' || left.has(field)) continue;
+    // Code keeps its indentation: only the blank lines around it go.
+    const value = field === 'code' ? cleanCode(merged.code) : cleanDetail(merged[field]);
     if (value !== undefined) (details as Record<string, unknown>)[field] = value;
   }
 
@@ -143,8 +157,14 @@ export function acceptedTerm(
     term,
     translation,
     ...(example ? { example } : {}),
+    ...(hint ? { hint } : {}),
     ...(Object.keys(details).length > 0 ? { details } : {}),
   };
+}
+
+function cleanCode(value: string | undefined): string | undefined {
+  const stripped = value?.replace(/^\s*\n/, '').trimEnd();
+  return stripped && stripped.trim() ? stripped : undefined;
 }
 
 function clean(value: string | undefined): string | undefined {

@@ -110,7 +110,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
               </span>
             </p>
             <Button asChild size="sm">
-              <Link href={`/drills/words?blockId=${encodeURIComponent(entry.currentBlock.blockId)}&view=add`}>
+              <Link href={`/flashcards?blockId=${encodeURIComponent(entry.currentBlock.blockId)}&view=add`}>
                 {dictionary.assist.review}
               </Link>
             </Button>

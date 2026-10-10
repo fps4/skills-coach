@@ -20,6 +20,7 @@ import {
   menuSchema,
   patchMeSchema,
   postAttemptSchema,
+  revealCardSchema,
   setReadSchema,
   startQuizSchema,
 } from '../domain/schemas.js';
@@ -49,6 +50,8 @@ const drillQuerySchema = z.object({
   kind: z.enum(['term', 'word-order', 'mcq']).optional(),
   stage: stageSchema.optional(),
   limit: z.coerce.number().int().positive().max(100).optional(),
+  // Learn mode serves each card's back with its front and records nothing (ADR-0027).
+  mode: z.enum(['practice', 'learn']).optional(),
 });
 
 /** A comma-separated query parameter as the list it stands for. Empty means absent, not "none". */
@@ -263,6 +266,17 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const learner = await caller(request, 'drill:practice');
     const { drillItemId } = request.params as { drillItemId: string };
     return drills.recordAttempt(ctx, learner.learnerId, drillItemId, postAttemptSchema.parse(request.body));
+  });
+
+  // Turning a card over on a self-graded pack. Records nothing — the learner's verdict that follows
+  // is the attempt (ADR-0027). Logged, so a reveal is visible in the request log like any read.
+  app.post('/api/v1/drills/:drillItemId/reveal', async (request) => {
+    const learner = await caller(request, 'drill:practice');
+    const { drillItemId } = request.params as { drillItemId: string };
+    const { stage } = revealCardSchema.parse(request.body ?? {});
+    const outcome = await drills.revealAnswer(ctx, learner.learnerId, drillItemId, stage);
+    request.log.info({ drillItemId, stage }, 'card revealed');
+    return outcome;
   });
 
   // --- quiz sittings --------------------------------------------------------

@@ -17,6 +17,7 @@ import type { PackManifestInput, PublishBlockInput } from '../domain/schemas.js'
 import type { Block, DrillItem, DrillKind, Lesson, PackManifest } from '../domain/types.js';
 import { withoutId, type BlockDoc, type DrillItemDoc, type LessonDoc, type PackDoc } from '../db/collections.js';
 import { usableAlternative } from '../domain/word-order.js';
+import { termPayload } from '../domain/flashcards.js';
 import { normalizeBlockText, normalizeLessonText, normalizePackText } from '../domain/pack-text.js';
 import { blockIdFor, drillIdFor, lessonIdFor, type ServiceContext } from './context.js';
 
@@ -360,7 +361,7 @@ function collectDrillItems(parsed: PublishBlockInput): { lessonOrder?: number; p
       for (const entry of section.items) {
         items.push({
           lessonOrder: lesson.order,
-          payload: { kind: 'term', term: entry.term, translation: entry.translation, example: entry.example },
+          payload: termPayload(entry),
         });
       }
     }

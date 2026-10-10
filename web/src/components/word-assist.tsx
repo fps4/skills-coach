@@ -261,6 +261,7 @@ export function WordAssist({ blockId, contentLanguage, translationLanguage, dict
 interface AcceptBody {
   translation: string;
   example: string;
+  hint: string;
   details: {
     partOfSpeech: string;
     forms: { label: string; value: string }[];
@@ -268,6 +269,10 @@ interface AcceptBody {
     synonyms: string[];
     antonyms: string[];
     note: string;
+    analogy: string;
+    /** Absent rather than blank: blank code is refused, and an empty line is not a snippet. */
+    code?: string;
+    source: string;
   };
   omit: OptionalTermField[];
 }
@@ -318,6 +323,10 @@ function ReviewCard({
     synonyms: (details.synonyms ?? []).join(', '),
     antonyms: (details.antonyms ?? []).join(', '),
     note: details.note ?? '',
+    hint: suggestion.hint ?? '',
+    analogy: details.analogy ?? '',
+    code: details.code ?? '',
+    source: details.source ?? '',
   });
   const [omit, setOmit] = useState<Set<OptionalTermField>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -345,6 +354,7 @@ function ReviewCard({
       onAccept({
         translation: values.translation,
         example: values.example,
+        hint: values.hint,
         details: {
           partOfSpeech: values.partOfSpeech,
           forms: parseForms(values.forms),
@@ -352,6 +362,9 @@ function ReviewCard({
           synonyms: splitList(values.synonyms),
           antonyms: splitList(values.antonyms),
           note: values.note,
+          analogy: values.analogy,
+          ...(values.code.trim() ? { code: values.code } : {}),
+          source: values.source,
         },
         omit: [...omit],
       }),
@@ -365,8 +378,10 @@ function ReviewCard({
     lang: string,
     options: { multiline?: boolean; hint?: string } = {},
   ) => {
-    if (!value && !(field in details) && field !== 'example') return null;
-    if (field === 'example' && !suggestion.example && !value) return null;
+    // The two lines that sit beside the pair rather than among the details are checked on the
+    // suggestion itself.
+    const suggested = field === 'example' ? suggestion.example : field === 'hint' ? suggestion.hint : field in details;
+    if (!value && !suggested) return null;
     const off = omit.has(field);
     const id = `${request.requestId}-${field}`;
     const Control = options.multiline ? Textarea : Input;
@@ -440,6 +455,11 @@ function ReviewCard({
       {row('synonyms', t.synonyms, values.synonyms, contentLanguage, { hint: t.listHint })}
       {row('antonyms', t.antonyms, values.antonyms, contentLanguage, { hint: t.listHint })}
       {row('note', t.note, values.note, translationLanguage, { multiline: true })}
+      {/* A concept card's lines (ADR-0027). Shown only when the coach filled them in. */}
+      {row('hint', t.hint, values.hint, contentLanguage)}
+      {row('analogy', t.analogy, values.analogy, translationLanguage, { multiline: true })}
+      {row('code', t.code, values.code, contentLanguage, { multiline: true })}
+      {row('source', t.source, values.source, translationLanguage)}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">
         <Button disabled={busy || !values.translation.trim()} onClick={() => void accept()}>

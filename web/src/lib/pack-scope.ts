@@ -132,11 +132,12 @@ export const SURFACES: Record<RailSurface, SurfaceDef> = {
     has: ({ reading }) => reading > 0,
     href: ({ packId }) => `/reading?packId=${encodeURIComponent(packId)}`,
   },
+  /** Flashcards (ADR-0027): a word deck typed, a concept deck self-graded — one surface, one key. */
   'drills:terms': {
     icon: Sparkles,
     labelKey: 'words',
     has: ({ terms }) => terms > 0,
-    href: ({ currentBlockId }) => (currentBlockId ? `/drills/words?blockId=${currentBlockId}` : null),
+    href: ({ currentBlockId }) => (currentBlockId ? `/flashcards?blockId=${currentBlockId}` : null),
   },
   'drills:word-order': {
     icon: Puzzle,
@@ -228,7 +229,8 @@ export function activeTab(pathname: string): SkillTab['id'] | null {
   if (head === 'packs' || head === 'blocks' || head === 'lessons' || head === 'sessions') return 'lessons';
   if (head === 'reading') return 'reading';
   if (head === 'quiz') return 'quiz';
-  if (head === 'drills' && tail === 'words') return 'drills:terms';
+  // `/drills/words` is the flashcards' old address; it redirects, but a tab must not flicker off on the way.
+  if (head === 'flashcards' || (head === 'drills' && tail === 'words')) return 'drills:terms';
   if (head === 'drills' && tail === 'sentences') return 'drills:word-order';
   return null;
 }
@@ -270,7 +272,7 @@ export function packIdFromUrl(pathname: string, search?: URLSearchParams | null)
   // pack without belonging to any block of it.
   if (head === 'progress') return search?.get('packId') ?? null;
   // Both of these name their block in the query rather than the path, so that is where the pack is.
-  if (head === 'drills' || head === 'quiz') {
+  if (head === 'drills' || head === 'quiz' || head === 'flashcards') {
     const blockId = search?.get('blockId');
     return blockId ? packIdFromEntityId(blockId) : null;
   }

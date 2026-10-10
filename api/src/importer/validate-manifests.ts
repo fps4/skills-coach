@@ -86,6 +86,13 @@ function lint(manifest: PackManifestInput): string[] {
     }
   }
 
+  // A grading mode for cards the pack never shows (ADR-0027): the setting can only ever be read by a
+  // surface the manifest has opted out of, which means it was written for a different manifest.
+  const surfaces = manifest.presentation?.surfaces;
+  if (manifest.flashcards && surfaces && !surfaces.includes('drills:terms')) {
+    problems.push('flashcards declares a grading mode, but presentation.surfaces leaves out drills:terms');
+  }
+
   return problems;
 }
 

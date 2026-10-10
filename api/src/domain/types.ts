@@ -6,6 +6,7 @@
  * three as opaque data.
  */
 
+import type { FlashcardSettings } from './flashcards.js';
 import type { LearnerMenu } from './menu.js';
 import type { TermDetails } from './term-request.js';
 
@@ -120,6 +121,11 @@ export interface PackManifest {
   /** Words stripped from the front of an answer when matching, per language. */
   matchArticles?: Record<string, string[]>;
   presentation?: PackPresentation;
+  /**
+   * How this pack's cards are answered (ADR-0027). Absent means typed — what every word deck does —
+   * so a manifest written before flashcards had modes keeps behaving as it did.
+   */
+  flashcards?: FlashcardSettings;
   version: number;
 }
 
@@ -174,10 +180,10 @@ export interface RulesSection extends SectionCommon {
   kind: 'rules';
   body: string;
 }
-export interface VocabularyEntry {
+/** One row of a vocabulary section. Each becomes a `term` card, carrying the same optional fields. */
+export interface VocabularyEntry extends TermCardFields {
   term: string;
   translation: string;
-  example?: string;
 }
 export interface VocabularySection extends SectionCommon {
   kind: 'vocabulary';
@@ -326,13 +332,32 @@ export interface ReadingState {
 
 export type DrillKind = 'term' | 'word-order' | 'mcq';
 
-export interface TermPayload {
+/**
+ * What a card can carry beyond the pair that is practised. One shape wherever a card is written —
+ * a vocabulary row, a published drill item, a learner's own word — so a field added here is
+ * available to all of them (ADR-0027).
+ */
+export interface TermCardFields {
+  example?: string;
+  /**
+   * A short cue, offered behind *Hint* before the learner answers. Masked wherever it contains the
+   * answer of the round being asked. When absent, the example is the hint, as it always was.
+   */
+  hint?: string;
+  /** The section of the source this card belongs to — "Foundations", "Querying". Shown on the front. */
+  group?: string;
+  /** Forms, synonyms, a note, an analogy, code, a source — shown after answering, never graded (ADR-0023). */
+  details?: TermDetails;
+}
+
+/**
+ * A card: a front and a back, practised in both directions. A word and its translation, or a concept
+ * and its meaning — the runtime does not know which (ADR-0027).
+ */
+export interface TermPayload extends TermCardFields {
   kind: 'term';
   term: string;
   translation: string;
-  example?: string;
-  /** Forms, synonyms, a note — shown after answering, never graded (ADR-0023). */
-  details?: TermDetails;
 }
 
 export interface McqOption {
@@ -478,6 +503,12 @@ export interface Attempt {
   correct: boolean;
   /** The learner rejected the grading and asserted they were right. Recorded, never hidden. */
   acceptedOverride: boolean;
+  /**
+   * The learner turned the card over and graded it themselves (ADR-0027). Recorded for the same
+   * reason an override is: a verdict the server did not reach is a different kind of evidence.
+   * Absent on rows written before self-grading existed, which were all typed.
+   */
+  selfGraded?: boolean;
   at: Date;
 }
 
