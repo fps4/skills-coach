@@ -48,3 +48,6 @@ coverage/
 
 # OS
 .DS_Store
+
+# Agent worktrees (Claude Code) — local checkouts, never content of this repository
+.claude/worktrees/
