@@ -49,7 +49,7 @@ not only a runtime variable.
 ## Request paths
 
 **Learner request.** Browser → `web` (Next server) → `api` `/api/v1/*`. The Next middleware checks
-token freshness before render and redirects to `/[locale]/login` if it is stale, because pages are
+token freshness before render and redirects to `/login` if it is stale, because pages are
 server-rendered and would otherwise 401 mid-render. The signed-in layout re-reads the cookie and
 redirects again if it has since gone, so the shell is never rendered around a page that cannot load.
 `api` verifies the token properly against the JWKS; both checks in `web` are cheap `exp` decodes,

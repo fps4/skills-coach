@@ -275,8 +275,8 @@ export const TOOLS: ToolDef[] = [
     description:
       'Load reading articles into ONE learner’s library. Reading material is personalized: it is the learner’s own ' +
       'domain brought into the pack, and nobody else ever sees it. Each article carries one variant per language — ' +
-      'the interface language switch is what flips between them, so an article with a single variant cannot be ' +
-      'flipped. Idempotent by slug: re-loading a slug replaces that article in place and leaves the learner’s read ' +
+      'it opens in the pack’s content language and links to the others, so an article with a single variant has ' +
+      'nothing to compare with. Idempotent by slug: re-loading a slug replaces that article in place and leaves the learner’s read ' +
       'mark and its position in the library alone, which is how a translation gets corrected. Always carry ' +
       '`source.url` for material that is not yours.',
     capability: 'pack:publish',

@@ -79,7 +79,6 @@ export interface PackMaterial {
 
 /** Where a surface opens from. Only ever built inside a pack, so `packId` is known. */
 export interface SurfaceContext {
-  locale: string;
   packId: string;
   currentBlockId: string | null;
 }
@@ -118,7 +117,7 @@ export const SURFACES: Record<RailSurface, SurfaceDef> = {
     icon: Dumbbell,
     labelKey: 'lessons',
     has: ({ blocks }) => blocks > 0,
-    href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/blocks/${currentBlockId}` : null),
+    href: ({ currentBlockId }) => (currentBlockId ? `/blocks/${currentBlockId}` : null),
   },
   /**
    * The learner's own library (ADR-0017).
@@ -131,25 +130,25 @@ export const SURFACES: Record<RailSurface, SurfaceDef> = {
     icon: Newspaper,
     labelKey: 'reading',
     has: ({ reading }) => reading > 0,
-    href: ({ locale, packId }) => `/${locale}/reading?packId=${encodeURIComponent(packId)}`,
+    href: ({ packId }) => `/reading?packId=${encodeURIComponent(packId)}`,
   },
   'drills:terms': {
     icon: Sparkles,
     labelKey: 'words',
     has: ({ terms }) => terms > 0,
-    href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/drills/words?blockId=${currentBlockId}` : null),
+    href: ({ currentBlockId }) => (currentBlockId ? `/drills/words?blockId=${currentBlockId}` : null),
   },
   'drills:word-order': {
     icon: Puzzle,
     labelKey: 'sentences',
     has: ({ wordOrder }) => wordOrder > 0,
-    href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/drills/sentences?blockId=${currentBlockId}` : null),
+    href: ({ currentBlockId }) => (currentBlockId ? `/drills/sentences?blockId=${currentBlockId}` : null),
   },
   quiz: {
     icon: ListChecks,
     labelKey: 'quiz',
     has: ({ quiz }) => quiz > 0,
-    href: ({ locale, currentBlockId }) => (currentBlockId ? `/${locale}/quiz?blockId=${currentBlockId}` : null),
+    href: ({ currentBlockId }) => (currentBlockId ? `/quiz?blockId=${currentBlockId}` : null),
   },
 };
 
@@ -160,8 +159,8 @@ export const SURFACES: Record<RailSurface, SurfaceDef> = {
  * on arriving at a pack they are already working through. The block list stays one click away on the
  * pack page, which is what the landing tiles link to.
  */
-export function packLanding(locale: string, packId: string): string {
-  return `/${locale}/progress?packId=${encodeURIComponent(packId)}`;
+export function packLanding(packId: string): string {
+  return `/progress?packId=${encodeURIComponent(packId)}`;
 }
 
 /**
@@ -198,13 +197,15 @@ export interface SkillTab {
  * readable — and a skill's surfaces are about *that* skill, so its own page is where they belong.
  * Which surfaces appear is still `visibleSurfaces`, so the rules of ADR-0019 are unchanged.
  */
-export function skillTabs(
-  locale: string,
-  skill: { packId: string; currentBlockId: string | null; surfaces?: PackSurface[]; material: PackMaterial },
-): SkillTab[] {
-  const context = { locale, packId: skill.packId, currentBlockId: skill.currentBlockId };
+export function skillTabs(skill: {
+  packId: string;
+  currentBlockId: string | null;
+  surfaces?: PackSurface[];
+  material: PackMaterial;
+}): SkillTab[] {
+  const context = { packId: skill.packId, currentBlockId: skill.currentBlockId };
   return [
-    { id: 'overview', icon: LayoutDashboard, labelKey: 'overview', href: packLanding(locale, skill.packId) },
+    { id: 'overview', icon: LayoutDashboard, labelKey: 'overview', href: packLanding(skill.packId) },
     ...visibleSurfaces(skill.surfaces, skill.material).map((id) => ({
       id,
       icon: SURFACES[id].icon,
@@ -221,9 +222,7 @@ export function skillTabs(
  * tab covers the pack's block list, a block, a lesson and the session log a lesson produced.
  */
 export function activeTab(pathname: string): SkillTab['id'] | null {
-  const segments = pathname.split('/').filter(Boolean);
-  const rest = segments.length > 0 && segments[0]?.length === 2 ? segments.slice(1) : segments;
-  const [head, tail] = rest;
+  const [head, tail] = pathname.split('/').filter(Boolean);
 
   if (head === 'progress') return 'overview';
   if (head === 'packs' || head === 'blocks' || head === 'lessons' || head === 'sessions') return 'lessons';
@@ -260,10 +259,7 @@ export function packIcon(key: string | undefined): LucideIcon {
  * everything before the first one.
  */
 export function packIdFromUrl(pathname: string, search?: URLSearchParams | null): string | null {
-  const segments = pathname.split('/').filter(Boolean);
-  // Drop the locale segment when there is one; every app URL carries it.
-  const rest = segments.length > 0 && segments[0]?.length === 2 ? segments.slice(1) : segments;
-  const [head, tail] = rest;
+  const [head, tail] = pathname.split('/').filter(Boolean);
 
   if (head === 'packs' && tail) return tail;
   if ((head === 'blocks' || head === 'lessons') && tail) return packIdFromEntityId(tail);

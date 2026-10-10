@@ -9,16 +9,14 @@
 import type { LearnerMenu } from './menu.js';
 import type { TermDetails } from './term-request.js';
 
-/** Interface languages the product ships. Distinct from a pack's content language — ADR-0005. */
+/**
+ * The languages pack metadata may be authored in, side by side. Not interface languages — the
+ * interface is English only (ADR-0025) — and distinct from a pack's content language (ADR-0005).
+ */
 export const LOCALES = ['nl', 'en'] as const;
 export type Locale = (typeof LOCALES)[number];
-export const DEFAULT_LOCALE: Locale = 'nl';
 
-export function isLocale(value: unknown): value is Locale {
-  return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
-}
-
-/** A string authored per interface language. Used for chrome-adjacent pack metadata only. */
+/** A string authored per language. Used for chrome-adjacent pack metadata only. */
 export type LocalizedText = Partial<Record<Locale, string>>;
 
 /** Resolve localized text, falling back to the other locale rather than rendering nothing. */
@@ -443,7 +441,6 @@ export interface Learner {
   subject: string;
   email?: string;
   displayName?: string;
-  uiLanguage: Locale;
   createdAt: Date;
   profile?: LearnerProfile;
   /** Their folders, and which skills show (ADR-0021). Absent until they first arrange anything. */

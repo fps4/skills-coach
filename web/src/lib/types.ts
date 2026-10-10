@@ -6,7 +6,6 @@
  * how they actually relate. `docs/api/endpoints.md` is the contract these follow.
  */
 
-export type Locale = 'nl' | 'en';
 export type LocalizedText = { nl?: string; en?: string };
 export type TitleText = string | LocalizedText;
 
@@ -15,7 +14,6 @@ export interface Learner {
   subject: string;
   email?: string;
   displayName?: string;
-  uiLanguage: Locale;
 }
 
 /** The learner's folders, and which skills show in the menu (ADR-0021). Always complete when read. */
@@ -149,8 +147,8 @@ export interface Lesson extends LessonSummary {
  * An article in the learner's own library (ADR-0017).
  *
  * `language` is the variant they are being *shown* — the api resolves it, so the list and the
- * article itself cannot disagree — and `inRequestedLanguage` is false when the article had no
- * variant in the interface language and fell back to the one the pack teaches.
+ * article itself cannot disagree — and `inRequestedLanguage` is false when a `?language=` was asked
+ * for that the article has no variant in, and the api fell back to the one the pack teaches.
  */
 export interface ArticleSummary {
   articleId: string;

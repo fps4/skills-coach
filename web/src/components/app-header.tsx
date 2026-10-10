@@ -2,16 +2,14 @@ import Link from 'next/link';
 
 import { PaletteToggle } from '@/components/palette-toggle';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { LanguageSwitch } from '@/components/language-switch';
 import { SignOut } from '@/components/sign-out';
-import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 
 /** The sticky brand header. The wordmark carries the accent, so the palette is visible at a glance. */
-export function AppHeader({ locale, dictionary }: { locale: Locale; dictionary: Dictionary }) {
+export function AppHeader({ dictionary }: { dictionary: Dictionary }) {
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-border bg-card/80 px-5 py-3 backdrop-blur">
-      <Link href={`/${locale}`} className="text-base font-bold tracking-tight">
+      <Link href="/" className="text-base font-bold tracking-tight">
         Skills <span className="text-primary">Coach</span>
       </Link>
       <span className="hidden rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground sm:inline">
@@ -21,12 +19,11 @@ export function AppHeader({ locale, dictionary }: { locale: Locale; dictionary: 
       <div className="flex-1" />
 
       <nav className="flex items-center gap-1">
-        <LanguageSwitch locale={locale} label={dictionary.nav.language} />
         <PaletteToggle label={dictionary.chrome.palette} followLabel={dictionary.chrome.followPack} />
         <ThemeToggle label={dictionary.chrome.theme} />
         {/* Last, and separated: it leaves the app, unlike everything to its left. */}
         <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-        <SignOut locale={locale} label={dictionary.nav.signOut} />
+        <SignOut label={dictionary.nav.signOut} />
       </nav>
     </header>
   );

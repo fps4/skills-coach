@@ -11,11 +11,9 @@
 
 import { z } from 'zod';
 import { ARCHIVE_KIND } from './portable.js';
-import { LOCALES } from './types.js';
 
 const nonEmpty = z.string().trim().min(1);
 
-export const localeSchema = z.enum(LOCALES);
 export const localizedTextSchema = z
   .object({ nl: z.string().optional(), en: z.string().optional() })
   .refine((value) => Boolean(value.nl || value.en), { message: 'at least one locale must be present' });
@@ -579,8 +577,11 @@ export const addSkillSchema = z.object({
   folderId: z.string().max(40).nullable().optional(),
 });
 
+/**
+ * What a learner may change about themselves. There is no interface language among it: the interface
+ * is English only (ADR-0025), and a client that still sends `uiLanguage` has it stripped, not refused.
+ */
 export const patchMeSchema = z.object({
-  uiLanguage: localeSchema.optional(),
   displayName: z.string().max(120).optional(),
   profile: learnerProfileSchema.optional(),
 });
@@ -651,7 +652,7 @@ export const archiveSchema = z.object({
   learner: z
     .object({
       displayName: z.string().max(120).optional(),
-      uiLanguage: localeSchema.optional(),
+      // An older file may still carry `uiLanguage`; it is stripped on parse (ADR-0025).
       profile: learnerProfileSchema.optional(),
       menu: menuSchema.optional(),
     })

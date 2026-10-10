@@ -35,7 +35,7 @@ import {
 } from '../domain/portable.js';
 import { archiveSchema, type Archive } from '../domain/schemas.js';
 import { initialProgress, type DrillProgress } from '../domain/drill-progress.js';
-import { drillOrigin, type Locale } from '../domain/types.js';
+import { drillOrigin } from '../domain/types.js';
 import type { DrillItemDoc } from '../db/collections.js';
 import { FROM_LEARNER } from './content.js';
 import {
@@ -190,7 +190,6 @@ export async function exportArchive(ctx: ServiceContext, learnerId: string, gene
     // The subject and the email are identity-service's, not ours to hand out in a file (ADR-0002).
     learner: {
       ...(learner?.displayName ? { displayName: learner.displayName } : {}),
-      ...(learner?.uiLanguage ? { uiLanguage: learner.uiLanguage } : {}),
       ...(learner?.profile ? { profile: learner.profile } : {}),
       // Folders and what shows (ADR-0021). Skills are named by packId, which is already portable.
       ...(learner?.menu ? { menu: learner.menu } : {}),
@@ -826,7 +825,7 @@ export async function importArchive(
 
   // --- the learner's own settings ------------------------------------------
   //
-  // Applied last and only where this system has nothing: a display name or an interface language set
+  // Applied last and only where this system has nothing: a display name set
   // here is a choice made *here*, and a file from six months ago has no business overruling it. The
   // domain profile is the same — it is what the next block gets written about (ADR-0015).
 
@@ -834,7 +833,6 @@ export async function importArchive(
     const live = await c.learners.findOne({ _id: learnerId });
     const fill: Record<string, unknown> = {};
     if (archive.learner.displayName && !live?.displayName) fill.displayName = archive.learner.displayName;
-    if (archive.learner.uiLanguage && !live?.uiLanguage) fill.uiLanguage = archive.learner.uiLanguage as Locale;
     if (archive.learner.profile && !live?.profile) fill.profile = archive.learner.profile;
     // Stored as it arrived: the menu is reconciled with what is started every time it is read, so a
     // folder naming a skill this system does not have simply shows without it.

@@ -25,7 +25,6 @@ import { clientApi } from '@/lib/api-client';
 import { packIcon } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
 import { cn } from '@/lib/utils';
-import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { LearnerMenu, MenuPlacement, TitleText } from '@/lib/types';
 
@@ -38,7 +37,6 @@ export interface MenuSkill {
 }
 
 interface Props {
-  locale: Locale;
   dictionary: Dictionary;
   initial: LearnerMenu;
   /** Every published skill — the ones in the menu and the ones that can still be added. */
@@ -48,7 +46,7 @@ interface Props {
 /** Short, random and slug-shaped, which is all the api asks of a folder id. */
 const newFolderId = (): string => `f${Math.random().toString(36).slice(2, 10)}`;
 
-export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
+export function MenuEditor({ dictionary, initial, skills }: Props) {
   const t = dictionary.menu;
   const router = useRouter();
   const [menu, setMenu] = useState<LearnerMenu>(initial);
@@ -141,7 +139,7 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
     const skill = skillById.get(placement.packId);
     if (!skill) return null;
     const Icon = packIcon(skill.icon);
-    const title = pickTitle(skill.title, locale);
+    const title = pickTitle(skill.title);
 
     return (
       <li
@@ -151,9 +149,7 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
         <Icon className={cn('h-4 w-4 shrink-0', placement.hidden ? 'text-muted-foreground/60' : 'text-primary')} />
         <div className="min-w-0 flex-1">
           <p className={cn('truncate text-sm font-medium', placement.hidden && 'text-muted-foreground')}>{title}</p>
-          {skill.description ? (
-            <p className="truncate text-xs text-muted-foreground">{pickTitle(skill.description, locale)}</p>
-          ) : null}
+          {skill.description ? <p className="truncate text-xs text-muted-foreground">{pickTitle(skill.description)}</p> : null}
         </div>
 
         {folderSelect(`folder-${placement.packId}`, title, placement.folderId ?? '', (folderId) =>
@@ -318,7 +314,7 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
           <ul>
             {available.map((skill) => {
               const Icon = packIcon(skill.icon);
-              const title = pickTitle(skill.title, locale);
+              const title = pickTitle(skill.title);
               return (
                 <li
                   key={skill.packId}
@@ -328,7 +324,7 @@ export function MenuEditor({ locale, dictionary, initial, skills }: Props) {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{title}</p>
                     {skill.description ? (
-                      <p className="truncate text-xs text-muted-foreground">{pickTitle(skill.description, locale)}</p>
+                      <p className="truncate text-xs text-muted-foreground">{pickTitle(skill.description)}</p>
                     ) : null}
                   </div>
                   {folderSelect(`add-${skill.packId}`, title, target[skill.packId] ?? '', (folderId) =>

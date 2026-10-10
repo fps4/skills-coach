@@ -173,30 +173,28 @@ describeIfMongo('authorization', () => {
     const response = await harness.app.inject({ method: 'GET', url: '/api/v1/me', headers: auth('learner-token') });
     const learner = response.json().learner;
     expect(learner.subject).toBe('learner-under-test');
-    expect(learner.uiLanguage).toBe('nl');
     expect(Object.keys(learner)).not.toContain('password');
     expect(Object.keys(learner)).not.toContain('roles');
   });
 
-  it('remembers a UI language change', async () => {
-    await harness.app.inject({
+  it('keeps no interface language — the interface is English only (ADR-0025)', async () => {
+    // A learner from before the decision still has one stored; it is not served back.
+    await harness.store.collections.learners.updateOne(
+      { subject: 'learner-under-test' },
+      { $set: { uiLanguage: 'nl' } as Record<string, unknown> },
+    );
+    const patched = await harness.app.inject({
       method: 'PATCH',
       url: '/api/v1/me',
       headers: auth('learner-token'),
-      payload: { uiLanguage: 'en' },
+      payload: { uiLanguage: 'en', displayName: 'Lerner' },
     });
-    const response = await harness.app.inject({ method: 'GET', url: '/api/v1/me', headers: auth('learner-token') });
-    expect(response.json().learner.uiLanguage).toBe('en');
-  });
+    // An older client sending one is not refused; the field is simply not a setting any more.
+    expect(patched.statusCode).toBe(200);
 
-  it('rejects a UI language the product does not ship', async () => {
-    const response = await harness.app.inject({
-      method: 'PATCH',
-      url: '/api/v1/me',
-      headers: auth('learner-token'),
-      payload: { uiLanguage: 'de' },
-    });
-    expect(response.statusCode).toBe(400);
+    const response = await harness.app.inject({ method: 'GET', url: '/api/v1/me', headers: auth('learner-token') });
+    expect(response.json().learner.displayName).toBe('Lerner');
+    expect(Object.keys(response.json().learner)).not.toContain('uiLanguage');
   });
 
   it('records an audit event for a coach publishing content', async () => {

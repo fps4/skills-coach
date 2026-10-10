@@ -15,7 +15,7 @@ import type { TermRequest } from '@/lib/types';
 const clientApi = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api-client', () => ({ clientApi, isSessionExpired: () => false }));
 
-const dictionary = getDictionary('en');
+const dictionary = getDictionary();
 
 const SUGGESTED: TermRequest = {
   requestId: 'req-1',

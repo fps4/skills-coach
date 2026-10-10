@@ -19,11 +19,9 @@ import { Search, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { FORMATS, TOPICS, toQuery, type WikiFilter } from '@/lib/wiki-labels';
-import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 
 interface Props {
-  locale: Locale;
   dictionary: Dictionary;
   filter: WikiFilter;
   topicCounts: Record<string, number>;
@@ -31,7 +29,7 @@ interface Props {
   total: number;
 }
 
-export function WikiFilters({ locale, dictionary, filter, topicCounts, formatCounts, total }: Props) {
+export function WikiFilters({ dictionary, filter, topicCounts, formatCounts, total }: Props) {
   const t = dictionary.wiki;
   const router = useRouter();
   const params = useSearchParams();
@@ -47,7 +45,7 @@ export function WikiFilters({ locale, dictionary, filter, topicCounts, formatCou
   }, [params]);
 
   const navigate = (next: WikiFilter) => {
-    startTransition(() => router.replace(`/${locale}/wiki${toQuery(next)}`, { scroll: false }));
+    startTransition(() => router.replace(`/wiki${toQuery(next)}`, { scroll: false }));
   };
 
   useEffect(() => {

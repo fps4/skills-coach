@@ -100,11 +100,11 @@ async function main(): Promise<void> {
   log(`articles ${articles.length}`);
   for (const article of articles) log(`  · ${describe(article)}`);
 
-  // An article with one variant is loadable and useful — but the language switch has nothing to do
-  // on it, which is the whole point of the surface, so it is called out rather than assumed.
+  // An article with one variant is loadable and useful — but there is no other variant to compare it
+  // with, which is the whole point of the surface, so it is called out rather than assumed.
   const single = articles.filter((article) => article.bodies.length === 1);
   if (single.length > 0) {
-    log(`\n${single.length} article(s) carry only one language — the switch will not flip them:`);
+    log(`\n${single.length} article(s) carry only one language — there is nothing to compare them with:`);
     for (const article of single) log(`  · ${article.slug} (${article.bodies[0]?.language})`);
   }
 

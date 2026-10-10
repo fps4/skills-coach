@@ -102,7 +102,7 @@ the text is most of the document and none of it is shown on a library screen.
 | `readingState` | derived | `(learnerId, articleId)` unique · `(learnerId, packId)` |
 
 `learners` is keyed on the token's `sub` and holds no credentials
-([ADR-0002](decisions/0002-identity-service-as-authentication-engine.md)): display name, UI language,
+([ADR-0002](decisions/0002-identity-service-as-authentication-engine.md)): display name
 and a `profile` — the working world their blocks are written about
 ([ADR-0015](decisions/0015-a-block-may-be-owned-by-a-learner.md)). Free text, carried to an author
 and interpreted by nothing. The unique index on `subject` is what makes lazy creation safe under

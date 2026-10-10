@@ -1,10 +1,14 @@
 ---
 title: UI language and content language are separate and never conflated
-status: accepted
+status: accepted — interface-language part superseded by ADR-0025
 date: 2026-08-01
 ---
 
 # ADR-0005 — UI language is not content language
+
+> **Superseded in part by [ADR-0025](0025-the-interface-is-english-only.md).** The interface is
+> English only: there is no `uiLanguage` on the learner, no `/nl/…` or `/en/…` in the URL, and no
+> locale negotiation. What this record says about **content** language still holds.
 
 ## Context
 

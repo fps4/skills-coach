@@ -47,7 +47,7 @@ const OPTIONS: MigrationOptions = {
   from: TEST_PACK.packId,
   words: WORDS.packId,
   reading: READING.packId,
-  folder: { nl: 'Nederlands', en: 'Dutch' },
+  folder: 'Dutch',
   dryRun: false,
 };
 
@@ -186,7 +186,7 @@ describeIfMongo('forking words and reading into skills', () => {
 
     const menu = (await harness.app.inject({ method: 'GET', url: '/api/v1/me/menu', ...as('learner-token') })).json()
       .menu;
-    expect(menu.folders).toEqual([{ folderId: expect.any(String), name: 'Nederlands' }]);
+    expect(menu.folders).toEqual([{ folderId: expect.any(String), name: 'Dutch' }]);
     const folderId = menu.folders[0].folderId;
     expect(menu.placements).toEqual(
       expect.arrayContaining([

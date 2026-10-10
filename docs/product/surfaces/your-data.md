@@ -1,15 +1,15 @@
 ---
-title: Jouw gegevens — the portable archive
+title: Your data — the portable archive
 surface: — (platform-wide)
 status: built
 ---
 
-# Jouw gegevens (your data)
+# Your data
 
 | | |
 |---|---|
 | **Surface key** | — not declarable; it belongs to the learner, not to a pack |
-| **Route** | `/{locale}/archive` |
+| **Route** | `/archive` |
 | **Capability** | `progress:read` to download · `progress:restore` to put one back |
 | **Appears when** | always, for every learner |
 | **Decides** | nothing on its own — an import writes across every collection the learner owns |
@@ -34,7 +34,7 @@ wrong one ([ADR-0018](../../architecture/decisions/0018-the-rail-is-packs-one-le
 
 | Section | What it is |
 |---|---|
-| `learner` | display name, interface language, the domain profile (ADR-0015) |
+| `learner` | display name, the domain profile (ADR-0015). Files written before ADR-0025 may also carry `uiLanguage`; it is ignored on import |
 | `enrollments` | which pack, which block, which lesson |
 | `drillState` | stage, streak and mastery per item — the core |
 | `ownTerms` | words the learner added themselves (ADR-0012) |
@@ -115,7 +115,7 @@ The same floor applies everywhere else it can:
   `firstSeen`; counts are never summed
 - **events** — attempts, submissions, corrections, sittings, reviews — are inserted if absent and
   never overwritten
-- the **display name, interface language and profile** are filled in only where this system has
+- the **display name and profile** are filled in only where this system has
   nothing. A setting chosen *here* is not overruled by a file from six months ago.
 
 The property this buys: **importing the wrong file by accident costs nothing.**

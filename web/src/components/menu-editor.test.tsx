@@ -16,7 +16,7 @@ const clientApi = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api-client', () => ({ clientApi, isSessionExpired: () => false }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
-const dictionary = getDictionary('en');
+const dictionary = getDictionary();
 
 const SKILLS: MenuSkill[] = [
   { packId: 'words', title: { en: 'Word trainer' } },
@@ -35,7 +35,7 @@ describe('MenuEditor', () => {
   afterEach(cleanup);
 
   it('offers only the skills not in the menu yet', () => {
-    render(<MenuEditor locale="en" dictionary={dictionary} initial={MENU} skills={SKILLS} />);
+    render(<MenuEditor dictionary={dictionary} initial={MENU} skills={SKILLS} />);
 
     expect(screen.getByText(dictionary.menu.available)).toBeTruthy();
     expect(screen.getAllByRole('button', { name: new RegExp(`^${dictionary.menu.add}`) })).toHaveLength(1);
@@ -49,7 +49,7 @@ describe('MenuEditor', () => {
         placements: [...MENU.placements, { packId: 'graphs', folderId: 'arch', hidden: false }],
       },
     });
-    render(<MenuEditor locale="en" dictionary={dictionary} initial={MENU} skills={SKILLS} />);
+    render(<MenuEditor dictionary={dictionary} initial={MENU} skills={SKILLS} />);
 
     fireEvent.change(screen.getByLabelText(`${dictionary.menu.folder}: Graphs`), { target: { value: 'arch' } });
     fireEvent.click(screen.getByRole('button', { name: `${dictionary.menu.add}: Graphs` }));

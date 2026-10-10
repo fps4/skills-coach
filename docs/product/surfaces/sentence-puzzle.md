@@ -1,15 +1,15 @@
 ---
-title: Zinspuzzel — the sentence puzzle
+title: Sentence puzzle
 surface: drills:word-order
 status: built
 ---
 
-# Zinspuzzel (sentence puzzle)
+# Sentence puzzle
 
 | | |
 |---|---|
 | **Surface key** | `drills:word-order` |
-| **Route** | `/{locale}/drills/sentences?blockId=…` |
+| **Route** | `/drills/sentences?blockId=…` |
 | **Capability** | `drill:practice` |
 | **Appears when** | the block has at least one `word-order` drill item, and the pack has not opted out ([ADR-0019](../../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)) |
 | **Decides** | `drillState` for `word-order` items, and `attempts` rows |

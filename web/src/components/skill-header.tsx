@@ -17,19 +17,17 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { activeTab, packIdFromUrl, skillTabs } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
-import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { LearnerMenu } from '@/lib/types';
 import { ReadyBadge, type RailPack } from './learner-rail';
 
 interface Props {
-  locale: Locale;
   dictionary: Dictionary;
   packs: RailPack[];
   menu: LearnerMenu | null;
 }
 
-export function SkillHeader({ locale, dictionary, packs, menu }: Props) {
+export function SkillHeader({ dictionary, packs, menu }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -41,13 +39,13 @@ export function SkillHeader({ locale, dictionary, packs, menu }: Props) {
 
   const folderId = menu?.placements.find((entry) => entry.packId === skill.packId)?.folderId ?? null;
   const folder = folderId ? menu?.folders.find((entry) => entry.folderId === folderId) : undefined;
-  const tabs = skillTabs(locale, skill);
+  const tabs = skillTabs(skill);
   const current = activeTab(pathname);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-6 pt-6 md:px-8 md:pt-8">
       {folder ? <p className="text-xs text-muted-foreground">{folder.name} ›</p> : null}
-      <p className="text-2xl font-semibold tracking-tight">{pickTitle(skill.title, locale)}</p>
+      <p className="text-2xl font-semibold tracking-tight">{pickTitle(skill.title)}</p>
 
       {/* Only worth a row when there is more than the overview to switch to. */}
       {tabs.length > 1 ? (

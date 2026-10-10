@@ -11,7 +11,7 @@
  *
  * Values are HSL channels to match the token convention; Tailwind wraps them as
  * `hsl(var(--token))`. The active palette is a `data-palette` attribute on `<html>`, set before
- * paint by the init script in the locale layout and changed by the palette picker.
+ * paint by the init script in the root layout and changed by the palette picker.
  */
 
 export type PaletteTokens = {

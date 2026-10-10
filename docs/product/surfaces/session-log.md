@@ -1,14 +1,14 @@
 ---
-title: Sessielog — hand work in, and read what came back
+title: Session log — hand work in, and read what came back
 surface: (part of `lessons` — it has no rail item of its own)
 status: built
 ---
 
-# Sessielog (session log)
+# Session log
 
 | | |
 |---|---|
-| **Route** | `/{locale}/sessions/{submissionId}` |
+| **Route** | `/sessions/{submissionId}` |
 | **Capability** | `submission:write` to create · `lesson:read` to read back |
 | **Reached from** | submitting a lesson, or the "already submitted" link on one |
 | **Decides** | `submissions` · and, when a coach answers, `corrections` and `errorLog` |
@@ -143,6 +143,6 @@ Les 4 · ingeleverd 12 aug                          vloeiend 3 · correct 2 · l
 | Corrections and the error-log write | `api/src/services/corrections.ts`, `error-log.ts` |
 | Answer references | `api/src/domain/progression.ts` |
 | Routes | `api/src/http/learner.ts` (learner) · `api/src/http/coach.ts` (correcting) |
-| Screen | `web/src/app/[locale]/(app)/sessions/[submissionId]/page.tsx` |
+| Screen | `web/src/app/(app)/sessions/[submissionId]/page.tsx` |
 | Strings | `web/src/i18n/dictionaries.ts` → `session` |
 | The coach's half | [`docs/guides/coach-loop.md`](../../guides/coach-loop.md) |

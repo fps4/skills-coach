@@ -9,7 +9,7 @@ status: built
 | | |
 |---|---|
 | **Surface key** | none — it is not declared by a pack and is not scoped to one |
-| **Routes** | `/{locale}/wiki` · `/{locale}/wiki/{slug}` |
+| **Routes** | `/wiki` · `/wiki/{slug}` |
 | **Capability** | none. It is prerendered static content behind the app's own session, not behind the API |
 | **Appears when** | always |
 | **Decides** | nothing. It writes no state of any kind |
@@ -71,7 +71,7 @@ the mechanics, with runnable examples.
 
 **Label ids are content; their display names are chrome.** A guide's frontmatter names
 `topic: streaming`, and that slug is stable and language-free. What a reader sees on the chip comes
-from the dictionary — so adding a third interface language never touches a guide
+from the dictionary — so rewording a chip never touches a guide
 ([ADR-0005](../../architecture/decisions/0005-ui-language-vs-content-language.md)).
 
 A guide declaring an id that is not in the closed set is a **build failure**, not a silently
@@ -171,7 +171,7 @@ two routes take different plugin lists rather than the reading route inheriting 
 | Corpus | `web/content/wiki/*.md` (28 guides) |
 | Reading and parsing | `web/src/lib/wiki.ts` (`server-only`) |
 | Label contract and filter | `web/src/lib/wiki-labels.ts` |
-| Screens | `web/src/app/[locale]/(app)/wiki/page.tsx`, `[slug]/page.tsx` |
+| Screens | `web/src/app/(app)/wiki/page.tsx`, `[slug]/page.tsx` |
 | Chip row | `web/src/components/wiki-filters.tsx` |
 | Guard | `web/src/lib/wiki.test.ts` |
 | Strings | `web/src/i18n/dictionaries.ts` → `wiki` |
