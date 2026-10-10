@@ -9,7 +9,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 - [`product/prd/0001-dutch-conversation-coach.md`](product/prd/0001-dutch-conversation-coach.md) — the first pack, and what M0 must do
 - [`product/surfaces/`](product/surfaces/README.md) — **one spec per function**, each complete enough
   to rebuild that function: the Woordtrainer, the Zinspuzzel, the Oefentoets, the reading library,
-  the lesson reader, the session log, progress and the rail, the wiki, and the portable archive
+  the lesson reader, the session log, progress and the rail, and the portable archive
 
 ## Architecture — how it is built
 

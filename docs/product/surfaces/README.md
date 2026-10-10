@@ -17,7 +17,6 @@ the same one. There is no per-pack branching anywhere in the runtime.
 | [Sentence puzzle](sentence-puzzle.md) | `drills:word-order` | `/drills/sentences` |
 | [Practice test](quiz.md) | `quiz` | `/quiz` |
 | [Progress and the menu](progress-and-navigation.md) | — (not declarable) | `/` · `/skills` · `/progress` |
-| [Wiki — the reference library](wiki.md) | — (platform-wide) | `/wiki` |
 | [Your data — the portable archive](your-data.md) | — (the learner's, not a pack's) | `/archive` |
 
 Screen sketches in these files that show Dutch labels predate

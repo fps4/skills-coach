@@ -171,17 +171,15 @@ Lezen                                                    12 · 9 ongelezen
 Reading time is `estimatedMinutes` when the loader gave one, otherwise counted **from the variant on
 screen**, so a translation that runs longer than its original reports its own length.
 
-### The markdown pipeline is the wiki's
+### The markdown pipeline
 
-Same `react-markdown`, same plugins (`remark-gfm`, `rehype-slug`, `rehype-highlight`), same
-`wiki-prose` styling, rendered on the server so the body ships as HTML with no client JavaScript.
-Two renderers for one job would mean two sets of rendering bugs.
+`react-markdown` with `remark-gfm`, `rehype-slug` and `rehype-highlight`, styled by `article-prose`,
+rendered on the server so the body ships as HTML with no client JavaScript. (It was the wiki's
+pipeline until the wiki was removed, ADR-0028.)
 
-> **`rehype-raw` must not be added to the reading route.** Wiki guides are written by us and
-> committed; an article is scraped from somewhere else. `react-markdown` does not render raw HTML
-> unless `rehype-raw` is added, and it refuses `javascript:` hrefs — which is precisely what makes
-> the same pipeline safe to point at untrusted text. If the wiki ever needs raw HTML, the two routes
-> take different plugin lists rather than the reading one inheriting it.
+> **`rehype-raw` must not be added to the reading route.** An article is scraped from somewhere
+> else. `react-markdown` does not render raw HTML unless `rehype-raw` is added, and it refuses
+> `javascript:` hrefs — which is precisely what makes this pipeline safe to point at untrusted text.
 
 ## Loading a library
 

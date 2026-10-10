@@ -6,7 +6,7 @@
  * in an interface-language setting — there is none any more (ADR-0025). The page says which variant
  * is on screen rather than leaving a learner to work out why the text changed.
  *
- * The markdown pipeline is the wiki's, unchanged: same plugins, same `wiki-prose` styling, rendered
+ * The markdown pipeline is the one the removed wiki used: these plugins and `article-prose`, rendered
  * on the server so the body ships as HTML with no client JavaScript. Two libraries for one job would
  * mean two sets of rendering bugs. Note that `react-markdown` does not render raw HTML unless
  * `rehype-raw` is added — which is what makes it safe to point at a scraped article, and a reason
@@ -106,7 +106,7 @@ export default async function ArticlePage({
 
       {/* `lang` is the *variant's* language, not the pack's and not the interface's — which is the
           whole point of a parallel text, and what makes a screen reader switch voice with it. */}
-      <article lang={article.language} className="wiki-prose">
+      <article lang={article.language} className="article-prose">
         <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeHighlight]}>
           {article.body}
         </Markdown>

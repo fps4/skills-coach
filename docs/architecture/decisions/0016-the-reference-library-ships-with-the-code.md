@@ -1,6 +1,6 @@
 ---
 title: The reference library ships with the code
-status: accepted
+status: superseded by ADR-0028
 date: 2026-08-08
 ---
 

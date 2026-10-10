@@ -91,14 +91,14 @@
 }
 
 /*
- * The wiki article body.
+ * A rendered markdown article body (reading).
  *
  * `@tailwindcss/typography` supplies the rhythm; every colour it uses is re-pointed at a token, so
- * the guides re-skin with the rest of the app and the light/dark and palette axes keep working
+ * articles re-skin with the rest of the app and the light/dark and palette axes keep working
  * (ADR-0007). No colour is named here — only roles.
  */
 @layer components {
-  .wiki-prose {
+  .article-prose {
     @apply prose max-w-none prose-headings:scroll-mt-20 prose-headings:tracking-tight;
     @apply prose-pre:border prose-pre:border-border prose-pre:bg-muted;
     @apply prose-table:block prose-table:overflow-x-auto;
@@ -122,7 +122,7 @@
   }
 
   /* A wide table scrolls inside itself rather than pushing the page sideways. */
-  .wiki-prose table {
+  .article-prose table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
@@ -134,23 +134,23 @@
    * a diagram reads as loose debris rather than as boxes. 1.35 keeps them joined and makes ordinary
    * code denser too, which is the right trade in a 500-line guide.
    */
-  .wiki-prose pre {
+  .article-prose pre {
     line-height: 1.35;
   }
 
   /* A wide diagram or a long line scrolls in place, same rule as a table. */
-  .wiki-prose pre > code {
+  .article-prose pre > code {
     display: block;
     overflow-x: auto;
   }
 
   /* Inline code, styled here because typography's backtick pseudo-elements are not wanted. */
-  .wiki-prose :not(pre) > code {
+  .article-prose :not(pre) > code {
     @apply rounded border border-border bg-muted px-1 py-0.5 text-[0.85em] font-normal;
   }
 
-  .wiki-prose :not(pre) > code::before,
-  .wiki-prose :not(pre) > code::after {
+  .article-prose :not(pre) > code::before,
+  .article-prose :not(pre) > code::after {
     content: none;
   }
 
@@ -161,30 +161,30 @@
    * roles is deliberately few — a guide is read for its prose, and a rainbow in every one of
    * sql-refresher's thirty code blocks competes with it.
    */
-  .wiki-prose .hljs-keyword,
-  .wiki-prose .hljs-selector-tag,
-  .wiki-prose .hljs-built_in,
-  .wiki-prose .hljs-name {
+  .article-prose .hljs-keyword,
+  .article-prose .hljs-selector-tag,
+  .article-prose .hljs-built_in,
+  .article-prose .hljs-name {
     color: hsl(var(--primary));
   }
 
-  .wiki-prose .hljs-string,
-  .wiki-prose .hljs-attr,
-  .wiki-prose .hljs-symbol,
-  .wiki-prose .hljs-regexp {
+  .article-prose .hljs-string,
+  .article-prose .hljs-attr,
+  .article-prose .hljs-symbol,
+  .article-prose .hljs-regexp {
     color: hsl(var(--success));
   }
 
-  .wiki-prose .hljs-number,
-  .wiki-prose .hljs-literal,
-  .wiki-prose .hljs-type,
-  .wiki-prose .hljs-title {
+  .article-prose .hljs-number,
+  .article-prose .hljs-literal,
+  .article-prose .hljs-type,
+  .article-prose .hljs-title {
     color: hsl(var(--accent));
   }
 
-  .wiki-prose .hljs-comment,
-  .wiki-prose .hljs-quote,
-  .wiki-prose .hljs-meta {
+  .article-prose .hljs-comment,
+  .article-prose .hljs-quote,
+  .article-prose .hljs-meta {
     color: hsl(var(--muted-foreground));
     font-style: italic;
   }

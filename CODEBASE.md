@@ -94,7 +94,6 @@ capability gate and writing the same audit trail, not a fork.
 ## `web/` — the learner surface
 
 ```
-web/content/wiki/    the reference library — empty while it is reworked; the route and the guard remain (ADR-0016)
 
 web/src/
   app/               no locale segment — the interface is English only (ADR-0025)
@@ -102,8 +101,6 @@ web/src/
     (app)/             everything that needs a session — header, rail, content
                        `(app)/page.tsx` is the landing surface: one tile per pack, started
                        ones first, then the rest of the published catalogue
-                       `(app)/wiki/` is the reference library: a filtered tile grid, and
-                       one route per guide rendering its markdown server-side
     (auth)/            everything that does not — the centred sign-in surface
   i18n/              the one English dictionary — chrome strings in one typed place
   lib/               api (server) / api-client (browser) / auth (server-only) / session (shared)
@@ -111,8 +108,6 @@ web/src/
     theme/palettes   the hue axis — a palette is data, not code
     menu.ts          grouping the rail by the learner's menu — pure, unit-tested
     legacy-locale.ts which old `/nl/…` `/en/…` paths the middleware redirects — pure, unit-tested
-    wiki-labels.ts   the wiki's topic/format taxonomy and its filter predicate — pure, unit-tested
-    wiki.ts          reading and validating the corpus off disk, server-only (ADR-0016)
   components/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
@@ -120,7 +115,6 @@ web/src/
     learner-rail.tsx the learner's menu: their folders, then the skills in them — two levels, never three
     skill-header.tsx a skill's name, its folder, and its surfaces as tabs (ADR-0021)
     menu-editor.tsx  "All my skills": folders, which folder a skill is in, and what shows
-    wiki-filters.tsx the chip rows and search box — writes the query string, filters nothing
     flashcards.tsx   the flashcard surface: practise (typed or self-graded) and learn, one card at a
                      time, every action on a key (ADR-0027). The keyboard map and the status line are
                      pure, in lib/flashcards.ts

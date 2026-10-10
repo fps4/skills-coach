@@ -3,7 +3,7 @@
  *
  * Not under a pack, and deliberately so. Everything else behind the rail is scoped to one pack
  * (ADR-0018); an archive is scoped to a *person* and spans every pack they have touched, so it sits
- * beside the wiki as one of the two things here that no manifest declares.
+ * beside the skills as the one thing here that no manifest declares.
  */
 
 import { PageShell } from '@/components/atoms';

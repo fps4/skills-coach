@@ -22,8 +22,7 @@ theirs rather than the deployment's ([ADR-0020](../../architecture/decisions/002
 Three things a learner reasonably wants and had no way to do: move to a different deployment, keep a
 copy of their own, and put a pack down for months without losing the streak on every word in it.
 
-It sits beside the wiki rather than under a pack, for the opposite reason: the wiki belongs to no
-pack, and an archive belongs to *every* pack at once. Filing it under one would be filing it under the
+It sits beside the skills rather than under one: an archive belongs to *every* pack at once. Filing it under one would be filing it under the
 wrong one ([ADR-0018](../../architecture/decisions/0018-the-rail-is-packs-one-level-deep.md)).
 
 ## The rules

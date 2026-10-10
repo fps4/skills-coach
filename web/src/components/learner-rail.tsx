@@ -15,7 +15,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ChevronRight, Folder, HardDriveDownload, LayoutGrid, Library, ListTree, Rows3 } from 'lucide-react';
+import { ChevronRight, Folder, HardDriveDownload, LayoutGrid, ListTree, Rows3 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { arrangeRail } from '@/lib/menu';
@@ -179,16 +179,8 @@ export function LearnerRail({ dictionary, packs, menu }: Props) {
       </RailItem>
 
       {/*
-        The wiki is the platform's, not a skill's, so it sits beside the skills rather than in the
-        menu the learner arranges.
-      */}
-      <RailItem href="/wiki" icon={<Library className="h-4 w-4" />} active={isActive('/wiki')}>
-        {t.wiki}
-      </RailItem>
-
-      {/*
-        Beside the skills for the opposite reason the wiki is: the archive belongs to *every* skill at
-        once, so filing it under one of them would be filing it under the wrong one.
+        Beside the skills rather than in them: the archive belongs to *every* skill at once, so filing
+        it under one of them would be filing it under the wrong one.
       */}
       <RailItem href="/archive" icon={<HardDriveDownload className="h-4 w-4" />} active={isActive('/archive')}>
         {t.yourData}

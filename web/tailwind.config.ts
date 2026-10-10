@@ -45,7 +45,7 @@ export default {
       },
     },
   },
-  // Typography supplies the rhythm for wiki articles; its colours are re-pointed at the tokens in
-  // `globals.css` (`.wiki-prose`), so it does not introduce a second palette.
+  // Typography supplies the rhythm for rendered articles; its colours are re-pointed at the tokens in
+  // `globals.css` (`.article-prose`), so it does not introduce a second palette.
   plugins: [require('@tailwindcss/typography')],
 } satisfies Config;
