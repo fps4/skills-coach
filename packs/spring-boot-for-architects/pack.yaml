@@ -1,0 +1,54 @@
+# Spring Boot for architects — a skill that is only a deck of flashcards (ADR-0022, ADR-0027).
+# This file is the whole definition of the skill and names no person, employer or client. The cards
+# are content: a coach writes them from the reference guides and publishes them through `/coach/v1`
+# or the MCP `publish_block` tool. None of them is committed (ADR-0006).
+
+packId: spring-boot-for-architects
+
+title: Spring Boot for architects
+
+description: >-
+  Enough Spring Boot to set standards and run architecture reviews — auto-configuration, dependency
+  injection, the REST layer, data access and transactions, security, production readiness and
+  testing — as flashcards mapped onto service and platform work you already know.
+
+contentLanguage: en
+translationLanguage: en
+skill: software-architecture
+
+goal: >-
+  Review a Spring Boot service the way you review any service: say where the layers are, where the
+  usual failures hide, and which standard to set, without notes, in both directions.
+
+framework:
+  id: spring-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Every card that can maps the Spring mechanism onto
+      its Node.js, Kubernetes or API-governance counterpart — a starter against a middleware stack,
+      Actuator health groups against probes — and says where the analogy breaks.
+    - >-
+      Name the confusion, then separate it: MVC and WebFlux, JPA and plain SQL, slice tests and full
+      context tests — a pair that gets confused becomes a card saying how the two differ.
+    - Mechanism before vocabulary. The back says what the thing does, not only what it is called.
+    - One idea per card, and a review flag is a card of its own.
+  rules:
+    sources: every card is written from the reference guides or the Spring documentation, and says where in `details.source`
+    front: the annotation or term as practitioners write it — "@Transactional", "auto-configuration", "N+1 query"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short Java or YAML snippet where seeing it is faster than reading about it
+    analogy: the Node.js, platform or API-governance counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: violet
+  icon: graduation-cap
+  tagline: Review it like any other service.
+  surfaces: [drills:terms]

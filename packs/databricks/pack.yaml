@@ -1,0 +1,58 @@
+# Databricks for data architects — a skill that is only a deck of flashcards (ADR-0022).
+#
+# This manifest is the whole definition of the skill and names no person, employer or client.
+# The cards are content: a coach writes them from the reference guides and publishes them into a
+# deck block through `/coach/v1` or `publish_block`. None of them is committed (ADR-0006).
+
+packId: databricks
+
+title: Databricks for data architects
+
+description: >-
+  The lakehouse platform decisions — control and compute planes, Delta Lake internals, Unity
+  Catalog, Workflows and Lakeflow, Photon, CI/CD, tuning and security on AWS — as flashcards.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture
+
+goal: >-
+  Own the Databricks platform decisions — what each component does, what it costs and when it is
+  the wrong choice — without notes, from the term to the idea and back.
+
+framework:
+  id: databricks-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. A card that can maps the Databricks idea onto its
+      warehouse, Spark or AWS counterpart — medallion layers against staging and marts, Unity
+      Catalog against a Hive metastore — and says where the mapping stops.
+    - >-
+      Name the confusion, then separate it. Control and compute plane, Delta and Iceberg, Z-order
+      and liquid clustering, Workflows and Airflow, DBFS mounts and volumes: each pair becomes a
+      card that says how they differ.
+    - >-
+      Say both names. Where a product was renamed, the card gives the current name and the one it
+      replaced.
+    - Decisions over knobs. A tuning card says which choice to make and why, not every setting.
+
+  rules:
+    sources: every card is written from the reference guides or the Databricks and Delta Lake documentation, and says where in `details.source`
+    front: the term as practitioners write it — "liquid clustering", "deletion vectors", "Delta vs Iceberg"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short SQL, Python or YAML snippet where seeing it is faster than reading about it
+    analogy: the warehouse, Spark or AWS counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: graduation-cap
+  tagline: One governed copy, in open formats.
+  surfaces: [drills:terms]

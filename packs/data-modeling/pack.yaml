@@ -1,0 +1,57 @@
+# Data modelling — approach, methodologies and tools — a skill that is only a deck of flashcards
+# (ADR-0022). This file is the whole definition of the skill and names no person, employer or
+# client. The cards are content: a coach writes them from the reference guides and publishes them
+# through `/coach/v1` or the MCP `publish_block` tool. None of them is committed (ADR-0006).
+
+packId: data-modeling
+
+title: Data modelling — approach and methods
+
+description: >-
+  The methodology-selection layer — conceptual, logical and physical models; 3NF, dimensional, Data
+  Vault, One Big Table, activity schema and documents; streaming contracts, tools, notations and
+  anti-patterns — as flashcards about when each one is the right choice.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture
+
+goal: >-
+  Pick and defend a modelling approach per layer from the grain, the consumer and the rate of
+  change, without notes, in both directions — from the term to the idea and from the idea to the term.
+
+framework:
+  id: modeling-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Decisions, not artefacts. A card about a methodology says the question that selects it and the
+      layer it belongs in, not only its shape.
+    - >-
+      Name the confusion, then separate it. Inmon and Kimball, a vault and a mart, schema-on-read and
+      schema-on-write, backward and forward compatibility: a confused pair becomes a card whose back
+      says how they differ.
+    - >-
+      Mechanism before vocabulary. The back says what the pattern does and what it costs.
+    - >-
+      One idea per card.
+
+  rules:
+    sources: every card is written from the reference guides or the standard texts, and says where in `details.source`
+    front: the term as practitioners write it — "conformed dimension", "satellite", "One Big Table"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short DDL, DBML or dbt snippet where seeing it is faster than reading about it
+    analogy: the counterpart in another methodology or layer, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: book-open
+  tagline: State the grain, then choose.
+  surfaces: [drills:terms]

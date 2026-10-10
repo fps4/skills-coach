@@ -1,0 +1,52 @@
+# Palantir Foundry and AIP for data architects — a skill that is only a deck of flashcards (ADR-0022,
+# ADR-0027). This file is the whole definition of the skill and names no person, employer or client.
+# The cards are content: a coach writes them from the reference guides and publishes them through
+# `/coach/v1` or the MCP `publish_block` tool. None of them is committed (ADR-0006).
+
+packId: palantir-foundry-aip
+
+title: Palantir Foundry and AIP for data architects
+
+description: >-
+  Foundry's datasets, ontology, actions and markings, and the AIP layer on top, as flashcards mapped
+  onto the lakehouse, semantic-layer and governance ideas you already know.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture
+
+goal: >-
+  Say what each Foundry and AIP building block is for, where access, audit and release live, and how
+  it maps onto a lakehouse estate, without notes, in both directions.
+
+framework:
+  id: foundry-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Every card that can maps the Foundry concept onto
+      its lakehouse or semantic-layer counterpart — an ontology against a semantic layer, an Action
+      against a validated API — and says where the analogy breaks.
+    - >-
+      Name the confusion, then separate it: a pair that gets confused becomes a card whose back says
+      how the two differ.
+    - Mechanism before vocabulary. The back says what the thing does, not only what it is called.
+    - One idea per card.
+  rules:
+    sources: every card is written from the reference guides or the vendor documentation, and says where in `details.source`
+    front: the product or concept name as practitioners write it — "Ontology", "AIP Evals", "marking"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
+    group: the guide's section, so the deck reads in the order the guide teaches
+    analogy: the lakehouse, semantic-layer or governance counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: briefcase
+  tagline: The operational layer over the data.
+  surfaces: [drills:terms]

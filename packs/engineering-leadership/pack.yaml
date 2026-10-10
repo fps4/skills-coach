@@ -1,0 +1,60 @@
+# Engineering leadership for architects — a skill that is only a deck of flashcards (ADR-0022,
+# ADR-0027). The vocabulary of the CTO / engineering-manager job: people, commercial ownership,
+# executive communication, delivery governance and regulated accountability.
+# The cards are content: a coach writes them from the reference guides and publishes them through
+# `/coach/v1` or the MCP `publish_block` tool. None of them is committed (ADR-0006).
+
+packId: engineering-leadership
+
+title: Engineering leadership for architects
+
+description: >-
+  The engineering-leadership job as flashcards — line management, hiring and levelling, budgets and
+  business cases, executive communication, DORA and SLOs as governance, regulated accountability —
+  each mapped onto the architecture work it grows out of.
+
+contentLanguage: en
+translationLanguage: en
+skill: engineering-leadership # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each leadership practice is for, what evidence proves it and when it is the wrong move,
+  without notes, in both directions — from the term to the idea and from the idea to the term.
+
+framework:
+  id: leadership-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Every card that can maps the leadership practice
+      onto its architecture counterpart — a career ladder against a capability model, an SLO as a
+      contract rather than a dashboard, a business case against an ADR — and says where it breaks.
+    - >-
+      Name the confusion, then separate it. Showback and chargeback, capex and opex, platform and
+      stream-aligned teams, advising and being accountable: a confused pair becomes two cards.
+    - >-
+      Evidence over vocabulary. The back says what the practice produces and how it is proven, not
+      only what it is called.
+    - >-
+      One idea per card. A back that needs two sentences to state is two cards.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides or the standard texts they cite, and says
+      where in `details.source`
+    front: the term as practitioners say it — "regretted attrition", "error budget", "showback vs chargeback"
+    back: one sentence, at most two; what it is for and when it is the wrong move
+    hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
+    group: the guide's section, so the deck reads in the order the guide teaches
+    analogy: the architecture or platform counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: violet
+  icon: briefcase
+  tagline: From designing the system to running the organisation.
+  surfaces: [drills:terms]
