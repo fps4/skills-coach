@@ -171,7 +171,7 @@ always safe.
 ## A skill that is only a deck, or only a reading list
 
 Not every skill is a course ([ADR-0022](../architecture/decisions/0022-a-skill-can-be-only-a-deck-or-a-library.md)).
-`packs/woordtrainer-nl` is only a word deck and `packs/lezen-nieuws-nl` only a reading library: no
+`packs/woordtrainer-nl` is only a word deck, and a skill can equally be only a reading library: no
 lessons, no error categories, and a `surfaces` list naming the one thing each does.
 
 - **A deck skill** keeps every learner's words in one block with no lessons — its deck block,
