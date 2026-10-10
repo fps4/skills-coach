@@ -20,7 +20,7 @@ const describeIfMongo = available ? describe : describe.skip;
 
 const WORDS = {
   packId: 'words-skill',
-  title: { en: 'Word trainer', nl: 'Woordtrainer' },
+  title: 'Word trainer',
   contentLanguage: 'nl',
   translationLanguage: 'en',
   skill: 'vocabulary',
@@ -30,7 +30,7 @@ const WORDS = {
 const READING = {
   ...WORDS,
   packId: 'reading-skill',
-  title: { en: 'Reading' },
+  title: 'Reading',
   presentation: { surfaces: ['reading'] },
 };
 

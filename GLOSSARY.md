@@ -20,7 +20,8 @@ the menu's shown skills ([ADR-0024](docs/architecture/decisions/0024-a-skill-is-
 
 **Pack** — a complete training program for one skill, e.g. Dutch conversation B1→B2. A pack declares
 its own **content language**, its competency **framework**, its **error categories** and its section
-map. Everything skill-specific enters the platform through a pack; nothing about a skill is hardcoded
+map. A skill is written in one language: every title, description and label it carries is one string,
+never one per language ([ADR-0026](docs/architecture/decisions/0026-a-skill-is-written-in-one-language.md)). Everything skill-specific enters the platform through a pack; nothing about a skill is hardcoded
 in the runtime.
 
 **Method** — a pack's declared teaching method: the lesson arc, its authoring rules, and its

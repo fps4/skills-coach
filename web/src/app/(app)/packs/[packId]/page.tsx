@@ -12,7 +12,6 @@ import { Meter, PageShell, Pill } from '@/components/atoms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { packLanding } from '@/lib/pack-scope';
-import { pickTitle } from '@/lib/text';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Block, PackProgress } from '@/lib/types';
 
@@ -34,7 +33,7 @@ export default async function PackPage({ params }: { params: Promise<{ packId: s
     <PageShell
       // The skill's name is in the header above (ADR-0021); this page is its lessons.
       title={dictionary.nav.lessons}
-      subtitle={progress.pack.description ? pickTitle(progress.pack.description) : undefined}
+      subtitle={progress.pack.description ? progress.pack.description : undefined}
     >
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{dictionary.pack.blocks}</p>
 
@@ -49,7 +48,7 @@ export default async function PackPage({ params }: { params: Promise<{ packId: s
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <CardTitle>
                     <Link href={`/blocks/${block.blockId}`} className="hover:text-primary">
-                      {dictionary.common.block} {block.order} · {pickTitle(block.title)}
+                      {dictionary.common.block} {block.order} · {block.title}
                     </Link>
                   </CardTitle>
                   <Pill tone={done ? 'success' : started ? 'primary' : 'muted'}>

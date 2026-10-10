@@ -16,7 +16,6 @@ import { usePathname, useSearchParams } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 import { activeTab, packIdFromUrl, skillTabs } from '@/lib/pack-scope';
-import { pickTitle } from '@/lib/text';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { LearnerMenu } from '@/lib/types';
 import { ReadyBadge, type RailPack } from './learner-rail';
@@ -45,7 +44,7 @@ export function SkillHeader({ dictionary, packs, menu }: Props) {
   return (
     <div className="mx-auto w-full max-w-3xl px-6 pt-6 md:px-8 md:pt-8">
       {folder ? <p className="text-xs text-muted-foreground">{folder.name} ›</p> : null}
-      <p className="text-2xl font-semibold tracking-tight">{pickTitle(skill.title)}</p>
+      <p className="text-2xl font-semibold tracking-tight">{skill.title}</p>
 
       {/* Only worth a row when there is more than the overview to switch to. */}
       {tabs.length > 1 ? (

@@ -373,6 +373,13 @@ The only way content and corrections enter the system
 | POST | `/submissions/:id/correction` | `correction:write` | Post a correction → `201` |
 | POST | `/blocks/:blockId/review` | `review:write` | Post a review; **closes the block** → `201` |
 | GET | `/blocks/:blockId/review` | `submission:read-all` | Read a review back |
+
+**Text is one string per field** ([ADR-0026](../architecture/decisions/0026-a-skill-is-written-in-one-language.md)).
+A pack's `title`, `description`, `goal`, `presentation.tagline` and each category's `label` and
+`group`, and a block's and lesson's `title`, are strings — in requests and in every response, here and
+under `/api/v1`. A `{ "nl": …, "en": … }` value is refused with a `400` naming the rule. Packs stored
+before that still hold the old shape and are served as one string: English if present, else the
+pack's `contentLanguage`, else the first value.
 | GET | `/blocks/:blockId/brief` | `submission:read-all` | The assembled brief for the next block |
 | GET | `/learners` | `submission:read-all` | Learner ids and display names. No email |
 | GET | `/term-requests` | `term:suggest` | Words waiting to be filled in, oldest first. `?status=requested\|suggested`, `?limit`. No learner |

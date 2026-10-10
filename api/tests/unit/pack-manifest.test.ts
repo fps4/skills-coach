@@ -14,7 +14,7 @@ import { packManifestSchema, publishBlockSchema } from '../../src/domain/schemas
 
 const base = {
   packId: 'test-pack',
-  title: { en: 'Test pack' },
+  title: 'Test pack',
   contentLanguage: 'nl',
   translationLanguage: 'en',
   skill: 'conversation',
@@ -34,7 +34,7 @@ describe('pack manifest', () => {
       presentation: {
         palette: 'blue',
         icon: 'message-circle',
-        tagline: { en: 'A tour' },
+        tagline: 'A tour',
         surfaces: ['lessons', 'drills:terms'],
       },
     });
@@ -42,7 +42,7 @@ describe('pack manifest', () => {
     expect(parsed.presentation).toEqual({
       palette: 'blue',
       icon: 'message-circle',
-      tagline: { en: 'A tour' },
+      tagline: 'A tour',
       surfaces: ['lessons', 'drills:terms'],
     });
   });
@@ -127,5 +127,43 @@ describe('publishing a block', () => {
     const parsed = publishBlockSchema.parse({ order: 1, slug: 'word-list', title: 'Word list' });
     expect(parsed.lessons).toEqual([]);
     expect(parsed.drillItems).toEqual([]);
+  });
+});
+
+/** A skill is written in one language (ADR-0026): its text fields are one string, never one per language. */
+describe('a skill in one language', () => {
+  it('takes its title, description, goal and labels as plain strings', () => {
+    const parsed = packManifestSchema.parse({
+      ...base,
+      description: 'Practise Dutch words.',
+      goal: 'A thousand words.',
+      errorCategories: [{ id: 'word-order', label: 'Word order', group: 'Grammar' }],
+    });
+    expect(parsed.title).toBe('Test pack');
+    expect(parsed.errorCategories[0]).toEqual({ id: 'word-order', label: 'Word order', group: 'Grammar' });
+  });
+
+  it.each([
+    ['title', { title: { nl: 'Testpakket', en: 'Test pack' } }],
+    ['description', { description: { en: 'Two languages' } }],
+    ['goal', { goal: { nl: 'Doel' } }],
+    ['a category label', { errorCategories: [{ id: 'x', label: { en: 'X' } }] }],
+    ['a tagline', { presentation: { tagline: { en: 'A tour' } } }],
+  ])('refuses %s given per language, and says why', (_field, change) => {
+    const result = packManifestSchema.safeParse({ ...base, ...change });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toMatch(/one language/);
+  });
+
+  it('refuses a block or lesson title given per language', () => {
+    expect(publishBlockSchema.safeParse({ order: 1, slug: 's', title: { en: 'Start' } }).success).toBe(false);
+    expect(
+      publishBlockSchema.safeParse({
+        order: 1,
+        slug: 's',
+        title: 'Start',
+        lessons: [{ order: 1, title: { nl: 'Les' }, sections: [{ id: 't', kind: 'text', body: 'x' }] }],
+      }).success,
+    ).toBe(false);
   });
 });

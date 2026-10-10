@@ -8,7 +8,6 @@ import { ArrowLeft } from 'lucide-react';
 import { PageShell } from '@/components/atoms';
 import { LessonForm } from '@/components/lesson-form';
 import { api } from '@/lib/api';
-import { pickTitle } from '@/lib/text';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Lesson, Pack, Submission } from '@/lib/types';
 
@@ -23,7 +22,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
 
   return (
     <PageShell
-      title={<span lang={pack.contentLanguage}>{pickTitle(lesson.title)}</span>}
+      title={<span lang={pack.contentLanguage}>{lesson.title}</span>}
       subtitle={
         <>
           {dictionary.common.lesson} {lesson.order}

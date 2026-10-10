@@ -53,5 +53,5 @@ chrome control changes material.
 
 **Costs.** A learner who preferred Dutch chrome loses it. Adding an interface language later means
 reintroducing the machinery this removes; that is deliberate — it should come back only with a
-reason, not by default. Pack-authored metadata that is still localized (`{nl, en}`) is resolved to
-English by the viewer until packs carry it as a single string in their own language.
+reason, not by default. Pack-authored metadata that was still localized (`{nl, en}`) became a single
+string in [ADR-0026](0026-a-skill-is-written-in-one-language.md).

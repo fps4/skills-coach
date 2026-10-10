@@ -58,7 +58,7 @@ describeIfMongo('blocks written for one learner', () => {
   const blockFor = (learnerId: string, slug: string, overrides: Record<string, unknown> = {}) => ({
     ...TEST_BLOCK,
     slug,
-    title: { en: `Block for ${slug}` },
+    title: `Block for ${slug}`,
     learnerId,
     ...overrides,
   });

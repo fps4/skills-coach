@@ -14,11 +14,17 @@ import { ARCHIVE_KIND } from './portable.js';
 
 const nonEmpty = z.string().trim().min(1);
 
-export const localizedTextSchema = z
-  .object({ nl: z.string().optional(), en: z.string().optional() })
-  .refine((value) => Boolean(value.nl || value.en), { message: 'at least one locale must be present' });
-/** Pack titles may be a plain string when the pack does not care to localize chrome metadata. */
-export const textOrLocalizedSchema = z.union([nonEmpty, localizedTextSchema]);
+/**
+ * A skill is written in one language (ADR-0026): its titles, descriptions and labels are one string,
+ * not one per language. The message names the rule, because the old `{ nl, en }` shape is exactly
+ * what an author who has published here before will reach for.
+ */
+export const oneLanguageTextSchema = z
+  .string({
+    invalid_type_error: 'a skill is written in one language — give this as one string, not one per language',
+  })
+  .trim()
+  .min(1);
 
 // ---------------------------------------------------------------------------
 // Sections
@@ -81,7 +87,7 @@ export const sectionSchema = z.discriminatedUnion('kind', [
 
 export const lessonSchema = z.object({
   order: z.number().int().positive(),
-  title: textOrLocalizedSchema,
+  title: oneLanguageTextSchema,
   level: z.string().optional(),
   estimatedMinutes: z.number().int().positive().optional(),
   focus: z.string().optional(),
@@ -323,7 +329,7 @@ export const packSurfaceSchema = z.enum([
 export const packPresentationSchema = z.object({
   palette: nonEmpty.optional(),
   icon: nonEmpty.optional(),
-  tagline: localizedTextSchema.optional(),
+  tagline: oneLanguageTextSchema.optional(),
   surfaces: z.array(packSurfaceSchema).min(1).optional(),
 });
 
@@ -347,12 +353,12 @@ export const packMethodSchema = z.object({
 
 export const packManifestSchema = z.object({
   packId: nonEmpty.regex(/^[a-z0-9][a-z0-9-]*$/, 'packId must be lower-case slug-like'),
-  title: localizedTextSchema,
-  description: localizedTextSchema.optional(),
+  title: oneLanguageTextSchema,
+  description: oneLanguageTextSchema.optional(),
   contentLanguage: nonEmpty,
   translationLanguage: nonEmpty,
   skill: nonEmpty,
-  goal: localizedTextSchema.optional(),
+  goal: oneLanguageTextSchema.optional(),
   framework: z.object({
     id: nonEmpty,
     levels: z.array(nonEmpty).min(1),
@@ -376,9 +382,9 @@ export const packManifestSchema = z.object({
     .array(
       z.object({
         id: nonEmpty,
-        label: localizedTextSchema.optional(),
+        label: oneLanguageTextSchema.optional(),
         // A free grouping label, e.g. an exam domain. Carried, never interpreted.
-        group: localizedTextSchema.optional(),
+        group: oneLanguageTextSchema.optional(),
       }),
     )
     .default([]),
@@ -394,7 +400,7 @@ export const packManifestSchema = z.object({
 export const publishBlockSchema = z.object({
   order: z.number().int().positive(),
   slug: nonEmpty.regex(/^[a-z0-9][a-z0-9-]*$/, 'slug must be lower-case slug-like'),
-  title: textOrLocalizedSchema,
+  title: oneLanguageTextSchema,
   level: z.string().optional(),
   theme: z.string().optional(),
   focus: z.array(z.string()).optional(),

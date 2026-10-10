@@ -17,7 +17,7 @@ const describeIfMongo = available ? describe : describe.skip;
 
 const WORDS = {
   packId: 'words-skill',
-  title: { en: 'Word trainer' },
+  title: 'Word trainer',
   contentLanguage: 'nl',
   translationLanguage: 'en',
   skill: 'vocabulary',

@@ -25,7 +25,7 @@
 import { mergeProgress } from '../domain/portable.js';
 import { normalizeMenu } from '../domain/menu.js';
 import type { DrillProgress } from '../domain/drill-progress.js';
-import type { LocalizedText, TermPayload } from '../domain/types.js';
+import type { TermPayload } from '../domain/types.js';
 import { conflict } from '../http/errors.js';
 import { getPack, listBlocks, publishBlock } from './content.js';
 import { articleIdFor, drillIdFor, drillStateIdFor, readingStateIdFor, type ServiceContext } from './context.js';
@@ -35,7 +35,7 @@ import { enroll } from './learners.js';
 export const DECK_BLOCK = {
   order: 1,
   slug: 'woordenlijst',
-  title: { nl: 'Woordenlijst', en: 'Word list' } satisfies LocalizedText,
+  title: 'Word list',
 };
 
 export interface MigrationOptions {

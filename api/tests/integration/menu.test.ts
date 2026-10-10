@@ -15,7 +15,7 @@ import { auth, createHarness, mongoAvailable, TEST_PACK, type Harness } from './
 const available = await mongoAvailable();
 const describeIfMongo = available ? describe : describe.skip;
 
-const SECOND_PACK = { ...TEST_PACK, packId: 'second-pack', title: { en: 'Second pack' } };
+const SECOND_PACK = { ...TEST_PACK, packId: 'second-pack', title: 'Second pack' };
 
 describeIfMongo('the learner menu', () => {
   let harness: Harness;

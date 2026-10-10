@@ -6,9 +6,6 @@
  * how they actually relate. `docs/api/endpoints.md` is the contract these follow.
  */
 
-export type LocalizedText = { nl?: string; en?: string };
-export type TitleText = string | LocalizedText;
-
 export interface Learner {
   learnerId: string;
   subject: string;
@@ -57,19 +54,23 @@ export type PackSurface = 'lessons' | 'reading' | 'drills:terms' | 'drills:word-
 export interface PackPresentation {
   palette?: string;
   icon?: string;
-  tagline?: LocalizedText;
+  tagline?: string;
   surfaces?: PackSurface[];
 }
 
+/**
+ * A skill is written in one language (ADR-0026): every text field here is one string. The api reads
+ * packs stored in the older per-language shape into this one, so the viewer never sees it.
+ */
 export interface Pack {
   packId: string;
-  title: LocalizedText;
-  description?: LocalizedText;
+  title: string;
+  description?: string;
   contentLanguage: string;
   translationLanguage: string;
-  goal?: LocalizedText;
+  goal?: string;
   framework: Framework;
-  errorCategories: { id: string; label?: LocalizedText; group?: LocalizedText }[];
+  errorCategories: { id: string; label?: string; group?: string }[];
   presentation?: PackPresentation;
 }
 
@@ -78,7 +79,7 @@ export interface Block {
   packId: string;
   order: number;
   slug: string;
-  title: TitleText;
+  title: string;
   level?: string;
   theme?: string;
   focus?: string[];
@@ -131,7 +132,7 @@ export interface LessonSummary {
   blockId: string;
   packId: string;
   order: number;
-  title: TitleText;
+  title: string;
   level?: string;
   estimatedMinutes?: number;
   focus?: string;

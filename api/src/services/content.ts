@@ -17,23 +17,27 @@ import type { PackManifestInput, PublishBlockInput } from '../domain/schemas.js'
 import type { Block, DrillItem, DrillKind, Lesson, PackManifest } from '../domain/types.js';
 import { withoutId, type BlockDoc, type DrillItemDoc, type LessonDoc, type PackDoc } from '../db/collections.js';
 import { usableAlternative } from '../domain/word-order.js';
+import { normalizeBlockText, normalizeLessonText, normalizePackText } from '../domain/pack-text.js';
 import { blockIdFor, drillIdFor, lessonIdFor, type ServiceContext } from './context.js';
 
 // ---------------------------------------------------------------------------
 // Reading
 // ---------------------------------------------------------------------------
 
+// The read boundary for pack text (ADR-0026). A pack, block or lesson stored before a skill was
+// written in one language still holds `{ nl, en }` where a string now goes; it is read as one string
+// here, so nothing past this point ever sees the old shape. A republish writes the new one.
 const toPack = (doc: PackDoc): PackManifest => {
   const { _id, createdAt: _c, updatedAt: _u, ...rest } = doc;
-  return { ...rest, packId: _id };
+  return normalizePackText({ ...rest, packId: _id });
 };
 const toBlock = (doc: BlockDoc): Block => {
   const { _id, ...rest } = doc;
-  return { ...rest, blockId: _id };
+  return normalizeBlockText({ ...rest, blockId: _id });
 };
 const toLesson = (doc: LessonDoc): Lesson => {
   const { _id, ...rest } = doc;
-  return { ...rest, lessonId: _id };
+  return normalizeLessonText({ ...rest, lessonId: _id });
 };
 const toDrillItem = (doc: DrillItemDoc): DrillItem => {
   const { _id, ...rest } = doc;

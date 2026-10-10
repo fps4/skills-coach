@@ -25,15 +25,7 @@ import { closeBlock, redrillCategories, retireCategories, topRecurring } from '.
 import { blockProgress, type BlockProgress } from '../domain/progression.js';
 import { rampPosition, type RampPosition } from '../domain/ramp.js';
 import { postBlockReviewSchema, type PostBlockReviewInput } from '../domain/schemas.js';
-import type {
-  Block,
-  BlockReview,
-  ErrorLogEntry,
-  LearnerProfile,
-  LocalizedText,
-  PackManifest,
-  Ratings,
-} from '../domain/types.js';
+import type { Block, BlockReview, ErrorLogEntry, LearnerProfile, PackManifest, Ratings } from '../domain/types.js';
 import type { CategoryBreakdown, QuizScore } from '../domain/quiz.js';
 import { getBlock, getPack } from './content.js';
 import { listErrorLog } from './corrections.js';
@@ -145,7 +137,7 @@ export interface LessonEvidence {
 }
 
 export interface NextBlockBriefPayload {
-  goal?: LocalizedText;
+  goal?: string;
   /**
    * (0) Who the block is for, and what their working world is.
    *

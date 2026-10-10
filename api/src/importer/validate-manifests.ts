@@ -92,9 +92,9 @@ function lint(manifest: PackManifestInput): string[] {
 /**
  * Keys with no value in the raw YAML.
  *
- * The usual cause is a comma inside an unquoted flow mapping: `{ en: who decides, owns it }` parses
- * as `{ en: "who decides", "owns it": null }`. The schema then strips the unknown key, so the label
- * publishes cut short and nothing complains. Checked on the raw document because by the time the
+ * The usual cause is a comma inside an unquoted flow mapping: `{ id: x, label: who decides, owns it }`
+ * parses as `{ id: "x", label: "who decides", "owns it": null }`. The schema then strips the unknown
+ * key, so the label publishes cut short and nothing complains. Checked on the raw document because by the time the
  * schema has parsed it, the evidence is gone.
  */
 function emptyKeys(value: unknown, path = ''): string[] {

@@ -17,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { arrangeRail } from '@/lib/menu';
 import { packIcon } from '@/lib/pack-scope';
-import { pickTitle } from '@/lib/text';
 import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
 import type { Enrollment, Learner, LearnerMenu, PackProgress } from '@/lib/types';
 
@@ -51,11 +50,11 @@ export default async function HomePage() {
         key={entry.pack.packId}
         href={packHref}
         icon={entry.pack.presentation?.icon}
-        title={pickTitle(entry.pack.title)}
+        title={entry.pack.title}
         pill={block?.level ? <Pill className="shrink-0 whitespace-nowrap">{block.level}</Pill> : null}
         // The block's own title, unprefixed: pack authors habitually name it "Blok 01 — …"
         // already, and a runtime prefix would say it twice.
-        caption={block ? pickTitle(block.title) : undefined}
+        caption={block ? block.title : undefined}
       >
         {progress && progress.lessonCount > 0 ? (
           <div>

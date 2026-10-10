@@ -19,9 +19,9 @@ const when = available ? describe : describe.skip;
 const QUIZ_BLOCK = {
   order: 1,
   slug: 'questions',
-  title: { en: 'Question block' },
+  title: 'Question block',
   status: 'published' as const,
-  lessons: [{ order: 1, title: { en: 'Only lesson' }, sections: [{ id: 't', kind: 'text' as const, body: 'Intro.' }] }],
+  lessons: [{ order: 1, title: 'Only lesson', sections: [{ id: 't', kind: 'text' as const, body: 'Intro.' }] }],
   drillItems: [1, 2, 3, 4, 5].map((n) => ({
     payload: {
       kind: 'mcq' as const,
