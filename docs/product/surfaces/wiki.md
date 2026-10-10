@@ -14,8 +14,12 @@ status: built
 | **Appears when** | always |
 | **Decides** | nothing. It writes no state of any kind |
 
-28 impersonal upskilling guides, committed to the repository and rendered in-app
+Impersonal upskilling guides, committed to the repository and rendered in-app
 ([ADR-0016](../../architecture/decisions/0016-the-reference-library-ships-with-the-code.md)).
+
+> **Empty since 2026-10-10.** The guides were removed while the library is reworked into flashcard
+> material; the folder, the routes, the filters and the guard test were kept for reuse. The index
+> renders its "no results" state until guides come back.
 
 ## Why it is in the repo at all
 
@@ -26,8 +30,9 @@ confidential), and **revised on the same clock as the code**. None of those is t
 
 The corpus lives at `web/content/wiki/`, one markdown file per guide, and is *in* the tree only
 because `.gitignore` un-ignores it explicitly — ADR-0006's `content/` rule matches at any depth and
-would otherwise drop every guide silently. `wiki.test.ts` asserts the corpus is non-empty, so that
-failure is a red build rather than an empty library in production.
+would otherwise drop every guide silently. `wiki.test.ts` asserts the directory arrives (its
+`.gitkeep`, while the corpus is empty), so that failure is a red build rather than a missing library
+in production.
 
 ## Data it needs
 
