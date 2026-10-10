@@ -36,6 +36,7 @@ import {
 import { archiveSchema, type Archive } from '../domain/schemas.js';
 import { initialProgress, type DrillProgress } from '../domain/drill-progress.js';
 import { drillOrigin } from '../domain/types.js';
+import { termFields, termPayload } from '../domain/flashcards.js';
 import type { DrillItemDoc } from '../db/collections.js';
 import { FROM_LEARNER } from './content.js';
 import {
@@ -220,10 +221,7 @@ export async function exportArchive(ctx: ServiceContext, learnerId: string, gene
       return [
         {
           ...block,
-          term: item.payload.term,
-          translation: item.payload.translation,
-          ...(item.payload.example ? { example: item.payload.example } : {}),
-          ...(item.payload.details ? { details: item.payload.details } : {}),
+          ...termFields(item.payload),
         },
       ];
     }),
@@ -237,6 +235,7 @@ export async function exportArchive(ctx: ServiceContext, learnerId: string, gene
           given: doc.given,
           correct: doc.correct,
           acceptedOverride: doc.acceptedOverride,
+          selfGraded: doc.selfGraded ?? false,
           at: doc.at,
         },
       ];
@@ -412,13 +411,7 @@ export async function importArchive(
       miss('ownTerms', `${entry.pack}/b${entry.block}`, 'no such block on this system');
       continue;
     }
-    const payload = {
-      kind: 'term' as const,
-      term: entry.term,
-      translation: entry.translation,
-      ...(entry.example ? { example: entry.example } : {}),
-      ...(entry.details ? { details: entry.details } : {}),
-    };
+    const payload = termPayload(entry);
     const _id = drillIdWithDigest(blockId, contentDigest(payload), learnerId);
     ownTermIds.set(itemRefKey({ ...entry, kind: 'term', digest: contentDigest(payload), own: true }), _id);
 
@@ -601,6 +594,7 @@ export async function importArchive(
       given: entry.given,
       correct: entry.correct,
       acceptedOverride: entry.acceptedOverride,
+      ...(entry.selfGraded ? { selfGraded: true } : {}),
       at: entry.at,
     });
   }

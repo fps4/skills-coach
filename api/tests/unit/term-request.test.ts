@@ -126,3 +126,36 @@ describe('acceptedTerm', () => {
     expect(() => acceptedTerm('ondanks', SUGGESTION, { translation: '   ' })).toThrow();
   });
 });
+
+describe('acceptedTerm with a concept card’s fields (ADR-0027)', () => {
+  const CONCEPT: TermSuggestion = {
+    translation: 'Matching two widget lists on a shared key.',
+    hint: 'A zipper.',
+    details: {
+      analogy: 'Like a SQL inner join.',
+      code: '\n  left JOIN right\n    USING (key)\n',
+      source: 'Widgets guide · Joining',
+    },
+  };
+
+  it('carries the cue, the analogy, the code and the source through', () => {
+    expect(acceptedTerm('widget join', CONCEPT)).toEqual({
+      term: 'widget join',
+      translation: 'Matching two widget lists on a shared key.',
+      hint: 'A zipper.',
+      details: {
+        analogy: 'Like a SQL inner join.',
+        // Indentation is part of a snippet; only the blank lines around it go.
+        code: '  left JOIN right\n    USING (key)',
+        source: 'Widgets guide · Joining',
+      },
+    });
+  });
+
+  it('lets the learner leave the cue and the code off', () => {
+    const accepted = acceptedTerm('widget join', CONCEPT, {}, ['hint', 'code']);
+    expect(accepted.hint).toBeUndefined();
+    expect(accepted.details?.code).toBeUndefined();
+    expect(accepted.details?.analogy).toBe('Like a SQL inner join.');
+  });
+});

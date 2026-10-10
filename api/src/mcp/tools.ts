@@ -236,7 +236,12 @@ export const TOOLS: ToolDef[] = [
       'Publish a block with its lessons and drill deck. Idempotent: republishing updates in place, and a drill ' +
       'item whose text is unchanged keeps the learner progress attached to it. Name a `learnerId` on the block ' +
       'and only that learner sees it — which is how one pack serves several people, each with lessons written ' +
-      'around their own work. Block and lesson titles are one string each, in the skill’s language.',
+      'around their own work. Block and lesson titles are one string each, in the skill’s language. A `term` drill ' +
+      'item is a flashcard: `term` (front) and `translation` (back — for a concept, its meaning in one sentence) are ' +
+      'what gets practised; `hint` (a cue that does not give the answer away), `group` (the source’s section), ' +
+      '`example`, and `details.analogy` (the idea in terms the learner already knows), `details.code` (a short ' +
+      'snippet) and `details.source` (where in the source it came from) are shown. A flashcards-only skill gets one ' +
+      'block with `lessons: []` and its cards in `drillItems`.',
     capability: 'pack:publish',
     input: z.object({ packId: z.string().min(1), block: publishBlockSchema }),
     readOnly: false,

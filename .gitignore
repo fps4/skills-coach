@@ -35,6 +35,10 @@ web/content/*
 packs/woordtrainer-nl/*
 !packs/woordtrainer-nl/pack.yaml
 
+!packs/knowledge-graphs/
+packs/knowledge-graphs/*
+!packs/knowledge-graphs/pack.yaml
+
 # A reading library is content twice over (ADR-0017): somebody else's articles, kept for one
 # learner. The per-pack stanzas above already exclude it — but only while their three lines stay in
 # that order, which the comment above warns about. This does not depend on that ordering, and it

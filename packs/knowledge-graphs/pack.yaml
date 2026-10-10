@@ -1,0 +1,75 @@
+# Knowledge graphs for data architects — a skill that is only a deck of flashcards (ADR-0022,
+# ADR-0027).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill — how its cards are
+# answered, what they are for, how a coach writes them — and it names no person, employer or client.
+# The cards themselves are content: a coach writes them from the reference guides and publishes them
+# into a deck block through `/coach/v1` or the MCP `publish_block` tool. None of them is committed
+# (ADR-0006). `.gitignore` un-ignores this one file.
+#
+# Unlike the Woordtrainer, the cards are concepts, not words: the front is a term, the back is what it
+# means in a sentence nobody would reproduce verbatim. So the learner turns the card over and says
+# whether they had it (`flashcards.grading: self`) rather than typing an answer the server would match.
+
+packId: knowledge-graphs
+
+# One string each, in the skill's one language (ADR-0026).
+title: Knowledge graphs for data architects
+
+description: >-
+  The graph and ontology layer — RDF, OWL, SKOS, SHACL, SPARQL — as flashcards, each one mapped onto
+  the relational and dimensional modelling you already know.
+
+# The standards are specified and discussed in English; a card's "translation" is its meaning.
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each standard is for, what it costs and when it is the wrong choice, without notes, in
+  both directions — from the term to the idea and from the idea to the term.
+
+# Required by the contract and read by no ramp here: a deck has no lessons, so nothing is authored
+# block by block. Kept as the ladder a coach writes cards against.
+framework:
+  id: kg-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Every card that can carries an analogy that maps the
+      idea onto its relational or dimensional counterpart — a triple against a row, SHACL against a
+      constraint, SPARQL against SQL — and says where the analogy breaks.
+    - >-
+      Name the confusion, then separate it. RDF and property graphs, OWL and SKOS, OWL's open world
+      and SHACL's closed one, `owl:sameAs` and a merge: a pair that gets confused becomes two cards,
+      each one's back saying how it differs from the other.
+    - >-
+      Mechanism before vocabulary. The back of a card says what the thing does, not only what it is
+      called — a learner who can only recite a definition has not got it.
+    - >-
+      One idea per card. A back that needs two sentences to state is two cards.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides or the W3C specifications (RDF 1.1, OWL 2, SKOS,
+      SHACL, SPARQL 1.1, PROV-O, R2RML), and says where in `details.source`
+    front: the term as practitioners write it — `owl:sameAs`, "named graph", "property path"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short Turtle, SPARQL or SHACL snippet where seeing it is faster than reading about it
+    analogy: the relational or dimensional counterpart, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: emerald
+  icon: sparkles
+  tagline: The layer between the data and the AI.
+  surfaces: [drills:terms]

@@ -72,6 +72,8 @@ export interface Pack {
   framework: Framework;
   errorCategories: { id: string; label?: string; group?: string }[];
   presentation?: PackPresentation;
+  /** How the skill's cards are answered (ADR-0027). Absent means typed. */
+  flashcards?: { grading?: CardGrading };
 }
 
 export interface Block {
@@ -256,7 +258,8 @@ export interface McqOption {
 }
 
 export type DrillPrompt =
-  | { kind: 'term'; stage: Stage; prompt: string; hint?: string }
+  // `hint` is the card's cue, masked wherever it would give the answer away; `group` its section.
+  | { kind: 'term'; stage: Stage; prompt: string; hint?: string; group?: string }
   | { kind: 'word-order'; stage: Stage; prompt: string; bank: string[]; leadCue?: string; tip?: string }
   // No answer key here on purpose: the browser learns which option is right only after the learner
   // has committed to one. See ADR-0014.
@@ -267,6 +270,30 @@ export interface DueItem {
   stage: Stage;
   prompt: DrillPrompt;
   progress: DrillProgress;
+  /** The back of the card — only in learn mode, which the learner asked for (ADR-0027). */
+  card?: CardFace;
+}
+
+/** How a skill's cards are answered (ADR-0027). Absent on the manifest means typed. */
+export type CardGrading = 'typed' | 'self';
+
+/** Practise asks; learn shows. Learn records nothing (ADR-0027). */
+export type DeckMode = 'practice' | 'learn';
+
+/** The back of a card: a reveal's answer, or learn mode's. */
+export interface CardFace {
+  /** The answer for the stage asked — the meaning in direction 1, the term in direction 2. */
+  expected: string;
+  hint?: string;
+  group?: string;
+  example?: string;
+  details?: TermDetails;
+}
+
+/** `POST /drills/:id/reveal` — the back of a card on a self-graded skill. Records nothing. */
+export interface RevealResult extends CardFace {
+  drillItemId: string;
+  stage: Stage;
 }
 
 /** A word the learner added themselves — a `term` item they own (ADR-0012). */
@@ -278,19 +305,34 @@ export interface TermDetails {
   synonyms?: string[];
   antonyms?: string[];
   note?: string;
+  /** "Map onto what you know" (ADR-0027). */
+  analogy?: string;
+  /** A snippet, rendered monospace. */
+  code?: string;
+  /** Where in the guide the card came from. */
+  source?: string;
 }
 
 export interface LearnerTerm {
   drillItemId: string;
   blockId: string;
   packId: string;
-  payload: { kind: 'term'; term: string; translation: string; example?: string; details?: TermDetails };
+  payload: {
+    kind: 'term';
+    term: string;
+    translation: string;
+    example?: string;
+    hint?: string;
+    group?: string;
+    details?: TermDetails;
+  };
 }
 
 /** What a coach proposed for a word the learner asked to have filled in. */
 export interface TermSuggestion {
   translation: string;
   example?: string;
+  hint?: string;
   details?: TermDetails;
 }
 
@@ -311,7 +353,7 @@ export interface TermRequest {
 }
 
 /** A field the learner can leave off the card; the translation is not one. */
-export type OptionalTermField = 'example' | keyof TermDetails;
+export type OptionalTermField = 'example' | 'hint' | keyof TermDetails;
 
 export interface DeckPage {
   items: DueItem[];
@@ -322,6 +364,8 @@ export interface AttemptResult {
   drillItemId: string;
   correct: boolean;
   overridden: boolean;
+  /** The verdict is the learner's own, given after turning the card over (ADR-0027). */
+  selfGraded?: boolean;
   expected: string;
   acceptedAlso?: string[];
   /** The whole card, once answered — a `term` item only (ADR-0023). */

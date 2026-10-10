@@ -19,7 +19,7 @@ them into order. Two right in a row solves an order. Where a sentence has a seco
 second order is a second stage, gated behind the first.
 
 It shares the whole progression machine, the deck meters, the feedback panel and the override with
-the [Woordtrainer](word-trainer.md) — one implementation, so the two surfaces cannot drift apart.
+the [flashcards](flashcards.md) — one implementation, so the two surfaces cannot drift apart.
 This file describes only what is different.
 
 ## Data it needs
@@ -153,7 +153,7 @@ Behaviour the rebuild must keep:
   per-chunk marks.
 - **Check is disabled on an empty sentence**; the override is not.
 - **Position in the round is shown above the prompt** — *"Zin 3 van 18"*, out of what is still to
-  master. The same line the [word trainer](word-trainer.md) carries, and for the same reason:
+  master. The same line the [flashcards](flashcards.md) carries, and for the same reason:
   mastering a sentence takes four correct answers across two orders, so the `beheerst` meter sits at
   `0/n` for a whole first pass and reads as if nothing is being counted. The surface asks for the
   API maximum so the round is the whole rotation, and **round + mastered = total** holds on screen.

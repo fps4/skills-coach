@@ -52,6 +52,7 @@ describe('packIdFromUrl', () => {
 
   it('takes it from the drill query, which is where a drill carries its block', () => {
     expect(packIdFromUrl('/drills/words', search('blockId=demo-conversation-nl.b1'))).toBe('demo-conversation-nl');
+    expect(packIdFromUrl('/flashcards', search('blockId=knowledge-graphs.b1'))).toBe('knowledge-graphs');
     expect(packIdFromUrl('/drills/sentences', search(''))).toBeNull();
   });
 
@@ -218,6 +219,7 @@ describe('activeTab', () => {
     expect(activeTab('/lessons/demo.b1.l2')).toBe('lessons');
     expect(activeTab('/reading/demo.rab12cd34.x')).toBe('reading');
     expect(activeTab('/drills/words')).toBe('drills:terms');
+    expect(activeTab('/flashcards')).toBe('drills:terms');
     expect(activeTab('/drills/sentences')).toBe('drills:word-order');
     expect(activeTab('/quiz')).toBe('quiz');
   });

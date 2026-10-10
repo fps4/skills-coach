@@ -38,13 +38,49 @@ const sectionCommon = {
 
 const promptItemSchema = z.object({ ref: nonEmpty, prompt: nonEmpty });
 
+/**
+ * What a card can carry beyond the pair that is practised (ADR-0023, ADR-0027). Shown, never graded.
+ * Language-neutral: a past tense and a plural are both just labelled forms, and a concept's analogy
+ * and code are just more lines on the back of the card.
+ */
+export const termDetailsSchema = z.object({
+  partOfSpeech: z.string().trim().max(120).optional(),
+  forms: z
+    .array(z.object({ label: z.string().trim().max(60), value: z.string().trim().min(1).max(200) }))
+    .max(12)
+    .optional(),
+  exampleTranslation: z.string().trim().max(500).optional(),
+  synonyms: z.array(z.string().trim().min(1).max(120)).max(12).optional(),
+  antonyms: z.array(z.string().trim().min(1).max(120)).max(12).optional(),
+  note: z.string().trim().max(500).optional(),
+  analogy: z.string().trim().max(1_000).optional(),
+  // Not trimmed: leading indentation is part of a snippet.
+  code: z
+    .string()
+    .max(4_000)
+    .refine((value) => value.trim().length > 0, 'code cannot be blank')
+    .optional(),
+  source: z.string().trim().max(300).optional(),
+});
+
+/**
+ * The optional fields of a card, one shape wherever a card is written — a vocabulary row, a drill
+ * item, a learner's own word — so a field added here reaches all three (ADR-0027).
+ */
+const termCardFields = {
+  example: z.string().optional(),
+  hint: z.string().trim().max(300).optional(),
+  group: z.string().trim().max(120).optional(),
+  details: termDetailsSchema.optional(),
+};
+
 export const sectionSchema = z.discriminatedUnion('kind', [
   z.object({ ...sectionCommon, kind: z.literal('text'), body: nonEmpty }),
   z.object({ ...sectionCommon, kind: z.literal('rules'), body: nonEmpty }),
   z.object({
     ...sectionCommon,
     kind: z.literal('vocabulary'),
-    items: z.array(z.object({ term: nonEmpty, translation: nonEmpty, example: z.string().optional() })).min(1),
+    items: z.array(z.object({ term: nonEmpty, translation: nonEmpty, ...termCardFields })).min(1),
   }),
   z.object({ ...sectionCommon, kind: z.literal('questions'), items: z.array(promptItemSchema).min(1) }),
   z.object({
@@ -98,29 +134,12 @@ export const lessonSchema = z.object({
 // Drill deck
 // ---------------------------------------------------------------------------
 
-/**
- * What a word's card can carry beyond the pair that is practised (ADR-0023). Shown, never graded.
- * Language-neutral: a past tense and a plural are both just labelled forms.
- */
-export const termDetailsSchema = z.object({
-  partOfSpeech: z.string().trim().max(120).optional(),
-  forms: z
-    .array(z.object({ label: z.string().trim().max(60), value: z.string().trim().min(1).max(200) }))
-    .max(12)
-    .optional(),
-  exampleTranslation: z.string().trim().max(500).optional(),
-  synonyms: z.array(z.string().trim().min(1).max(120)).max(12).optional(),
-  antonyms: z.array(z.string().trim().min(1).max(120)).max(12).optional(),
-  note: z.string().trim().max(500).optional(),
-});
-
 export const drillPayloadSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('term'),
     term: nonEmpty,
     translation: nonEmpty,
-    example: z.string().optional(),
-    details: termDetailsSchema.optional(),
+    ...termCardFields,
   }),
   z.object({
     kind: z.literal('word-order'),
@@ -391,6 +410,12 @@ export const packManifestSchema = z.object({
   sectionMap: z.array(z.object({ match: nonEmpty, kind: sectionKindSchema })).optional(),
   matchArticles: z.record(z.array(z.string())).optional(),
   presentation: packPresentationSchema.optional(),
+  /**
+   * How the pack's cards are answered (ADR-0027). `typed` — matched on the server, with "accept
+   * anyway" — is the default and what a word deck wants; `self` turns the card over and lets the
+   * learner say whether they had it, which is what a concept whose back is a sentence wants.
+   */
+  flashcards: z.object({ grading: z.enum(['typed', 'self']).default('typed') }).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -460,9 +485,19 @@ export const createSubmissionSchema = z.object({
 
 export const postAttemptSchema = z.object({
   stage: z.union([z.literal(1), z.literal(2)]),
-  /** Free text for a term item; the built chunk order for a word-order item. */
-  given: z.union([z.string(), z.array(z.string())]),
+  /** Free text for a term item; the built chunk order for a word-order item. Empty for a self grade. */
+  given: z.union([z.string(), z.array(z.string())]).default(''),
   override: z.boolean().default(false),
+  /**
+   * The learner's own verdict on a card they turned over (ADR-0027). Accepted only on a pack whose
+   * cards are self-graded — checked in the service, where the manifest is in hand.
+   */
+  self: z.enum(['got', 'missed']).optional(),
+});
+
+/** Asking for the back of a card on a self-graded pack. Records nothing (ADR-0027). */
+export const revealCardSchema = z.object({
+  stage: z.union([z.literal(1), z.literal(2)]),
 });
 
 /**
@@ -475,8 +510,8 @@ export const postAttemptSchema = z.object({
 export const createLearnerTermSchema = z.object({
   term: nonEmpty.max(200),
   translation: nonEmpty.max(200),
+  ...termCardFields,
   example: z.string().trim().max(500).optional(),
-  details: termDetailsSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -492,6 +527,7 @@ export const requestTermsSchema = z.object({
 export const termSuggestionSchema = z.object({
   translation: nonEmpty.max(200),
   example: z.string().trim().max(500).optional(),
+  hint: termCardFields.hint,
   details: termDetailsSchema.optional(),
 });
 
@@ -499,9 +535,24 @@ export const termSuggestionSchema = z.object({
 export const acceptTermRequestSchema = z.object({
   translation: z.string().trim().max(200).optional(),
   example: z.string().trim().max(500).optional(),
+  hint: termCardFields.hint,
   details: termDetailsSchema.optional(),
   omit: z
-    .array(z.enum(['example', 'exampleTranslation', 'partOfSpeech', 'forms', 'synonyms', 'antonyms', 'note']))
+    .array(
+      z.enum([
+        'example',
+        'hint',
+        'exampleTranslation',
+        'partOfSpeech',
+        'forms',
+        'synonyms',
+        'antonyms',
+        'note',
+        'analogy',
+        'code',
+        'source',
+      ]),
+    )
     .default([]),
 });
 
@@ -685,6 +736,7 @@ export const archiveSchema = z.object({
         given: z.string(),
         correct: z.boolean(),
         acceptedOverride: z.boolean().default(false),
+        selfGraded: z.boolean().default(false),
         at: z.coerce.date(),
       }),
     )

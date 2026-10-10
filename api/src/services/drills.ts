@@ -16,6 +16,14 @@ import {
   type DeckSummary,
 } from '../domain/drill-progress.js';
 import { optionsText } from '../domain/mcq.js';
+import {
+  AnswerModeError,
+  cardGrading,
+  checkAnswerMode,
+  learnCard,
+  revealCard,
+  type CardFace,
+} from '../domain/flashcards.js';
 import type { PostAttemptInput } from '../domain/schemas.js';
 import type { DrillItem, DrillKind, McqPayload, PackManifest, Stage } from '../domain/types.js';
 import type { DrillStateDoc } from '../db/collections.js';
@@ -50,7 +58,18 @@ export interface DueItem {
   stage: Stage;
   prompt: DrillPrompt;
   progress: DrillProgress;
+  /**
+   * The back of the card — present only in learn mode, which the learner asked for (ADR-0027).
+   * Practice never carries it: there the answer arrives after an attempt or an explicit reveal.
+   */
+  card?: CardFace;
 }
+
+/**
+ * `practice` serves prompts and nothing else. `learn` serves each card front and back together, and
+ * is read-only by construction: it is served from here and nothing in this module writes for it.
+ */
+export type DeckMode = 'practice' | 'learn';
 
 export interface DeckPage {
   items: DueItem[];
@@ -66,6 +85,8 @@ export interface NextItemsQuery {
   /** Which direction to practise. Items not sitting at this stage are skipped. */
   stage?: Stage;
   limit?: number;
+  /** Learn mode serves the back of each card too. Only for cards; it records nothing (ADR-0027). */
+  mode?: DeckMode;
 }
 
 /**
@@ -99,6 +120,14 @@ export async function nextItems(ctx: ServiceContext, query: NextItemsQuery): Pro
     // practice when the learner has explicitly switched direction.
     if (stage === 2 && stagesFor(item) === 1) continue;
     if (!isDueAtStage(progress, stage)) continue;
+
+    if (query.mode === 'learn') {
+      // Only cards have a back to show; learn mode over a question bank would be an answer sheet.
+      if (item.payload.kind !== 'term') continue;
+      const { prompt, card } = learnCard(item, stage);
+      due.push({ drillItemId: item.drillItemId, stage, prompt, progress, card });
+      continue;
+    }
 
     due.push({
       drillItemId: item.drillItemId,
@@ -149,6 +178,15 @@ export async function recordAttempt(
     throw invalid('this item has only one stage');
   }
 
+  // A self grade is the learner's own verdict, taken only where the pack says that is how its cards
+  // are answered (ADR-0027).
+  try {
+    checkAnswerMode(cardGrading(pack), item, input);
+  } catch (error) {
+    if (error instanceof AnswerModeError) throw invalid(error.message);
+    throw error;
+  }
+
   const stateId = drillStateIdFor(learnerId, drillItemId);
   const existing = await ctx.store.collections.drillState.findOne({ _id: stateId });
   const progress = existing ? stripState(existing) : initialProgress();
@@ -164,6 +202,7 @@ export async function recordAttempt(
       stage: input.stage,
       given: input.given,
       override: input.override,
+      self: input.self,
       matchOptions: matchOptionsFor(pack, input.stage),
     },
     progress,
@@ -184,6 +223,7 @@ export async function recordAttempt(
     given: Array.isArray(input.given) ? input.given.join(' | ') : input.given,
     correct: result.correct,
     acceptedOverride: result.overridden,
+    ...(result.selfGraded ? { selfGraded: true } : {}),
     at: now,
   });
 
@@ -192,6 +232,43 @@ export async function recordAttempt(
   }
 
   return { ...result, drillItemId };
+}
+
+export interface RevealOutcome extends CardFace {
+  drillItemId: string;
+  stage: Stage;
+}
+
+/**
+ * Turn a card over on a self-graded pack (ADR-0027).
+ *
+ * **Writes nothing** — no attempt, no drill state. The learner grades themselves afterwards with an
+ * ordinary attempt, and that is the one thing that moves the streak. Every gate an attempt passes
+ * applies here too, so a reveal cannot be used to read a card the learner could not answer: someone
+ * else's own word is a 404, a locked second direction is a 400, and a typed pack's cards are revealed
+ * by answering them, not by asking.
+ */
+export async function revealAnswer(
+  ctx: ServiceContext,
+  learnerId: string,
+  drillItemId: string,
+  stage: Stage,
+): Promise<RevealOutcome> {
+  const item: DrillItem = await getDrillItem(ctx, drillItemId);
+  if (item.learnerId && item.learnerId !== learnerId) throw notFound(`drill item ${drillItemId}`);
+  const pack = await getPack(ctx, item.packId);
+
+  if (item.payload.kind !== 'term') throw invalid('only a card can be revealed');
+  if (cardGrading(pack) !== 'self') {
+    throw invalid('this skill’s cards are answered by typing — the answer comes back with the verdict');
+  }
+
+  if (stage === 2) {
+    const existing = await ctx.store.collections.drillState.findOne({ _id: drillStateIdFor(learnerId, drillItemId) });
+    if (!existing?.stage1Cleared) throw invalid('stage 2 is locked until stage 1 is cleared for this item');
+  }
+
+  return { drillItemId, stage, ...revealCard(item, stage) };
 }
 
 /**

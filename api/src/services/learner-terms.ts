@@ -13,6 +13,7 @@
 
 import { notFound } from '../http/errors.js';
 import { createLearnerTermSchema, type CreateLearnerTermInput } from '../domain/schemas.js';
+import { termPayload } from '../domain/flashcards.js';
 import type { DrillItem } from '../domain/types.js';
 import { FROM_LEARNER, getBlockFor } from './content.js';
 import { drillIdFor, drillStateIdFor, type ServiceContext } from './context.js';
@@ -36,14 +37,8 @@ export async function addTerm(
   // rather than orphaning the item in a deck its owner will never open.
   const block = await getBlockFor(ctx, blockId, learnerId);
 
-  const payload = {
-    kind: 'term' as const,
-    term: parsed.term,
-    translation: parsed.translation,
-    ...(parsed.example ? { example: parsed.example } : {}),
-    // Shown after an answer, never graded; carried as given (ADR-0023).
-    ...(parsed.details ? { details: parsed.details } : {}),
-  };
+  // Everything past the pair is shown, never graded; carried as given (ADR-0023, ADR-0027).
+  const payload = termPayload(parsed);
 
   const drillItemId = drillIdFor(blockId, payload, learnerId);
   const doc = { packId: block.packId, blockId, payload, learnerId, origin: 'learner' as const };

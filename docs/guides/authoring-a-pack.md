@@ -171,8 +171,9 @@ always safe.
 ## A skill that is only a deck, or only a reading list
 
 Not every skill is a course ([ADR-0022](../architecture/decisions/0022-a-skill-can-be-only-a-deck-or-a-library.md)).
-`packs/woordtrainer-nl` is only a word deck, and a skill can equally be only a reading library: no
-lessons, no error categories, and a `surfaces` list naming the one thing each does.
+`packs/woordtrainer-nl` is only a word deck and `packs/knowledge-graphs` only a deck of concept
+flashcards: no lessons, no error categories, and a `surfaces` list naming the one thing each does.
+A reading-list skill is the same idea with `surfaces: [reading]`.
 
 - **A deck skill** keeps every learner's words in one block with no lessons — its deck block,
   `woordenlijst`, order 1. The words are all learners' own (ADR-0012), so nothing is authored into it
@@ -183,6 +184,71 @@ lessons, no error categories, and a `surfaces` list naming the one thing each do
 
 Forking a programme's words and reading into such skills, and removing the programme afterwards, is
 the `maintain-skills` workflow — see ADR-0022 for what each task copies and what it deletes.
+
+## A flashcards skill
+
+Every `term` drill item is a flashcard, and one surface practises them all
+([ADR-0027](../architecture/decisions/0027-flashcards-are-one-engine-with-two-ways-of-answering.md)).
+What a manifest decides is **how its cards are answered**:
+
+```yaml
+flashcards:
+  grading: self      # or typed — the default, and what a manifest that says nothing gets
+
+presentation:
+  surfaces: [drills:terms]   # the flashcard surface; its key predates the name
+```
+
+- **`typed`** — the learner types the back and the server matches it tolerantly, with *Accept
+  anyway* for what the matching gets wrong. Right for words: a word has one spelling, and direction 2
+  exists to drill it. The Woordtrainer is typed.
+- **`self`** — the learner turns the card over and says *Got it* or *Missed it*. Right for concepts:
+  the back is a sentence nobody would reproduce verbatim, so matching it would only ever be wrong.
+  `packs/knowledge-graphs` is self-graded.
+
+Both run the same machine: two in a row clears a direction, direction 2 opens only after direction
+1, a miss resets the streak, mastered is final. Both offer **learn mode**, which shows every card
+with its answer and records nothing.
+
+**The cards are content and are never committed** (ADR-0006). A coach writes them — for an upskilling
+deck, from the reference guides — and publishes them into the skill's deck block: order 1, no
+lessons, `drillItems` only. Through the coach API or the MCP `publish_block` tool:
+
+```jsonc
+{
+  "order": 1, "slug": "deck", "title": "Deck", "lessons": [],
+  "drillItems": [
+    { "payload": {
+        "kind": "term",
+        "term": "Widget join",
+        "translation": "Matching two widget lists on a shared key.",
+        "hint": "Works like a zipper.",
+        "group": "Basics",
+        "details": {
+          "analogy": "Like a SQL inner join, but for widgets.",
+          "code": "left JOIN right USING (key)",
+          "source": "Widgets guide · Joining"
+        } } }
+  ]
+}
+```
+
+What each field is for — only `term` and `translation` are ever graded, the rest is shown:
+
+| Field | Shown | What to put in it |
+|---|---|---|
+| `term` | front, direction 1 | The term as practitioners write it. Its text is the card's identity: change it and the card is new, and its streak does not follow. |
+| `translation` | back, direction 1; front, direction 2 | The meaning — for a concept, one sentence, at most two. What it does, not only what it is called. |
+| `hint` | behind *Hint*, before answering | A cue, not the answer. The runtime masks the answer out of it in whichever direction would give it away, but write it so it does not need to. |
+| `group` | above the front | The guide's section, so a deck reads in the order the guide teaches. |
+| `example` | after answering (the hint, when there is no `hint`) | A sentence that uses the term. |
+| `details.analogy` | after answering, as *Map onto what you know* | The idea in terms the learner already has — and where the comparison stops holding. |
+| `details.code` | after answering, monospace | A short snippet, when seeing it is faster than reading about it. Indentation is kept. |
+| `details.source` | after answering, as *From the guide · …* | Where in the source the card came from, so a disputed card is checkable. |
+| `details.note`, `forms`, `synonyms`, `antonyms`, `partOfSpeech`, `exampleTranslation` | after answering | A word's card, as before ([ADR-0023](../architecture/decisions/0023-a-coach-fills-in-a-word-the-learner-asked-for.md)). |
+
+The same fields are accepted on a `vocabulary` row, on a learner's own word, and on a coach's
+suggestion for a word a learner asked for — a card is one shape wherever it is written.
 
 ## Lessons
 

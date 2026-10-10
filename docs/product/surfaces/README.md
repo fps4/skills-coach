@@ -13,7 +13,7 @@ the same one. There is no per-pack branching anywhere in the runtime.
 | [Lessons — the lesson reader](lessons.md) | `lessons` | `/lessons/{lessonId}` |
 | [Session log — hand in, read back](session-log.md) | part of `lessons` | `/sessions/{submissionId}` |
 | [Reading — the reading library](reading.md) | `reading` | `/reading` |
-| [Word trainer](word-trainer.md) | `drills:terms` | `/drills/words` |
+| [Flashcards — words and concepts](flashcards.md) | `drills:terms` | `/flashcards` (was `/drills/words`) |
 | [Sentence puzzle](sentence-puzzle.md) | `drills:word-order` | `/drills/sentences` |
 | [Practice test](quiz.md) | `quiz` | `/quiz` |
 | [Progress and the menu](progress-and-navigation.md) | — (not declarable) | `/` · `/skills` · `/progress` |
