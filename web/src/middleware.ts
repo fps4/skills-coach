@@ -1,5 +1,5 @@
 /**
- * Runs before any page renders: pick a locale, renew the session if it has lapsed, and gate.
+ * Runs before any page renders: retire old locale URLs, renew the session if it has lapsed, and gate.
  *
  * The auth check here is a cheap `exp` decode, never a verification — the API verifies properly
  * against the JWKS. Its only job is to avoid server-rendering a page whose API calls are certain to
@@ -13,7 +13,7 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale, negotiateLocale } from './i18n/config';
+import { withoutRetiredLocale } from './lib/legacy-locale';
 import { PACK_HEADER, packIdFromUrl } from './lib/pack-scope';
 import { refreshSession, sessionCookies, type SessionCookie } from './lib/refresh';
 import { AUTH_MODE, DEV_TOKEN, REFRESH_COOKIE, TOKEN_COOKIE, tokenIsFresh } from './lib/session';
@@ -28,22 +28,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // 401 contract, and refreshing here would race its own exchange for the same rotating token.
   if (pathname.startsWith('/api/')) return NextResponse.next();
 
-  const segments = pathname.split('/').filter(Boolean);
-  const locale = isLocale(segments[0]) ? segments[0] : null;
-
-  // No locale in the path — negotiate one and redirect, so every URL is unambiguous.
-  if (!locale) {
-    const chosen = negotiateLocale(
-      request.cookies.get(LOCALE_COOKIE)?.value,
-      request.headers.get('accept-language') ?? undefined,
-    );
+  // The interface no longer has a language in its URLs (ADR-0025). A bookmark that still does is
+  // sent to the same page without it — permanently, so browsers and link previews learn the new one.
+  const unprefixed = withoutRetiredLocale(pathname);
+  if (unprefixed !== null) {
     const url = request.nextUrl.clone();
-    url.pathname = `/${chosen}${pathname === '/' ? '' : pathname}`;
-    return NextResponse.redirect(url);
+    url.pathname = unprefixed;
+    return NextResponse.redirect(url, 308);
   }
 
-  const rest = segments.slice(1);
-  const isPublic = rest.length > 0 && PUBLIC_SEGMENTS.includes(rest[0] as string);
+  const [first] = pathname.split('/').filter(Boolean);
+  const isPublic = first !== undefined && PUBLIC_SEGMENTS.includes(first);
 
   const token = request.cookies.get(TOKEN_COOKIE)?.value;
   let signedIn = AUTH_MODE === 'dev' ? token === DEV_TOKEN : tokenIsFresh(token);
@@ -80,7 +75,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // Already signed in — keep them out of the sign-in screen.
     if (isPublic) {
       const url = request.nextUrl.clone();
-      url.pathname = `/${locale}`;
+      url.pathname = '/';
       url.search = '';
       return finish(NextResponse.redirect(url));
     }
@@ -90,7 +85,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   if (isPublic) return finish(NextResponse.next());
 
   const url = request.nextUrl.clone();
-  url.pathname = `/${locale}/login`;
+  url.pathname = '/login';
   // Remember where they were headed, so signing in lands them there rather than at the start.
   url.search = `?next=${encodeURIComponent(pathname + search)}`;
   return finish(NextResponse.redirect(url));
@@ -135,5 +130,3 @@ export const config = {
 };
 
 export const runtime = 'nodejs';
-
-export { DEFAULT_LOCALE };

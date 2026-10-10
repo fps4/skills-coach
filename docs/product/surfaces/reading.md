@@ -1,15 +1,15 @@
 ---
-title: Lezen — the reading library
+title: Reading — the reading library
 surface: reading
 status: built
 ---
 
-# Lezen (reading library)
+# Reading (reading library)
 
 | | |
 |---|---|
 | **Surface key** | `reading` |
-| **Routes** | `/{locale}/reading?packId=…` · `/{locale}/reading/{articleId}` |
+| **Routes** | `/reading?packId=…` · `/reading/{articleId}` |
 | **Capability** | `lesson:read` to read · `reading:track` to mark read |
 | **Appears when** | the learner has at least one article in this pack, and the pack has not opted out ([ADR-0019](../../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)) |
 | **Decides** | `readingState` |
@@ -24,7 +24,7 @@ A pack is a methodology; the material a learner practises on should come from th
 world. A block is the wrong container for *volume of input* — a learner at B1.2 needs to read far
 more than six lessons a month, on subjects nobody is going to hand-author. So the library carries
 professional writing the learner would have been reading in English anyway, translated, with the
-original one language-switch away.
+original one link away.
 
 ## Data it needs
 
@@ -68,10 +68,11 @@ cannot disagree. Order:
 `inRequestedLanguage: false` says it fell back. A list of Dutch titles that silently turns English
 because one article was never translated is worse than one that says so.
 
-The page passes the **locale from the URL** as `language`, not the stored profile — a page rendered
-under `/en/…` knows better than the profile does. So the header's language switch, which rewrites
-that locale segment, flips the article between its languages. Every other surface leaves material
-alone, so this one says on the page what it is doing.
+With no `language` asked for, an article opens in the pack's `contentLanguage` — there is no
+interface-language setting to consult any more
+([ADR-0025](../../architecture/decisions/0025-the-interface-is-english-only.md)). The article page
+lists the article's other variants as links (`?language=en`), so comparing with the original is one
+click and the choice lives in the URL, like every other view state.
 
 ### The three filters
 
@@ -224,5 +225,5 @@ make import-reading SOURCE=./articles PACKID=… LEARNER=…
 | Library and article | `api/src/services/reading.ts` |
 | Routes | `api/src/http/learner.ts` (learner) · `api/src/http/coach.ts` (loading) |
 | Importer | `api/src/importer/reading-source.ts`, `import-reading.ts` |
-| Screens | `web/src/app/[locale]/(app)/reading/page.tsx`, `[articleId]/page.tsx`, `web/src/components/read-toggle.tsx` |
+| Screens | `web/src/app/(app)/reading/page.tsx`, `[articleId]/page.tsx`, `web/src/components/read-toggle.tsx` |
 | Strings | `web/src/i18n/dictionaries.ts` → `reading` |

@@ -1,14 +1,14 @@
 ---
-title: Voortgang & het menu — where a learner is, and how they get anywhere
+title: Progress and the menu — where a learner is, and how they get anywhere
 surface: (progress is no longer a declarable surface — ADR-0018, ADR-0021)
 status: built
 ---
 
-# Voortgang & het menu (progress and navigation)
+# Progress and the menu
 
 | | |
 |---|---|
-| **Routes** | `/{locale}` (landing) · `/{locale}/skills` · `/{locale}/progress?packId=…` · `/{locale}/packs/{packId}` · `/{locale}/blocks/{blockId}` |
+| **Routes** | `/` (landing) · `/skills` · `/progress?packId=…` · `/packs/{packId}` · `/blocks/{blockId}` |
 | **Capability** | `progress:read` |
 | **Decides** | nothing. Every number here is **derived on read** |
 
@@ -19,15 +19,15 @@ stored that could disagree with the events it came from.
 ## The rail: folders of skills
 
 ```
-Start                     /nl                        the landing page
-MIJN MENU                 (organise → /nl/skills)
-▾ Nederlands              a folder the learner made
-    Woordtrainer          /nl/progress?packId=…      a skill — opens on its overview
+Home                      /                          the landing page
+MY MENU                   (organise → /skills)
+▾ Dutch                   a folder the learner made
+    Woordtrainer          /progress?packId=…         a skill — opens on its overview
     Lezen · nieuws
   SAP · Networking        a skill outside any folder
-Alle vaardigheden +3 verborgen   /nl/skills           everything started, hidden ones included
-Wiki                      /nl/wiki                   platform furniture
-Jouw gegevens             /nl/archive
+All my skills +3 hidden   /skills                    everything started, hidden ones included
+Wiki                      /wiki                      platform furniture
+Your data                 /archive
 ```
 
 Rules ([ADR-0021](../../architecture/decisions/0021-the-menu-is-folders-of-skills.md), which
@@ -51,7 +51,7 @@ is open — shows the folder the skill is filed in, its name, and a row of tabs:
 ```
 Nederlands ›
 Woordtrainer
-[Overzicht] [Lessen] [Lezen] [Woordtrainer] [Zinspuzzel] [Oefentoets]
+[Overview] [Lessons] [Reading] [Word trainer] [Sentence puzzle] [Practice test]
 ```
 
 `Overzicht` is `/progress?packId=…`, the page ADR-0018 had a pack land on. The rest are the surfaces
@@ -88,7 +88,7 @@ quiz: {
   icon: ListChecks,
   labelKey: 'quiz',
   has: ({ quiz }) => quiz > 0,                                     // does this pack do this?
-  href: ({ locale, currentBlockId }) => currentBlockId ? … : null, // where does it open now?
+  href: ({ currentBlockId }) => currentBlockId ? … : null, // where does it open now?
 }
 ```
 
@@ -214,5 +214,5 @@ next block — the same numbers, so the learner and the author are looking at on
 | Surface registry (the one place) | `web/src/lib/pack-scope.ts` |
 | Menu | `web/src/components/learner-rail.tsx`, `web/src/lib/menu.ts`, `api/src/domain/menu.ts` |
 | Skill tabs | `web/src/components/skill-header.tsx`, `skillTabs` in `web/src/lib/pack-scope.ts` |
-| Organise page | `web/src/app/[locale]/(app)/skills/page.tsx`, `web/src/components/menu-editor.tsx` |
-| Screens | `web/src/app/[locale]/(app)/page.tsx`, `progress/page.tsx`, `packs/[packId]/page.tsx`, `blocks/[blockId]/page.tsx` |
+| Organise page | `web/src/app/(app)/skills/page.tsx`, `web/src/components/menu-editor.tsx` |
+| Screens | `web/src/app/(app)/page.tsx`, `progress/page.tsx`, `packs/[packId]/page.tsx`, `blocks/[blockId]/page.tsx` |

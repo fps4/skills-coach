@@ -10,15 +10,19 @@ the same one. There is no per-pack branching anywhere in the runtime.
 
 | Function | Surface key | Route |
 |---|---|---|
-| [Lessen — the lesson reader](lessons.md) | `lessons` | `/{locale}/lessons/{lessonId}` |
-| [Sessielog — hand in, read back](session-log.md) | part of `lessons` | `/{locale}/sessions/{submissionId}` |
-| [Lezen — the reading library](reading.md) | `reading` | `/{locale}/reading` |
-| [Woordtrainer — the word trainer](word-trainer.md) | `drills:terms` | `/{locale}/drills/words` |
-| [Zinspuzzel — the sentence puzzle](sentence-puzzle.md) | `drills:word-order` | `/{locale}/drills/sentences` |
-| [Oefentoets — the practice test](quiz.md) | `quiz` | `/{locale}/quiz` |
-| [Voortgang & het menu](progress-and-navigation.md) | — (not declarable) | `/{locale}/progress` |
-| [Wiki — the reference library](wiki.md) | — (platform-wide) | `/{locale}/wiki` |
-| [Jouw gegevens — the portable archive](your-data.md) | — (the learner's, not a pack's) | `/{locale}/archive` |
+| [Lessons — the lesson reader](lessons.md) | `lessons` | `/lessons/{lessonId}` |
+| [Session log — hand in, read back](session-log.md) | part of `lessons` | `/sessions/{submissionId}` |
+| [Reading — the reading library](reading.md) | `reading` | `/reading` |
+| [Word trainer](word-trainer.md) | `drills:terms` | `/drills/words` |
+| [Sentence puzzle](sentence-puzzle.md) | `drills:word-order` | `/drills/sentences` |
+| [Practice test](quiz.md) | `quiz` | `/quiz` |
+| [Progress and the menu](progress-and-navigation.md) | — (not declarable) | `/` · `/skills` · `/progress` |
+| [Wiki — the reference library](wiki.md) | — (platform-wide) | `/wiki` |
+| [Your data — the portable archive](your-data.md) | — (the learner's, not a pack's) | `/archive` |
+
+Screen sketches in these files that show Dutch labels predate
+[ADR-0025](../../architecture/decisions/0025-the-interface-is-english-only.md): the interface is now
+English only, and the labels are the ones in `web/src/i18n/dictionaries.ts`.
 
 ## How a surface comes to exist
 
@@ -41,7 +45,7 @@ plus a count in the material payload if it needs a new one. No new endpoint, and
 on which pack is being served.
 
 Whether a surface *appears* for a given learner is decided in one place and by three questions —
-see [Voortgang & het menu](progress-and-navigation.md#when-a-surface-appears)
+see [Progress and the menu](progress-and-navigation.md#when-a-surface-appears)
 ([ADR-0019](../../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)).
 
 ## What every surface has in common
@@ -56,10 +60,11 @@ These hold across all of them, and a rebuild that drops one has changed the prod
 - **Progression is position, never dates.** No streak-of-days, no decay, no "you missed a week".
 - **Nothing derived is stored.** Scores, statuses and breakdowns are computed on read, so they cannot
   disagree with the evidence they come from.
-- **`lang` is set per element.** Pack material announces its own language even when the interface is
-  in another ([ADR-0005](../../architecture/decisions/0005-ui-language-vs-content-language.md)). The
-  reading library is the one surface where the interface language selects *content*
-  ([ADR-0017](../../architecture/decisions/0017-reading-is-personalized-parallel-text.md)).
+- **The interface is English; each skill is in one language.** There is no interface-language
+  setting and no language in the URL
+  ([ADR-0025](../../architecture/decisions/0025-the-interface-is-english-only.md)). Pack material
+  announces its own language with `lang` on the element, so Dutch is read as Dutch inside the English
+  chrome ([ADR-0005](../../architecture/decisions/0005-ui-language-vs-content-language.md)).
 - **Filter state lives in the URL**, so a view is bookmarkable and shareable.
 - **Content another learner owns is a `404`**; a non-content resource that is theirs is a `403`.
 - **No engagement metrics.** No time-on-page, no scroll tracking, no inferred completion.

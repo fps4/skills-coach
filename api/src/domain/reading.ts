@@ -27,8 +27,8 @@ export interface ArticleRef {
 /**
  * The base of a BCP-47 tag: `nl-BE` → `nl`.
  *
- * Matching on the base is what lets a pack authored in `nl` serve an interface negotiated to
- * `nl-BE` without either side having to know about the other's regional refinement.
+ * Matching on the base is what lets a pack authored in `nl` serve a request for `nl-BE` without
+ * either side having to know about the other's regional refinement.
  */
 export function baseLanguage(tag: string): string {
   const base = tag.trim().toLocaleLowerCase().split(/[-_]/)[0];
@@ -50,27 +50,32 @@ export function matchBody(bodies: ArticleBody[], wanted: string): ArticleBody | 
 /**
  * Which variant to show, and whether the learner got the one they asked for.
  *
- * The order is deliberate. **The interface language wins** — this is the one place where flipping
- * the language switch changes content rather than chrome, and it is the whole point of a parallel
- * text (ADR-0017). Where the article has no such variant it falls back to the language the pack
- * teaches, because a Dutch program showing English by default would quietly stop being practice.
+ * **The language the skill teaches is the default** — a skill is written in one language
+ * (ADR-0025), and a Dutch skill opening its articles in English would quietly stop being practice.
+ * A learner may still ask for another variant by name, which is what makes a parallel text worth
+ * having (ADR-0017); where the article has no such variant it falls back to the content language.
+ * There is no interface-language setting in this decision any more: the interface is English only.
  *
- * `requested` says which of those happened, so the surface can tell the learner it fell back
- * instead of silently serving a language they did not choose.
+ * `requested` says whether the learner got what they asked for — always true when they asked for
+ * nothing in particular — so the surface can say it fell back instead of silently serving a
+ * language they did not choose.
  */
 export function pickBody(
   bodies: ArticleBody[],
-  uiLanguage: string,
+  requested: string | undefined,
   contentLanguage: string,
 ): { body: ArticleBody; requested: boolean } | null {
-  const wanted = matchBody(bodies, uiLanguage);
-  if (wanted) return { body: wanted, requested: true };
-
   const content = matchBody(bodies, contentLanguage);
-  if (content) return { body: content, requested: false };
+
+  if (requested !== undefined) {
+    const wanted = matchBody(bodies, requested);
+    if (wanted) return { body: wanted, requested: true };
+  }
+
+  if (content) return { body: content, requested: requested === undefined };
 
   const first = bodies[0];
-  return first ? { body: first, requested: false } : null;
+  return first ? { body: first, requested: requested === undefined } : null;
 }
 
 /** Every language an article can be read in, in the order its variants were supplied. */

@@ -92,19 +92,20 @@ capability gate and writing the same audit trail, not a fork.
 web/content/wiki/    the reference library — empty while it is reworked; the route and the guard remain (ADR-0016)
 
 web/src/
-  app/[locale]/      all routes live under a locale segment (`nl` | `en`)
-    layout.tsx         the document: <html lang>, theme and palette. No chrome.
+  app/               no locale segment — the interface is English only (ADR-0025)
+    layout.tsx         the document: <html lang="en">, theme and palette. No chrome.
     (app)/             everything that needs a session — header, rail, content
                        `(app)/page.tsx` is the landing surface: one tile per pack, started
                        ones first, then the rest of the published catalogue
                        `(app)/wiki/` is the reference library: a filtered tile grid, and
                        one route per guide rendering its markdown server-side
     (auth)/            everything that does not — the centred sign-in surface
-  i18n/              typed dictionaries + the locale negotiator
+  i18n/              the one English dictionary — chrome strings in one typed place
   lib/               api (server) / api-client (browser) / auth (server-only) / session (shared)
     refresh.ts       spending the rotating refresh token — middleware and route handler only (ADR-0011)
     theme/palettes   the hue axis — a palette is data, not code
     menu.ts          grouping the rail by the learner's menu — pure, unit-tested
+    legacy-locale.ts which old `/nl/…` `/en/…` paths the middleware redirects — pure, unit-tested
     wiki-labels.ts   the wiki's topic/format taxonomy and its filter predicate — pure, unit-tested
     wiki.ts          reading and validating the corpus off disk, server-only (ADR-0016)
   components/
@@ -122,7 +123,7 @@ web/src/
     quiz-runner.tsx  the practice-test surface: practice / exam modes, an optional clock
     quiz-results.tsx score, per-category breakdown, and every question back for review
     ui/option-list.tsx  radio or checkbox options, and the per-question strip
-  middleware.ts      locale negotiation + session renewal + auth gate, before render
+  middleware.ts      old /nl/ and /en/ URLs redirected + session renewal + auth gate, before render
 ```
 
 **Styling is token-driven (ADR-0007).** Components name roles — `bg-background`, `text-primary`,

@@ -199,7 +199,7 @@ Each item is `{ original, corrected, categories[], explanation? }`.
   counts under-report and the wrong things get re-drilled.
 - **Do not invent mistakes.** A model asked to correct will find something to correct; inflated
   counts distort what comes back as practice. If a sentence is right, leave it out.
-- Keep `explanation` to one sentence, in the learner's interface language.
+- Keep `explanation` to one sentence, in English — the language of the interface (ADR-0025).
 - Ratings are advisory, never a persisted score about a person.
 
 Correcting the same submission twice is a `409`.

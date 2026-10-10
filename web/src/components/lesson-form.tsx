@@ -22,18 +22,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input, Textarea } from '@/components/ui/input';
 import { ApiError, clientApi } from '@/lib/api-client';
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { Locale } from '@/i18n/config';
 import type { Lesson, Submission } from '@/lib/types';
 
 interface Props {
   lesson: Lesson;
   contentLanguage: string;
   dictionary: Dictionary;
-  locale: Locale;
   existingSubmission: Submission | null;
 }
 
-export function LessonForm({ lesson, contentLanguage, dictionary, locale, existingSubmission }: Props) {
+export function LessonForm({ lesson, contentLanguage, dictionary, existingSubmission }: Props) {
   const t = dictionary.lesson;
   const router = useRouter();
   const draftKey = useMemo(() => `sc.draft.${lesson.lessonId}`, [lesson.lessonId]);
@@ -85,7 +83,7 @@ export function LessonForm({ lesson, contentLanguage, dictionary, locale, existi
         body: { answers: filled, speakingNote: speakingNote.trim() || undefined },
       });
       window.localStorage.removeItem(draftKey);
-      router.push(`/${locale}/sessions/${result.submission.submissionId}`);
+      router.push(`/sessions/${result.submission.submissionId}`);
       router.refresh();
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : dictionary.common.error);
@@ -137,7 +135,7 @@ export function LessonForm({ lesson, contentLanguage, dictionary, locale, existi
           <CardContent className="pt-5">
             <p className="text-sm">{t.alreadySubmitted}</p>
             <Button asChild className="mt-4">
-              <Link href={`/${locale}/sessions/${existingSubmission.submissionId}`}>{t.viewSessionLog}</Link>
+              <Link href={`/sessions/${existingSubmission.submissionId}`}>{t.viewSessionLog}</Link>
             </Button>
           </CardContent>
         </Card>

@@ -20,8 +20,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh }) }));
 const clientApi = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api-client', () => ({ clientApi, isSessionExpired: () => false }));
 
-const dictionary = getDictionary('en');
-const LIBRARY = '/en/reading?packId=dutch-conversation-nl';
+const dictionary = getDictionary();
+const LIBRARY = '/reading?packId=dutch-conversation-nl';
 
 function renderToggle(readAt: string | null) {
   return render(<ReadToggle articleId="art-1" readAt={readAt} library={LIBRARY} dictionary={dictionary} />);

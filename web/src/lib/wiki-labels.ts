@@ -7,7 +7,7 @@
  *
  * **Label ids are content; their display names are chrome (ADR-0005).** A guide's frontmatter names
  * `topic: streaming`, and that slug is stable and language-free. What a learner reads on the chip
- * comes from the dictionary, so adding a third interface language never touches a guide.
+ * comes from the dictionary, so rewording a chip never touches a guide.
  *
  * A guide declaring an id that is not here is a build failure, not a silently unfiltered tile —
  * see `wiki.test.ts`. That mirrors what `validate-manifests.ts` does for a pack.

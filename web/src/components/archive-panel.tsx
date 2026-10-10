@@ -21,11 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiError, clientApi, isSessionExpired } from '@/lib/api-client';
 import { ARCHIVE_SECTIONS, type ArchiveImportReport } from '@/lib/types';
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { Locale } from '@/i18n/config';
 
 type Stage = 'idle' | 'checking' | 'previewing' | 'applying' | 'done';
 
-export function ArchivePanel({ locale, dictionary }: { locale: Locale; dictionary: Dictionary }) {
+export function ArchivePanel({ dictionary }: { dictionary: Dictionary }) {
   const t = dictionary.archive;
 
   const [stage, setStage] = useState<Stage>('idle');
@@ -184,7 +183,7 @@ export function ArchivePanel({ locale, dictionary }: { locale: Locale; dictionar
                   {stage === 'done' ? <Check className="ml-1.5 inline h-4 w-4 text-success" /> : null}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {t.fileFrom} {new Date(report.archive.exportedAt).toLocaleString(locale)}
+                  {t.fileFrom} {new Date(report.archive.exportedAt).toLocaleString('en-GB')}
                 </p>
               </div>
 

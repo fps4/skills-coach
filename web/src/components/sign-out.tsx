@@ -13,13 +13,12 @@ import { redirect } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { clearSession } from '@/lib/auth';
-import type { Locale } from '@/i18n/config';
 
-export function SignOut({ locale, label }: { locale: Locale; label: string }) {
+export function SignOut({ label }: { label: string }) {
   async function signOut(): Promise<void> {
     'use server';
     await clearSession();
-    redirect(`/${locale}/login`);
+    redirect('/login');
   }
 
   return (

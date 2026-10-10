@@ -4,6 +4,10 @@ status: accepted
 date: 2026-08-08
 ---
 
+> **Amended by [ADR-0025](0025-the-interface-is-english-only.md).** There is no interface language
+> to select a variant any more: an article opens in the pack's content language, and its other
+> variants are links on the article page.
+
 # ADR-0017 — Reading is personalized parallel text
 
 ## Context

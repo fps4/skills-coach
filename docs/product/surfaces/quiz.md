@@ -1,15 +1,15 @@
 ---
-title: Oefentoets — the practice test
+title: Practice test
 surface: quiz
 status: built
 ---
 
-# Oefentoets (practice test)
+# Practice test
 
 | | |
 |---|---|
 | **Surface key** | `quiz` |
-| **Route** | `/{locale}/quiz?blockId=…` |
+| **Route** | `/quiz?blockId=…` |
 | **Capability** | `drill:practice` — a sitting is a way of grouping practice, not a second kind of it |
 | **Appears when** | the block has at least one `mcq` drill item, and the pack has not opted out ([ADR-0019](../../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)) |
 | **Decides** | `quizSessions`, plus the same `drillState`, `attempts` and `errorLog` writes any drill attempt makes |

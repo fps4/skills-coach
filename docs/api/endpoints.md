@@ -45,7 +45,7 @@ reach another's work.
 | Method | Path | Capability | Purpose |
 |---|---|---|---|
 | GET | `/me` | `progress:read` | Profile and enrollments. Creates the profile on first call |
-| PATCH | `/me` | `progress:read` | `{ uiLanguage?, displayName? }` |
+| PATCH | `/me` | `progress:read` | `{ displayName?, profile? }`. No interface language (ADR-0025): a `uiLanguage` sent by an older client is stripped |
 | GET | `/me/menu` | `progress:read` | Your folders and which skills show — every started skill placed exactly once |
 | PUT | `/me/menu` | `progress:read` | Replace the menu wholesale. Reconciled with what you have started, never refused for it |
 | POST | `/me/menu/skills` | `lesson:read` | `{ packId, folderId? }` — add a skill from the library: **enrols** and shows it. `404` for an unpublished skill |
@@ -169,7 +169,7 @@ The learner's portable archive ([ADR-0020](../architecture/decisions/0020-a-lear
   "version": 1,
   "exportedAt": "2026-08-31T09:12:04.318Z",
   "packs": [{ "packId": "aws-sap-c02", "version": 7 }],
-  "learner": { "uiLanguage": "nl", "profile": { "domain": "integration architecture" } },
+  "learner": { "profile": { "domain": "integration architecture" } },
   "drillState": [{
     "item": { "pack": "aws-sap-c02", "block": 1, "owned": false,
               "kind": "term", "digest": "00250fd6b17e", "own": false },
@@ -345,9 +345,9 @@ Four things this contract commits to:
   An article with no `source.site` has no facet and drops out of any source-filtered view. All
   three filters compose by intersection, and the `sources` facets cover the whole library for the
   same reason the label ones do.
-- **The api resolves the language, not the surface.** `language` (defaulting to the learner's
-  `uiLanguage`) picks the variant: exact tag, then same base language, then the pack's
-  `contentLanguage`, then whatever exists. `inRequestedLanguage: false` says it fell back, so the
+- **The api resolves the language, not the surface.** With no `language`, the variant is the
+  pack's `contentLanguage` (ADR-0025). A `language` picks a variant by exact tag, then same base
+  language, then falls back to the pack's `contentLanguage`, then whatever exists. `inRequestedLanguage: false` says it fell back, so the
   surface can tell the learner instead of silently changing language on them.
 
 `GET /reading/:articleId` returns the same shape plus `body` — the markdown of the resolved variant.

@@ -72,9 +72,8 @@ const commaList = z
  * because that is what the surface defaults to — the query string and the screen say the same thing,
  * so a bookmarked link reproduces what the learner was looking at.
  *
- * `language` is optional: absent, the learner's own interface language is used. It is a parameter
- * at all because reading is the one surface where language selects *content* (ADR-0017), and the
- * caller — a page rendered under `/en/…` — knows that better than the stored profile does.
+ * `language` is optional: absent, the article opens in the pack's content language (ADR-0025). It
+ * is a parameter at all so the article page can link to an article's other variants (ADR-0017).
  */
 const readingQuerySchema = z.object({
   labels: commaList,
@@ -187,20 +186,14 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const learner = await caller(request, 'lesson:read');
     const { packId } = request.params as { packId: string };
     const { labels, sources, unread, language } = readingQuerySchema.parse(request.query);
-    return reading.library(
-      ctx,
-      learner.learnerId,
-      packId,
-      { labels, sources, unreadOnly: unread },
-      language ?? learner.uiLanguage,
-    );
+    return reading.library(ctx, learner.learnerId, packId, { labels, sources, unreadOnly: unread }, language);
   });
 
   app.get('/api/v1/reading/:articleId', async (request) => {
     const learner = await caller(request, 'lesson:read');
     const { articleId } = request.params as { articleId: string };
     const { language } = readingQuerySchema.parse(request.query);
-    return { article: await reading.getArticle(ctx, learner.learnerId, articleId, language ?? learner.uiLanguage) };
+    return { article: await reading.getArticle(ctx, learner.learnerId, articleId, language) };
   });
 
   app.post('/api/v1/reading/:articleId/read', async (request) => {

@@ -81,7 +81,7 @@ runtime image always sets it, because that is what it means to Node.
 **`api` restarts with an "invalid configuration" message.** It validates configuration at boot
 rather than failing on the first request that needs a missing value. The message names the variable.
 
-**`web` is healthy but every page redirects to `/nl/login`.** The session cookie is missing or
+**`web` is healthy but every page redirects to `/login`.** The session cookie is missing or
 stale. In dev mode the login page has a single "continue" button that sets it.
 
 **Port already in use.** Override in the environment: `API_PORT`, `WEB_PORT`, `MONGO_PORT`.

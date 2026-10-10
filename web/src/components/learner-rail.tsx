@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils';
 import { arrangeRail } from '@/lib/menu';
 import { packIcon, packIdFromUrl, packLanding, type PackMaterial } from '@/lib/pack-scope';
 import { pickTitle } from '@/lib/text';
-import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { LearnerMenu, PackSurface, TitleText } from '@/lib/types';
 
@@ -43,7 +42,6 @@ export interface RailPack {
 }
 
 interface Props {
-  locale: Locale;
   dictionary: Dictionary;
   packs: RailPack[];
   /** Null when it could not be fetched — every skill then shows, loose. */
@@ -62,7 +60,7 @@ function readClosed(): Set<string> {
   }
 }
 
-export function LearnerRail({ locale, dictionary, packs, menu }: Props) {
+export function LearnerRail({ dictionary, packs, menu }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = dictionary.nav;
@@ -87,8 +85,8 @@ export function LearnerRail({ locale, dictionary, packs, menu }: Props) {
   const isActive = (href: string, exact = false) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
-  const home = `/${locale}`;
-  const skills = `/${locale}/skills`;
+  const home = '/';
+  const skills = '/skills';
   const scoped = packIdFromUrl(pathname, searchParams);
   const arranged = arrangeRail(menu, packs);
 
@@ -97,14 +95,14 @@ export function LearnerRail({ locale, dictionary, packs, menu }: Props) {
     return (
       <RailItem
         key={pack.packId}
-        href={packLanding(locale, pack.packId)}
+        href={packLanding(pack.packId)}
         icon={<Icon className="h-4 w-4" />}
         active={pack.packId === scoped}
         nested={nested}
       >
         {/* The skill's own name — localized metadata, resolved here, never translated (ADR-0005). */}
         <span className="flex items-center justify-between gap-2">
-          <span className="truncate">{pickTitle(pack.title, locale)}</span>
+          <span className="truncate">{pickTitle(pack.title)}</span>
           {pack.ready ? <ReadyBadge count={pack.ready} label={dictionary.assist.ready} /> : null}
         </span>
       </RailItem>
@@ -185,7 +183,7 @@ export function LearnerRail({ locale, dictionary, packs, menu }: Props) {
         The wiki is the platform's, not a skill's, so it sits beside the skills rather than in the
         menu the learner arranges.
       */}
-      <RailItem href={`/${locale}/wiki`} icon={<Library className="h-4 w-4" />} active={isActive(`/${locale}/wiki`)}>
+      <RailItem href="/wiki" icon={<Library className="h-4 w-4" />} active={isActive('/wiki')}>
         {t.wiki}
       </RailItem>
 
@@ -193,11 +191,7 @@ export function LearnerRail({ locale, dictionary, packs, menu }: Props) {
         Beside the skills for the opposite reason the wiki is: the archive belongs to *every* skill at
         once, so filing it under one of them would be filing it under the wrong one.
       */}
-      <RailItem
-        href={`/${locale}/archive`}
-        icon={<HardDriveDownload className="h-4 w-4" />}
-        active={isActive(`/${locale}/archive`)}
-      >
+      <RailItem href="/archive" icon={<HardDriveDownload className="h-4 w-4" />} active={isActive('/archive')}>
         {t.yourData}
       </RailItem>
     </nav>

@@ -21,13 +21,15 @@ import {
   type PatchMeInput,
 } from '../domain/schemas.js';
 import { normalizeMenu, type LearnerMenu } from '../domain/menu.js';
-import { DEFAULT_LOCALE, type Enrollment, type Learner, type LearnerProfile } from '../domain/types.js';
+import { type Enrollment, type Learner, type LearnerProfile } from '../domain/types.js';
 import type { LearnerDoc } from '../db/collections.js';
 import { getPack, listBlocks } from './content.js';
 import { enrollmentIdFor, type ServiceContext } from './context.js';
 
 const toLearner = (doc: LearnerDoc): Learner => {
-  const { _id, ...rest } = doc;
+  // A learner created before ADR-0025 still has a stored `uiLanguage`. It means nothing now, so it
+  // is dropped here rather than served — and left in the document, because removing it buys nothing.
+  const { _id, uiLanguage: _retired, ...rest } = doc as LearnerDoc & { uiLanguage?: unknown };
   return { ...rest, learnerId: _id };
 };
 
@@ -54,7 +56,6 @@ export async function resolveLearner(ctx: ServiceContext, principal: Principal):
     subject: principal.subject,
     email: principal.email,
     displayName: principal.email?.split('@')[0],
-    uiLanguage: DEFAULT_LOCALE,
     createdAt: ctx.now(),
   };
 
@@ -80,7 +81,6 @@ export async function resolveLearner(ctx: ServiceContext, principal: Principal):
 export interface LearnerSummary {
   learnerId: string;
   displayName?: string;
-  uiLanguage: string;
   /**
    * Whether a domain profile has been written for them. The profile itself is not projected here —
    * a list is for choosing who to author for, and this is the one thing about it worth knowing at
@@ -92,9 +92,8 @@ export interface LearnerSummary {
 export async function listLearnerSummaries(ctx: ServiceContext): Promise<LearnerSummary[]> {
   const docs = await ctx.store.collections.learners
     .find({})
-    .project<{ _id: string; displayName?: string; uiLanguage: string; profile?: LearnerProfile }>({
+    .project<{ _id: string; displayName?: string; profile?: LearnerProfile }>({
       displayName: 1,
-      uiLanguage: 1,
       profile: 1,
     })
     .toArray();
@@ -134,7 +133,6 @@ export async function getLearner(ctx: ServiceContext, learnerId: string): Promis
 
 export async function updateLearner(ctx: ServiceContext, learnerId: string, input: PatchMeInput): Promise<Learner> {
   const update: Partial<LearnerDoc> = {};
-  if (input.uiLanguage) update.uiLanguage = input.uiLanguage;
   if (input.displayName !== undefined) update.displayName = input.displayName;
   // Replaced wholesale rather than merged field by field: a profile is a short description of one
   // working world, and a caller that sends half of it means the other half no longer applies.

@@ -64,7 +64,13 @@ describe('matchBody', () => {
 });
 
 describe('pickBody', () => {
-  it('gives the learner the interface language — this is where the switch changes content', () => {
+  it('opens an article in the language the skill teaches when nothing else is asked for', () => {
+    const picked = pickBody([body('en'), body('nl')], undefined, 'nl');
+    expect(picked?.body.language).toBe('nl');
+    expect(picked?.requested).toBe(true);
+  });
+
+  it('gives the variant asked for by name — comparing with the original is one link away', () => {
     const picked = pickBody([body('nl'), body('en')], 'en', 'nl');
     expect(picked?.body.language).toBe('en');
     expect(picked?.requested).toBe(true);
@@ -83,7 +89,7 @@ describe('pickBody', () => {
   });
 
   it('has nothing to show for an article with no variants', () => {
-    expect(pickBody([], 'nl', 'nl')).toBeNull();
+    expect(pickBody([], undefined, 'nl')).toBeNull();
   });
 });
 

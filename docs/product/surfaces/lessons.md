@@ -1,15 +1,15 @@
 ---
-title: Lessen — the lesson reader
+title: Lessons — the lesson reader
 surface: lessons
 status: built
 ---
 
-# Lessen (lesson reader)
+# Lessons (lesson reader)
 
 | | |
 |---|---|
 | **Surface key** | `lessons` |
-| **Routes** | `/{locale}/blocks/{blockId}` (the block's lesson list) · `/{locale}/lessons/{lessonId}` |
+| **Routes** | `/blocks/{blockId}` (the block's lesson list) · `/lessons/{lessonId}` |
 | **Capability** | `lesson:read` to read · `submission:write` to hand work in |
 | **Appears when** | the block has at least one lesson, and the pack has not opted out ([ADR-0019](../../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)) |
 | **Decides** | `submissions` — nothing else. Reading a lesson writes nothing. |
@@ -154,6 +154,6 @@ Behaviour the rebuild must keep:
 | Next lesson, block completion, answer refs | `api/src/domain/progression.ts` |
 | Lessons and blocks | `api/src/services/content.ts`, `progress.ts` |
 | Routes | `api/src/http/learner.ts` |
-| Screens | `web/src/app/[locale]/(app)/lessons/[lessonId]/page.tsx`, `blocks/[blockId]/page.tsx` |
+| Screens | `web/src/app/(app)/lessons/[lessonId]/page.tsx`, `blocks/[blockId]/page.tsx` |
 | Renderers | `web/src/components/section-view.tsx`, `lesson-form.tsx` |
 | Strings | `web/src/i18n/dictionaries.ts` → `lesson` |

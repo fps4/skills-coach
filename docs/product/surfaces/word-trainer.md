@@ -4,12 +4,12 @@ surface: drills:terms
 status: built
 ---
 
-# Woordtrainer (word trainer)
+# Word trainer
 
 | | |
 |---|---|
 | **Surface key** | `drills:terms` |
-| **Route** | `/{locale}/drills/words?blockId=…` |
+| **Route** | `/drills/words?blockId=…` |
 | **Capability** | `drill:practice` — and `drill:curate` for a learner's own words |
 | **Appears when** | the block has at least one `term` drill item, and the pack has not opted out ([ADR-0019](../../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)) |
 | **Decides** | `drillState` for `term` items, and `attempts` rows |
@@ -78,7 +78,7 @@ stay:
 
 ### The streak machine
 
-Shared with the Zinspuzzel — one implementation, so the two surfaces cannot drift apart.
+Shared with the sentence puzzle — one implementation, so the two surfaces cannot drift apart.
 `CLEAR_STREAK` is **2**.
 
 ```

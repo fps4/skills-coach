@@ -176,7 +176,7 @@ hand-author. That is what the reading library is for
 ([ADR-0017](../architecture/decisions/0017-reading-is-personalized-parallel-text.md)).
 
 An article is **parallel text**: the same piece in the language being learned and in its original,
-with the interface language switch flipping between them. So the job is scrape → convert to markdown
+with the article page linking from one to the other. So the job is scrape → convert to markdown
 → translate → load, and only the last step touches this API.
 
 Files on disk, one per article *per language*:
@@ -235,7 +235,7 @@ When driving this with a language model, the shape that holds up:
 > Here are the categories this pack declares: `<ids>`
 >
 > Return JSON matching the correction schema. One item per mistake, not per sentence. Use only the
-> category ids listed. Keep explanations to one sentence and in the learner's interface language.
+> category ids listed. Keep explanations to one sentence and in English.
 > Do not invent mistakes: if a sentence is correct, leave it out.
 
 That last instruction matters more than it looks. A model asked to correct will find something to

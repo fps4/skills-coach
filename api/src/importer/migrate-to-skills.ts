@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   const { from, words, reading } = args;
   if (typeof from !== 'string' || typeof words !== 'string' || typeof reading !== 'string') {
     throw new Error(
-      'usage: migrate:to-skills --from <packId> --words <packId> --reading <packId> [--folder-nl Nederlands] [--folder-en Dutch] [--apply]',
+      'usage: migrate:to-skills --from <packId> --words <packId> --reading <packId> [--folder Dutch] [--apply]',
     );
   }
   const dryRun = args.apply !== true;
@@ -52,10 +52,7 @@ async function main(): Promise<void> {
       from,
       words,
       reading,
-      folder: {
-        nl: typeof args['folder-nl'] === 'string' ? args['folder-nl'] : 'Nederlands',
-        en: typeof args['folder-en'] === 'string' ? args['folder-en'] : 'Dutch',
-      },
+      folder: typeof args.folder === 'string' ? args.folder : 'Dutch',
       dryRun,
     });
 

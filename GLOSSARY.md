@@ -71,9 +71,9 @@ An article is **parallel text** — one **variant** per language — and is iden
 re-loading it corrects it in place. See
 [ADR-0017](docs/architecture/decisions/0017-reading-is-personalized-parallel-text.md).
 
-**Variant** — one language's rendering of an article: a language tag, a title, and markdown. Which
-variant a learner sees is decided by the interface language, falling back to the pack's content
-language. This is the *only* place in the product where the language switch changes material.
+**Variant** — one language's rendering of an article: a language tag, a title, and markdown. An
+article opens in the pack's content language; the learner can open another variant by name from the
+article page.
 
 **Label** — a free string an article carries, chosen by whoever loaded it. The library filters and
 groups by labels; the runtime never interprets one, exactly as it never interprets a ramp's dials.
@@ -84,15 +84,16 @@ carries many labels and needs *all* of the ones asked for, and has one source an
 *any* of them. An article with no `site` is not filed under a placeholder; it simply has no source
 facet.
 
-**Content language** — the language a pack's material is written in. Distinct from **UI language**,
-the language of the interface chrome. A Dutch pack renders as Dutch whether the interface is set to
-Dutch or English. See [ADR-0005](docs/architecture/decisions/0005-ui-language-vs-content-language.md).
-The one narrowing of this is an article's variants, above.
+**Content language** — the language a pack's material is written in. Distinct from the language of
+the interface chrome, which is English and only English
+([ADR-0025](docs/architecture/decisions/0025-the-interface-is-english-only.md)). A Dutch pack renders
+as Dutch inside the English interface. See
+[ADR-0005](docs/architecture/decisions/0005-ui-language-vs-content-language.md).
 
 ## Learner state
 
 **Learner** — a person working through a pack, identified by the `sub` claim of their
-identity-service token. The `learners` record is a thin profile (display name, UI language); Skills
+identity-service token. The `learners` record is a thin profile (display name, domain profile); Skills
 Coach stores no credentials.
 
 **Enrollment** — a learner's position in a pack: current block, current lesson.

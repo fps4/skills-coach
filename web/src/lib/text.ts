@@ -2,17 +2,18 @@
  * Small helpers shared by the surfaces.
  *
  * `pickTitle` resolves a pack's localized *metadata* — a block title a pack chose to author in both
- * languages. This is the one place localized pack data exists, and it is metadata, never material:
- * lesson prose, terms and translations are content and pass through untouched (ADR-0005).
+ * languages — to its English form, the interface being English only (ADR-0025). This is the one
+ * place localized pack data exists, and it is metadata, never material: lesson prose, terms and
+ * translations are content and pass through untouched (ADR-0005).
  */
 
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { ErrorStatus, Locale, TitleText } from './types';
+import type { ErrorStatus, TitleText } from './types';
 
-export function pickTitle(title: TitleText | undefined, locale: Locale): string {
+export function pickTitle(title: TitleText | undefined): string {
   if (!title) return '';
   if (typeof title === 'string') return title;
-  return title[locale] ?? title[locale === 'nl' ? 'en' : 'nl'] ?? '';
+  return title.en ?? title.nl ?? '';
 }
 
 /**
@@ -28,9 +29,9 @@ export function readingMinutes(source: string, wordsPerMinute = 200): number {
   return Math.max(1, Math.round(words / wordsPerMinute));
 }
 
-export function formatDate(iso: string | undefined, locale: Locale): string {
+export function formatDate(iso: string | undefined): string {
   if (!iso) return '';
-  return new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', {
+  return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

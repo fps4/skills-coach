@@ -46,7 +46,7 @@ export interface MigrationOptions {
   /** The reading skill articles go into. Must be published already. */
   reading: string;
   /** The menu folder both new skills are filed in, created if the learner has none by this name. */
-  folder: LocalizedText;
+  folder: string;
   /** Report what would happen and write nothing. */
   dryRun: boolean;
 }
@@ -264,8 +264,8 @@ async function migrateLearner(
 /**
  * Put the new skills in one folder of the learner's menu, and leave everything else where it is.
  *
- * The folder is found by name in the learner's interface language, so a learner who already made a
- * "Nederlands" folder gets the skills filed there rather than a second folder of the same name.
+ * The folder is found by name, so a learner who already made a folder of that name gets the skills
+ * filed there rather than a second folder of the same name.
  */
 async function fileInFolder(ctx: ServiceContext, learnerId: string, options: MigrationOptions): Promise<void> {
   const c = ctx.store.collections;
@@ -276,7 +276,7 @@ async function fileInFolder(ctx: ServiceContext, learnerId: string, options: Mig
     (entry) => entry.packId,
   );
   const menu = normalizeMenu(learner.menu, started);
-  const name = options.folder[learner.uiLanguage] ?? options.folder.nl ?? options.folder.en ?? 'Folder';
+  const name = options.folder;
 
   let folder = menu.folders.find((entry) => entry.name === name);
   if (!folder) {

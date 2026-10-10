@@ -24,7 +24,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0002](architecture/decisions/0002-identity-service-as-authentication-engine.md) | identity-service authenticates; Skills Coach authorizes |
 | [0003](architecture/decisions/0003-mongodb-single-store.md) | One MongoDB; logs to stdout; audit as a collection |
 | [0004](architecture/decisions/0004-pack-contract-and-typed-sections.md) | Skills enter through a pack contract; lessons are typed sections |
-| [0005](architecture/decisions/0005-ui-language-vs-content-language.md) | UI language and content language are separate |
+| [0005](architecture/decisions/0005-ui-language-vs-content-language.md) | UI language and content language are separate — interface-language part superseded by 0025 |
 | [0006](architecture/decisions/0006-content-and-learner-data-stay-out-of-the-repo.md) | Content and learner data never enter the repository |
 | [0007](architecture/decisions/0007-token-driven-theme-with-a-palette-axis.md) | One token theme, two independent axes (theme × palette) |
 | [0008](architecture/decisions/0008-a-packs-manifest-is-product.md) | A pack's manifest is product; its blocks are content |
@@ -36,7 +36,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0014](architecture/decisions/0014-an-authored-answer-key-may-write-the-error-log.md) | An authored answer key may write the error log |
 | [0015](architecture/decisions/0015-a-block-may-be-owned-by-a-learner.md) | A block may be owned by a learner |
 | [0016](architecture/decisions/0016-the-reference-library-ships-with-the-code.md) | The reference library ships with the code |
-| [0017](architecture/decisions/0017-reading-is-personalized-parallel-text.md) | Reading is personalized parallel text; the interface language selects the variant |
+| [0017](architecture/decisions/0017-reading-is-personalized-parallel-text.md) | Reading is personalized parallel text — variant selection amended by 0025 |
 | [0018](architecture/decisions/0018-the-rail-is-packs-one-level-deep.md) | ~~The rail is packs, one level deep; a pack lands on its progress~~ — superseded by 0021 |
 | [0019](architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md) | A surface appears when the pack has material for it |
 | [0020](architecture/decisions/0020-a-learner-can-take-their-progress-with-them.md) | A learner can take their progress with them |
@@ -44,6 +44,7 @@ Start with [`../CODEBASE.md`](../CODEBASE.md) for the repository map and
 | [0022](architecture/decisions/0022-a-skill-can-be-only-a-deck-or-a-library.md) | A skill can be only a deck or only a library, and a programme's can be forked out of it |
 | [0023](architecture/decisions/0023-a-coach-fills-in-a-word-the-learner-asked-for.md) | A coach fills in a word the learner asked for; the learner decides what reaches the deck |
 | [0024](architecture/decisions/0024-a-skill-is-added-from-the-library-and-the-start-page-is-the-menu.md) | A skill is added from the library, and the start page is the menu — amends 0021 |
+| [0025](architecture/decisions/0025-the-interface-is-english-only.md) | The interface is English only — supersedes the interface-language part of 0005 |
 
 ## Reference
 

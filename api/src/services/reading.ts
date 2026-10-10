@@ -60,7 +60,7 @@ export interface ArticleSummary {
   title: string;
   summary?: string;
   inRequestedLanguage: boolean;
-  /** Every language this article can be read in — what the language switch is worth here. */
+  /** Every language this article can be read in — the variants the surface offers as links. */
   languages: string[];
 }
 
@@ -109,14 +109,14 @@ async function readMap(ctx: ServiceContext, learnerId: string, packId: string): 
 function summarize(
   doc: ArticleIndexDoc,
   readAt: Date | null,
-  uiLanguage: string,
+  language: string | undefined,
   contentLanguage: string,
 ): ArticleSummary | null {
   // `pickBody` wants full bodies; the projection's are enough for a title, so it is handed a
   // body-less shape rather than the whole document being read to choose a language.
   const picked = pickBody(
     doc.bodies.map((entry) => ({ ...entry, body: '' })),
-    uiLanguage,
+    language,
     contentLanguage,
   );
   // An article with no variants cannot be published — the schema demands one — so this is a
@@ -152,7 +152,7 @@ export async function library(
   learnerId: string,
   packId: string,
   filter: ReadingFilter,
-  uiLanguage: string,
+  language?: string,
 ): Promise<Library> {
   const pack = await getPack(ctx, packId);
   const docs = await ctx.store.collections.articles
@@ -165,7 +165,7 @@ export async function library(
   const refs = docs.map((doc) => ({ ...doc, articleId: doc._id }));
 
   const articles = filterArticles(refs, filter, isRead)
-    .map((doc) => summarize(doc, read.get(doc._id) ?? null, uiLanguage, pack.contentLanguage))
+    .map((doc) => summarize(doc, read.get(doc._id) ?? null, language, pack.contentLanguage))
     .filter((entry): entry is ArticleSummary => entry !== null);
 
   return {
@@ -181,21 +181,21 @@ export async function getArticle(
   ctx: ServiceContext,
   learnerId: string,
   articleId: string,
-  uiLanguage: string,
+  language?: string,
 ): Promise<ArticleView> {
   // Scoped by the filter: another learner's article is not found, never forbidden.
   const doc = await ctx.store.collections.articles.findOne({ _id: articleId, learnerId });
   if (!doc) throw notFound(`article ${articleId}`);
 
   const pack = await getPack(ctx, doc.packId);
-  const picked = pickBody(doc.bodies, uiLanguage, pack.contentLanguage);
+  const picked = pickBody(doc.bodies, language, pack.contentLanguage);
   if (!picked) throw notFound(`article ${articleId} has no readable variant`);
 
   const state = await ctx.store.collections.readingState.findOne({
     _id: readingStateIdFor(learnerId, articleId),
   });
 
-  const summary = summarize(doc, state?.readAt ?? null, uiLanguage, pack.contentLanguage);
+  const summary = summarize(doc, state?.readAt ?? null, language, pack.contentLanguage);
   if (!summary) throw notFound(`article ${articleId} has no readable variant`);
 
   return { ...summary, body: picked.body.body };
