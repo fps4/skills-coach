@@ -26,7 +26,6 @@ MY MENU                   (organise → /skills)
     Lezen · nieuws
   SAP · Networking        a skill outside any folder
 All my skills +3 hidden   /skills                    everything started, hidden ones included
-Wiki                      /wiki                      platform furniture
 Your data                 /archive
 ```
 

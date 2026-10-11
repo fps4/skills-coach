@@ -226,6 +226,6 @@ describe('activeTab', () => {
 
   it('is null outside a skill', () => {
     expect(activeTab('/')).toBeNull();
-    expect(activeTab('/wiki')).toBeNull();
+    expect(activeTab('/archive')).toBeNull();
   });
 });

@@ -4,7 +4,7 @@
  * The top of a skill's page: where it is filed, what it is called, and its tabs (ADR-0021).
  *
  * Rendered by the shell above whatever page is open, so every surface of a skill carries the same
- * header without each page having to remember it. Outside a skill — the home page, the wiki, the
+ * header without each page having to remember it. Outside a skill — the home page, the
  * archive — it renders nothing.
  *
  * The tabs are what the rail used to indent under a pack (ADR-0018). Which ones appear is decided in

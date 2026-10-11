@@ -19,13 +19,9 @@ This file is the set of rules that override convenience.
    examples. Test data is synthetic. The only pack in the tree is `packs/demo-*`.
    ([ADR-0006](docs/architecture/decisions/0006-content-and-learner-data-stay-out-of-the-repo.md))
 
-   The one exception, granted explicitly and narrowly, is the wiki at `web/content/wiki/` — public,
-   impersonal reference guides that nothing but a human reads
-   ([ADR-0016](docs/architecture/decisions/0016-the-reference-library-ships-with-the-code.md)). It is
-   not a licence to put content in the tree. A guide that needs to be answered, scored, tracked, or
-   shown to one learner and not another is a pack, and rule 3 applies unchanged. Adding a guide means
-   keeping it impersonal: `web/src/lib/wiki.test.ts` fails the build if an employer or a person is
-   named, and that guard is load-bearing, not decorative.
+   There is no exception. The committed wiki that ADR-0016 allowed was removed, guard and all
+   ([ADR-0028](docs/architecture/decisions/0028-the-wiki-is-removed.md)); reference guides now reach
+   a learner as flashcard decks, which are content and live in the database like any other.
 
 4. **Skills Coach owns no identity.** No user table, no credentials, no password handling, no
    callback to identity-service to make an authorization decision. Everything needed arrives on the
