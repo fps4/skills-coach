@@ -16,12 +16,16 @@ This file is the set of rules that override convenience.
 
 3. **This repository is public and holds no content and no personal data.** Do not commit training
    material, learner answers, error logs or session logs — not in fixtures, not in tests, not in
-   examples. Test data is synthetic. The only pack in the tree is `packs/demo-*`.
+   examples. Test data is synthetic. A skill in the tree is `skills/<id>/skill.yaml` plus its guides;
+   the only skill committed whole, blocks included, is `skills/demo-*`.
    ([ADR-0006](docs/architecture/decisions/0006-content-and-learner-data-stay-out-of-the-repo.md))
 
-   There is no exception. The committed wiki that ADR-0016 allowed was removed, guard and all
-   ([ADR-0028](docs/architecture/decisions/0028-the-wiki-is-removed.md)); reference guides now reach
-   a learner as flashcard decks, which are content and live in the database like any other.
+   The one exception, granted narrowly, is a skill's reference guides at `skills/<id>/guides/*.md` —
+   curated, impersonal, public material the cards are written from
+   ([ADR-0029](docs/architecture/decisions/0029-a-skill-is-a-folder-with-its-guides.md)). It is not a
+   licence to put content in the tree: the cards themselves are content and live in the database. A
+   guide names no employer, client, person, project or job posting; `web/src/lib/guides.test.ts`
+   fails the build on the known ones, and that guard is load-bearing, not decorative.
 
 4. **Skills Coach owns no identity.** No user table, no credentials, no password handling, no
    callback to identity-service to make an authorization decision. Everything needed arrives on the

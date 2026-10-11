@@ -14,6 +14,7 @@ the same one. There is no per-pack branching anywhere in the runtime.
 | [Session log — hand in, read back](session-log.md) | part of `lessons` | `/sessions/{submissionId}` |
 | [Reading — the reading library](reading.md) | `reading` | `/reading` |
 | [Flashcards — words and concepts](flashcards.md) | `drills:terms` | `/flashcards` (was `/drills/words`) |
+| [Guides](guides.md) | — (any skill with `guides/`) | `/guides/<skillId>` |
 | [Sentence puzzle](sentence-puzzle.md) | `drills:word-order` | `/drills/sentences` |
 | [Practice test](quiz.md) | `quiz` | `/quiz` |
 | [Progress and the menu](progress-and-navigation.md) | — (not declarable) | `/` · `/skills` · `/progress` |

@@ -20,6 +20,7 @@ import {
   Sparkles,
   Cloud,
   Dumbbell,
+  FileText,
   LayoutDashboard,
   ListChecks,
   Newspaper,
@@ -48,7 +49,7 @@ export const PACK_HEADER = 'x-sc-pack';
  * the pack itself lands on. The api still accepts it in a manifest's `surfaces` so packs published
  * before that change keep publishing — it simply moves nothing.
  */
-export type RailSurface = Exclude<PackSurface, 'progress'>;
+export type RailSurface = Exclude<PackSurface, 'progress'> | 'guides';
 
 /**
  * Every surface the platform can render, in the order the rail shows them.
@@ -57,7 +58,7 @@ export type RailSurface = Exclude<PackSurface, 'progress'>;
  * the pack's. Declaring surfaces is how a pack opts *out* of one, which is why omitting the key
  * means all of them.
  */
-export const DEFAULT_SURFACES: RailSurface[] = ['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz'];
+export const DEFAULT_SURFACES: RailSurface[] = ['lessons', 'guides', 'reading', 'drills:terms', 'drills:word-order', 'quiz'];
 
 /**
  * What a pack *has*, counted across the whole pack rather than the block in front of the learner
@@ -75,6 +76,8 @@ export interface PackMaterial {
   quiz: number;
   /** Articles in this learner's library for the pack (ADR-0017). */
   reading: number;
+  /** Reference guides committed beside the skill's manifest (ADR-0029); the same for every learner. */
+  guides: number;
 }
 
 /** Where a surface opens from. Only ever built inside a pack, so `packId` is known. */
@@ -132,6 +135,18 @@ export const SURFACES: Record<RailSurface, SurfaceDef> = {
     has: ({ reading }) => reading > 0,
     href: ({ packId }) => `/reading?packId=${encodeURIComponent(packId)}`,
   },
+  /**
+   * The skill's reference guides (ADR-0029): files in `skills/<id>/guides/`, read on the server.
+   *
+   * Not a key a manifest declares — a skill that has guides shows them, which is why `visibleSurfaces`
+   * lets it through whatever `surfaces` says. Opting out of your own documentation is not a thing.
+   */
+  guides: {
+    icon: FileText,
+    labelKey: 'guides',
+    has: ({ guides }) => guides > 0,
+    href: ({ packId }) => `/guides/${encodeURIComponent(packId)}`,
+  },
   /** Flashcards (ADR-0027): a word deck typed, a concept deck self-graded — one surface, one key. */
   'drills:terms': {
     icon: Sparkles,
@@ -177,8 +192,8 @@ export function packLanding(packId: string): string {
  * has no questions never shows a practice test, without its author having to remember to say so.
  */
 export function visibleSurfaces(declared: PackSurface[] | undefined, material: PackMaterial): RailSurface[] {
-  const offered: PackSurface[] = declared ?? DEFAULT_SURFACES;
-  return DEFAULT_SURFACES.filter((id) => offered.includes(id) && SURFACES[id].has(material));
+  const offered: readonly string[] = declared ?? DEFAULT_SURFACES;
+  return DEFAULT_SURFACES.filter((id) => (id === 'guides' || offered.includes(id)) && SURFACES[id].has(material));
 }
 
 /** One tab along the top of a skill's page (ADR-0021). */
@@ -228,6 +243,7 @@ export function activeTab(pathname: string): SkillTab['id'] | null {
   if (head === 'progress') return 'overview';
   if (head === 'packs' || head === 'blocks' || head === 'lessons' || head === 'sessions') return 'lessons';
   if (head === 'reading') return 'reading';
+  if (head === 'guides') return 'guides';
   if (head === 'quiz') return 'quiz';
   // `/drills/words` is the flashcards' old address; it redirects, but a tab must not flicker off on the way.
   if (head === 'flashcards' || (head === 'drills' && tail === 'words')) return 'drills:terms';
@@ -263,7 +279,7 @@ export function packIcon(key: string | undefined): LucideIcon {
 export function packIdFromUrl(pathname: string, search?: URLSearchParams | null): string | null {
   const [head, tail] = pathname.split('/').filter(Boolean);
 
-  if (head === 'packs' && tail) return tail;
+  if ((head === 'packs' || head === 'guides') && tail) return tail;
   if ((head === 'blocks' || head === 'lessons') && tail) return packIdFromEntityId(tail);
   // An article is `${packId}.r…`, so a URL naming one already carries its pack; the library itself
   // names the pack directly, because it belongs to no block.

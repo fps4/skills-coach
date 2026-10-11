@@ -122,7 +122,7 @@ jobs:
       - name: Dry-run import of the demo pack
         run: |
           docker run --rm sc-ci-import:${{ github.run_id }}-${{ github.run_attempt }} \
-            bash -lc "cd api && npm run import:pack -- --source ../packs/demo-conversation-nl --dry-run"
+            bash -lc "cd api && npm run import:pack -- --source ../skills/demo-conversation-nl --dry-run"
       - name: Validate every committed pack manifest
         run: |
           docker run --rm sc-ci-import:${{ github.run_id }}-${{ github.run_attempt }} \

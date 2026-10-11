@@ -1,0 +1,70 @@
+# Streaming & integration architecture — a skill that is only a deck of flashcards (ADR-0022,
+# ADR-0027). It names no person, employer or client; the cards are content, written from the
+# reference guides and published into a deck block through `/coach/v1`, never committed (ADR-0006).
+#
+# The cards are concepts, grouped by idea rather than by vendor: a Kafka log, a Solace queue and an
+# EventBridge bus sit side by side so the learner compares them instead of memorising three products.
+
+packId: streaming-integration
+
+# One string each, in the skill's one language (ADR-0026).
+title: Streaming & integration architecture
+
+description: >-
+  Event streaming and enterprise integration as flashcards — logs versus brokers and routers, schemas
+  and event contracts, connectors and CDC, stream processing with time, state and joins, delivery
+  guarantees and failure handling, operating an event platform, iPaaS and API-led integration,
+  integrating SaaS and ERP systems, and streams for AI/ML and agents.
+
+contentLanguage: en
+translationLanguage: en
+skill: integration-architecture # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each mechanism does, what it costs and when it is the wrong choice, without notes, in both
+  directions — and pick between a log, a broker and a router for a given requirement.
+
+# Required by the contract and read by no ramp here: a deck has no lessons. Kept as the ladder a
+# coach writes cards against.
+framework:
+  id: integration-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Group by concept, not by vendor. Kafka, Event Hubs, Solace and EventBridge answer the same
+      questions — ordering, retention, replay, delivery — differently; a card says how, so the learner
+      compares rather than memorises products.
+    - >-
+      Name the confusion, then separate it. Log and router, BACKWARD and FORWARD, temporal and lookup
+      join, rule DLQ and queue DLQ, EIB and Studio: a confused pair is one card whose back draws the
+      line, or two cards that each say how they differ.
+    - >-
+      Mechanism before vocabulary. The back says what the thing does and when it is the wrong choice,
+      not only what it is called.
+    - >-
+      One idea per card. A back that needs three sentences is two cards.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides or the vendor documentation they cite, and says
+      where in `details.source`
+    front: the term as practitioners write it — "watermark", "outbox pattern", "FULL_TRANSITIVE"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer — and never the front's own words
+    group: a concept theme, numbered from foundations to advanced
+    code: a short SQL, config or payload snippet where seeing it is faster than reading about it
+    analogy: the Kafka, SQL or warehouse counterpart, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: cloud
+  tagline: Logs, brokers, routers — and what connects them.
+  surfaces: [drills:terms]

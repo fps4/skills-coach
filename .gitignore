@@ -12,184 +12,27 @@ dist/
 config/ds1/.env
 
 # Learner content and artifacts are never committed (see ADR-0006).
-# Real packs are imported into MongoDB from a local path; only packs/demo-* ships.
-packs/*
-!packs/demo-*/
 content/
 
-# A pack's MANIFEST is product; its blocks are content (ADR-0008). Granted per pack, by name, so
-# the default outcome of dropping a pack into the tree is still that all of it stays out.
+# Skills (ADR-0029): `skills/<id>/skill.yaml` and, beside it, `skills/<id>/guides/*.md` — curated,
+# impersonal reference guides that ship with the code and render on the skill's Guides tab. Cards,
+# blocks and a local copy of a reading library are content (ADR-0006, ADR-0008) and stay out: dropping a
+# skill's whole working directory into the tree still commits only the manifest and the guides.
 #
-# Three lines, in this order, because git does not descend into an excluded directory: re-include
-# the directory so it is walked, ignore everything inside it again, then un-ignore the one file.
-# Last match wins — reordering these silently commits a learner's lessons.
-!packs/woordtrainer-nl/
-packs/woordtrainer-nl/*
-!packs/woordtrainer-nl/pack.yaml
+# Order matters: git does not descend into an excluded directory, so the directories themselves are
+# re-included, everything inside them is ignored again, and only then are the allowed files
+# un-ignored. Last match wins — reordering these silently commits content.
+skills/*
+!skills/*/
+skills/*/*
+!skills/*/skill.yaml
+!skills/*/guides/
+skills/*/guides/*
+!skills/*/guides/*.md
 
-!packs/knowledge-graphs/
-packs/knowledge-graphs/*
-!packs/knowledge-graphs/pack.yaml
-
-# Upskilling flashcard skills — one per reference guide (ADR-0027). Manifest only; the cards are
-# content, published by a coach.
-!packs/airflow-mwaa/
-packs/airflow-mwaa/*
-!packs/airflow-mwaa/pack.yaml
-!packs/aviation-climate-contrails/
-packs/aviation-climate-contrails/*
-!packs/aviation-climate-contrails/pack.yaml
-!packs/aws-bedrock-genai/
-packs/aws-bedrock-genai/*
-!packs/aws-bedrock-genai/pack.yaml
-!packs/aws-cdk-for-terraform-users/
-packs/aws-cdk-for-terraform-users/*
-!packs/aws-cdk-for-terraform-users/pack.yaml
-!packs/aws-data-engineering/
-packs/aws-data-engineering/*
-!packs/aws-data-engineering/pack.yaml
-!packs/aws-eventbridge/
-packs/aws-eventbridge/*
-!packs/aws-eventbridge/pack.yaml
-!packs/azure-arc-and-azure-monitor/
-packs/azure-arc-and-azure-monitor/*
-!packs/azure-arc-and-azure-monitor/pack.yaml
-!packs/azure-event-hubs-for-kafka-users/
-packs/azure-event-hubs-for-kafka-users/*
-!packs/azure-event-hubs-for-kafka-users/pack.yaml
-!packs/bid-and-presales-process/
-packs/bid-and-presales-process/*
-!packs/bid-and-presales-process/pack.yaml
-!packs/boomi/
-packs/boomi/*
-!packs/boomi/pack.yaml
-!packs/c4-model/
-packs/c4-model/*
-!packs/c4-model/pack.yaml
-!packs/cloud-db-migration-to-aws/
-packs/cloud-db-migration-to-aws/*
-!packs/cloud-db-migration-to-aws/pack.yaml
-!packs/confluent/
-packs/confluent/*
-!packs/confluent/pack.yaml
-!packs/dama-dmbok-governance/
-packs/dama-dmbok-governance/*
-!packs/dama-dmbok-governance/pack.yaml
-!packs/data-governance-catalog-quality/
-packs/data-governance-catalog-quality/*
-!packs/data-governance-catalog-quality/pack.yaml
-!packs/data-modeling/
-packs/data-modeling/*
-!packs/data-modeling/pack.yaml
-!packs/data-vault-dbt/
-packs/data-vault-dbt/*
-!packs/data-vault-dbt/pack.yaml
-!packs/databricks/
-packs/databricks/*
-!packs/databricks/pack.yaml
-!packs/dbt/
-packs/dbt/*
-!packs/dbt/pack.yaml
-!packs/engineering-leadership/
-packs/engineering-leadership/*
-!packs/engineering-leadership/pack.yaml
-!packs/eu-legal-publication-standards/
-packs/eu-legal-publication-standards/*
-!packs/eu-legal-publication-standards/pack.yaml
-!packs/feature-platforms/
-packs/feature-platforms/*
-!packs/feature-platforms/pack.yaml
-!packs/flink-sql/
-packs/flink-sql/*
-!packs/flink-sql/pack.yaml
-!packs/kafka-ai-ml-mcp/
-packs/kafka-ai-ml-mcp/*
-!packs/kafka-ai-ml-mcp/pack.yaml
-!packs/llmops-eval/
-packs/llmops-eval/*
-!packs/llmops-eval/pack.yaml
-!packs/microsoft-fabric-platform/
-packs/microsoft-fabric-platform/*
-!packs/microsoft-fabric-platform/pack.yaml
-!packs/model-serving-patterns/
-packs/model-serving-patterns/*
-!packs/model-serving-patterns/pack.yaml
-!packs/mulesoft-anypoint/
-packs/mulesoft-anypoint/*
-!packs/mulesoft-anypoint/pack.yaml
-!packs/online-experimentation/
-packs/online-experimentation/*
-!packs/online-experimentation/pack.yaml
-!packs/openshift-for-k8s-users/
-packs/openshift-for-k8s-users/*
-!packs/openshift-for-k8s-users/pack.yaml
-!packs/palantir-foundry-aip/
-packs/palantir-foundry-aip/*
-!packs/palantir-foundry-aip/pack.yaml
-!packs/pharma-rd-data-gxp/
-packs/pharma-rd-data-gxp/*
-!packs/pharma-rd-data-gxp/pack.yaml
-!packs/polars-pandas/
-packs/polars-pandas/*
-!packs/polars-pandas/pack.yaml
-!packs/power-bi-for-data-architects/
-packs/power-bi-for-data-architects/*
-!packs/power-bi-for-data-architects/pack.yaml
-!packs/pytorch-image-segmentation/
-packs/pytorch-image-segmentation/*
-!packs/pytorch-image-segmentation/pack.yaml
-!packs/react-node/
-packs/react-node/*
-!packs/react-node/pack.yaml
-!packs/safe-for-architects/
-packs/safe-for-architects/*
-!packs/safe-for-architects/pack.yaml
-!packs/sap-advanced-event-mesh/
-packs/sap-advanced-event-mesh/*
-!packs/sap-advanced-event-mesh/pack.yaml
-!packs/sap-commercial-data-migration-and-tpm/
-packs/sap-commercial-data-migration-and-tpm/*
-!packs/sap-commercial-data-migration-and-tpm/pack.yaml
-!packs/sap-data-platform/
-packs/sap-data-platform/*
-!packs/sap-data-platform/pack.yaml
-!packs/sap-s4hana-finance-migration/
-packs/sap-s4hana-finance-migration/*
-!packs/sap-s4hana-finance-migration/pack.yaml
-!packs/snowflake-platform/
-packs/snowflake-platform/*
-!packs/snowflake-platform/pack.yaml
-!packs/spark-performance/
-packs/spark-performance/*
-!packs/spark-performance/pack.yaml
-!packs/spring-boot-for-architects/
-packs/spring-boot-for-architects/*
-!packs/spring-boot-for-architects/pack.yaml
-!packs/sql-patterns/
-packs/sql-patterns/*
-!packs/sql-patterns/pack.yaml
-!packs/tax-regulatory-finance-data-flows/
-packs/tax-regulatory-finance-data-flows/*
-!packs/tax-regulatory-finance-data-flows/pack.yaml
-!packs/togaf/
-packs/togaf/*
-!packs/togaf/pack.yaml
-!packs/workday-integration-architecture/
-packs/workday-integration-architecture/*
-!packs/workday-integration-architecture/pack.yaml
-!packs/xml-xsd-xslt-xpath-schematron/
-packs/xml-xsd-xslt-xpath-schematron/*
-!packs/xml-xsd-xslt-xpath-schematron/pack.yaml
-
-# A reading library is content twice over (ADR-0017): somebody else's articles, kept for one
-# learner. The per-pack stanzas above already exclude it — but only while their three lines stay in
-# that order, which the comment above warns about. This does not depend on that ordering, and it
-# applies to a pack added later whose stanza nobody has written yet.
-#
-# Keeping a local copy under `packs/<pack>/reading/` is a reasonable thing to want: the loader reads
-# that shape directly and is idempotent by slug, so it is what you reload from after a restore. This
-# line is what makes keeping it there safe.
-packs/*/reading/
+# The demo skill is synthetic, invented for this repository, and ships whole — blocks included — so
+# the app runs out of the box and CI has a pack to import (ADR-0006).
+!skills/demo-*/**
 
 # Tooling caches
 .cache/

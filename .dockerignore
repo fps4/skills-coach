@@ -13,4 +13,6 @@ config/ds1/.env
 .env.local
 *.md
 !README.md
+# A skill's guides render in the app (ADR-0029).
+!skills/*/guides/*.md
 .DS_Store

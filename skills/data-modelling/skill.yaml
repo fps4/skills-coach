@@ -1,0 +1,69 @@
+# Data modelling — a skill that is only a deck of flashcards (ADR-0022, ADR-0027).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill and it names no
+# person, employer or client. The cards are content, written by a coach from the reference guides and
+# published into a deck block through `/coach/v1` or the MCP `publish_block` tool; none of them is
+# committed (ADR-0006). Cards are concepts, so the learner self-grades (`flashcards.grading: self`).
+
+packId: data-modelling
+
+# One string each, in the skill's one language (ADR-0026).
+title: Data modelling
+
+description: >-
+  Modelling levels and grain, choosing between dimensional, Data Vault, wide-table and document
+  models, vault mechanics and layering, schema contracts and evolution, RDF and ontologies with SHACL
+  and SPARQL, XML schemas, XPath and XSLT, and knowledge graphs next to LLMs — as flashcards.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each model, structure and standard is for, what it costs and when it is the wrong choice,
+  without notes, in both directions — from the term to the idea and from the idea to the term.
+
+# Required by the contract and read by no ramp here: a deck has no lessons. Kept as the ladder a
+# coach writes cards against.
+framework:
+  id: modelling-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Where it helps, a card carries an analogy that maps
+      the idea onto a relational or dimensional counterpart — a satellite against SCD2, SHACL against
+      a dbt test, a property path against a recursive CTE — and says where the analogy breaks.
+    - >-
+      Name the confusion, then separate it. Raw and business vault, PIT and bridge, OWL and SHACL,
+      XSD and Schematron, RDF and property graphs: a pair that gets confused is one card whose back
+      says how the two differ.
+    - >-
+      Mechanism and trade-off before vocabulary. The back says what the thing does and when it is
+      the wrong choice, not only what it is called.
+    - >-
+      One idea per card. A back that needs more than two sentences is two cards.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides or the specifications they cite, and says where
+      in `details.source`
+    front: the term as practitioners write it, at most eight words
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer, and never repeating the front's words
+    group: a concept theme, numbered from foundations to advanced
+    code: a short SQL, Turtle, SPARQL, XSD or XSLT snippet where seeing it is faster than reading
+    analogy: the relational or dimensional counterpart, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: list-checks
+  tagline: Pick the model per layer, and defend it.
+  surfaces: [drills:terms]

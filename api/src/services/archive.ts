@@ -5,7 +5,7 @@
  * with you, and nothing that is the pack's does.** A learner's archive holds their position, their
  * practice state, their own words, their reading library, their written work and the coaching that
  * came back on it. It does not hold a single lesson, vocabulary row or question — that material is
- * the coach's, it is republished from `packs/`, and copying it into a personal file would put
+ * the coach's, it is republished from `skills/`, and copying it into a personal file would put
  * content somewhere it does not belong (ADR-0006).
  *
  * Two consequences shape everything below.

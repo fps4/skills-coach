@@ -1,0 +1,67 @@
+# Business domains for data architects — a skill that is only a deck of flashcards (ADR-0022,
+# ADR-0027): the domain knowledge a data architect needs before the platform work starts — ERP finance
+# and migration, regulatory reporting, and aviation climate.
+#
+# COMMITTED, deliberately (ADR-0008): it names no person, employer or client. The cards are content,
+# published into a deck block through `/coach/v1` or the MCP `publish_block` tool, and are never
+# committed (ADR-0006).
+
+packId: business-domains
+
+# One string each, in the skill's one language (ADR-0026).
+title: Business domains for data architects
+
+description: >-
+  The domains behind the data — the S/4HANA finance data model and how ERP migrations are designed and
+  reconciled, commercial data and trade promotion, tax and regulatory reporting (DAC7, ViDA, SAF-T,
+  e-invoicing, SOX, GDPR), and aviation climate: contrail physics, forcing and targeted avoidance.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Speak a domain's language well enough to design its data: say what each concept is, why it shapes
+  the architecture, and where the trap is, without notes, in both directions.
+
+# Required by the contract and read by no ramp here: a deck has no lessons.
+framework:
+  id: domain-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Domain first, then the data consequence. A card says what the business or physical concept is
+      and what it forces on the data platform — a grain, a golden record, a snapshot, a gate.
+    - >-
+      Map onto what the learner already knows. Where it helps, a card carries an analogy to
+      dimensional modelling, pipelines or ML practice, and says where it stops holding.
+    - >-
+      Name the confusion, then separate it. Central Finance and selective transition, DAC7 and ViDA,
+      off-invoice and bill-back, reanalysis and forecast: a pair that gets confused becomes one card
+      whose back states the difference.
+    - >-
+      State uncertainty honestly. Where a figure is contested or depends on a modelling choice, the
+      card says so instead of quoting a number as settled.
+
+  rules:
+    sources: every card is written from the reference guides, and says where in `details.source`
+    front: the term as practitioners write it — `ACDOCA`, "deemed supplier", "ice-supersaturated region"
+    back: one sentence, at most two; what it is and why it matters for the data
+    hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
+    group: a concept theme, ordered from foundations to advanced
+    code: a short annotation, formula or pipeline sketch where seeing it is faster than reading about it
+    analogy: the data-architecture counterpart, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: briefcase
+  tagline: Know the domain before you model it.
+  surfaces: [drills:terms]

@@ -1,9 +1,10 @@
 /**
- * `npm run validate:manifests [-- <packs-dir>]`
+ * `npm run validate:manifests [-- <skills-dir>]`
  *
- * Parses every pack manifest in the tree and reports what it found. A manifest is committed
- * (ADR-0008) precisely so a change to it is reviewable, and this is what makes the review honest:
- * a manifest that stops parsing, or that quietly contradicts itself, fails the DoD.
+ * Parses every skill manifest in the tree (`skills/<id>/skill.yaml`, ADR-0029) and reports what it
+ * found. A manifest is committed (ADR-0008) precisely so a change to it is reviewable, and this is
+ * what makes the review honest: a manifest that stops parsing, or that quietly contradicts itself,
+ * fails the DoD.
  *
  * Deliberately not `import:pack --dry-run`: `loadPack` requires a block directory, and a committed
  * pack ships without one — its blocks live outside the tree. `loadManifest` is the block-free entry
@@ -21,11 +22,11 @@ import { parse as parseYaml } from 'yaml';
 import { ZodError } from 'zod';
 
 import type { PackManifestInput } from '../domain/schemas.js';
-import { loadManifest } from './pack-source.js';
+import { MANIFEST_FILE, loadManifest } from './pack-source.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-/** The repository's `packs/`, whatever the caller's working directory is. */
-const DEFAULT_PACKS_DIR = resolve(HERE, '../../../packs');
+/** The repository's `skills/`, whatever the caller's working directory is. */
+const DEFAULT_SKILLS_DIR = resolve(HERE, '../../../skills');
 
 const log = (message: string): void => {
   process.stdout.write(`${message}\n`);
@@ -116,19 +117,19 @@ function emptyKeys(value: unknown, path = ''): string[] {
 }
 
 async function main(): Promise<void> {
-  const packsDir = process.argv[2] ? resolve(process.argv[2]) : DEFAULT_PACKS_DIR;
+  const skillsDir = process.argv[2] ? resolve(process.argv[2]) : DEFAULT_SKILLS_DIR;
 
-  if (!(await isDirectory(packsDir))) {
-    throw new Error(`no packs directory at ${packsDir}`);
+  if (!(await isDirectory(skillsDir))) {
+    throw new Error(`no skills directory at ${skillsDir}`);
   }
 
-  const entries = (await readdir(packsDir, { withFileTypes: true })).filter((entry) => entry.isDirectory());
+  const entries = (await readdir(skillsDir, { withFileTypes: true })).filter((entry) => entry.isDirectory());
 
   let checked = 0;
   let failed = 0;
 
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    const manifestPath = join(packsDir, entry.name, 'pack.yaml');
+    const manifestPath = join(skillsDir, entry.name, MANIFEST_FILE);
     try {
       await stat(manifestPath);
     } catch {
@@ -144,7 +145,7 @@ async function main(): Promise<void> {
       const ramp = manifest.framework.ramp?.length ?? 0;
 
       log(
-        `${problems.length === 0 ? '✓' : '✗'} ${entry.name}/pack.yaml — ${manifest.packId} ` +
+        `${problems.length === 0 ? '✓' : '✗'} ${entry.name}/${MANIFEST_FILE} — ${manifest.packId} ` +
           `(${manifest.contentLanguage} → ${manifest.translationLanguage}), ` +
           `${manifest.framework.levels.length} levels, ${ramp} ramp step${ramp === 1 ? '' : 's'}, ` +
           `${manifest.errorCategories.length} error categories`,
@@ -154,7 +155,7 @@ async function main(): Promise<void> {
       if (problems.length > 0) failed += 1;
     } catch (error) {
       failed += 1;
-      log(`✗ ${entry.name}/pack.yaml`);
+      log(`✗ ${entry.name}/${MANIFEST_FILE}`);
       if (error instanceof ZodError) {
         for (const issue of error.issues) {
           log(`    · ${issue.path.join('.') || '(root)'}: ${issue.message}`);
@@ -165,7 +166,7 @@ async function main(): Promise<void> {
     }
   }
 
-  if (checked === 0) throw new Error(`no pack manifests under ${packsDir}`);
+  if (checked === 0) throw new Error(`no skill manifests under ${skillsDir}`);
 
   log(`\n${checked} manifest${checked === 1 ? '' : 's'} checked, ${failed} with problems.`);
   if (failed > 0) process.exit(1);

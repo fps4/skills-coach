@@ -1,0 +1,76 @@
+# Data platforms for architects — a skill that is only a deck of flashcards (ADR-0022, ADR-0027).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill and it names no
+# person, employer or client. The cards are content, written by a coach from the reference guides and
+# published into a deck block through `/coach/v1` or the MCP `publish_block` tool; none is committed
+# (ADR-0006).
+#
+# One deck across the platforms — Databricks, Snowflake, Microsoft Fabric, the AWS data stack, SAP's
+# data products, Palantir Foundry and Power BI — grouped by concept rather than by vendor, so that a
+# card compares platforms where the same idea appears in several.
+
+packId: data-platforms
+
+# One string each, in the skill's one language (ADR-0026).
+title: Data platforms for architects
+
+description: >-
+  Lakehouse foundations, table formats and file layout, compute and cost models, query engines and
+  tuning, ingestion and incremental pipelines, orchestration and release, catalogs and governance, BI
+  semantic models, SAP and operational data layers, and how to choose between platforms — compared
+  across Databricks, Snowflake, Fabric, AWS, SAP, Foundry and Power BI.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Explain each mechanism, what it costs and when it is the wrong choice, and say which platform does
+  it how — without notes, from the term to the idea and from the idea to the term.
+
+# Required by the contract and read by no ramp here: a deck has no lessons. Kept as the ladder a
+# coach writes cards against.
+framework:
+  id: platform-depth
+  levels: [vocabulary, mechanism, trade-off, design]
+
+method:
+  principles:
+    - >-
+      Group by concept, not by vendor. Where the same idea exists on several platforms — the
+      lakehouse, table formats, catalogs, compute/storage separation, tag-based access — one card
+      names it and compares the platforms, instead of one card per product.
+    - >-
+      Name the confusion, then separate it. Pairs that get mixed up — Import and DirectQuery,
+      shortcut and mirroring, Time Travel and Fail-safe, Lakehouse and Warehouse — become one card
+      whose back says how they differ.
+    - >-
+      Mechanism and trade-off before vocabulary. The back says what the thing does and what it costs,
+      not only what it is called.
+    - >-
+      One idea per card, and only the ideas an architect must hold in their head; product trivia and
+      exact limits that change monthly stay in the guides.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides and says where in `details.source`
+      ("<guide title> · <section>")
+    front: the term as practitioners write it, at most eight words
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer, and never the front's own words
+    group: a numbered concept theme, ordered from foundations to platform choice
+    code: a short SQL, YAML, DAX or Python snippet where seeing it is faster than reading about it
+    analogy: the equivalent on a platform the learner already knows, and where it stops holding
+    note: a dated claim to verify, or a caveat that does not fit the back
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: cloud
+  tagline: One idea, compared across the platforms.
+  surfaces: [drills:terms]

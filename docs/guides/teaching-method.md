@@ -24,7 +24,7 @@ every block is built the same way.
 | Layer | Holds |
 |---|---|
 | This document | the principles, and why each one is a rule rather than a preference |
-| A pack's `method:` block in `pack.yaml` | that pack's own commitments — lesson arc, authoring rules, per-topic sequencing |
+| A pack's `method:` block in `skill.yaml` | that pack's own commitments — lesson arc, authoring rules, per-topic sequencing |
 | A pack's `framework.ramp[].dials` | how hard the next block should be |
 | The learner's `profile` | what the block is **about** — their domain, background, target role |
 
@@ -176,7 +176,7 @@ the same reason a ramp's `dials` are: a language pack, a certification syllabus 
 share a lesson shape, and a schema that insisted they did would be the runtime holding an opinion
 about didactics it cannot act on.
 
-`packs/demo-conversation-nl/pack.yaml` carries a short one. The fullest one written so far, with the
+`skills/demo-conversation-nl/skill.yaml` carries a short one. The fullest one written so far, with the
 Dutch sequencing notes, belonged to `dutch-conversation-nl`; that programme was retired on 2026-09-30
 (ADR-0022) and its manifest is in the git history, in the commit that removed it.
 

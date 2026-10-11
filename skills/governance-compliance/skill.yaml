@@ -1,0 +1,65 @@
+# Governance and compliance for data architects — a skill that is only a deck of flashcards
+# (ADR-0022, ADR-0027). It names no person, employer or client; the cards are content, published into
+# a deck block through `/coach/v1` and never committed (ADR-0006).
+
+packId: governance-compliance
+
+# One string each, in the skill's one language (ADR-0026).
+title: Governance & compliance for data architects
+
+description: >-
+  Data governance and the rules data lives under — DAMA-DMBOK vocabulary, operating models and
+  roles, policy as code, master and reference data, catalogs and lineage, layered data quality,
+  clinical and real-world health data under GxP, and the EU legal publication standards.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each concept is for, which confusion it resolves and what it changes in a design or a
+  delivery plan, without notes, in both directions — from the term to the idea and back.
+
+# Required by the contract and read by no ramp here: a deck has no lessons.
+framework:
+  id: governance-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Name the confusion, then separate it. Governance and management, owner and steward, master and
+      reference data, accuracy and validity, rules and anomaly detection: a pair that gets confused is
+      one card whose back says how the two differ.
+    - >-
+      Mechanism before vocabulary. The back says what the thing does or what it forces — a policy
+      that nothing enforces, a join that breaks a licence — not only what it is called.
+    - >-
+      Build from what the learner already knows. Where it helps, an analogy maps the idea onto data
+      engineering or software practice — a data SLA onto an SLO, policy as code onto CI checks.
+    - >-
+      One idea per card.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides (DAMA-DMBOK and data governance; data
+      governance, catalog and quality; pharma R&D data and GxP; EU legal and publication standards)
+      and says where in `details.source`
+    front: the term as practitioners write it, at most eight words
+    back: one sentence, at most two; what it does and how it differs from its neighbour
+    hint: a cue, not the answer, and never repeating the front's words
+    group: a concept theme, numbered from foundations to the specialised regulated domains
+    code: a short snippet where seeing it is faster than reading about it
+    analogy: the engineering counterpart, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: shield-check
+  tagline: Who decides, what is true, and what the rules require.
+  surfaces: [drills:terms]

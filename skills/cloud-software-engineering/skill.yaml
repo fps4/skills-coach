@@ -1,0 +1,66 @@
+# Cloud and software engineering — a skill that is only a deck of flashcards (ADR-0022, ADR-0027).
+# The cards are content, written from the reference guides and published into a deck block through
+# `/coach/v1` or the MCP `publish_block` tool; none of them is committed (ADR-0006).
+
+packId: cloud-software-engineering
+
+title: Cloud and software engineering
+
+description: >-
+  Building and running services, from the component to the cloud control plane — React hooks and
+  Vite, Node backends-for-frontends, Spring Boot wiring, data access and transactions, testing and
+  production readiness on Kubernetes, OpenShift and container security, AWS CDK against Terraform,
+  and hybrid governance and observability with Azure Arc, Policy and Monitor.
+
+contentLanguage: en
+translationLanguage: en
+skill: software-engineering # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each mechanism does, what it costs and when it is the wrong choice, without notes, in
+  both directions — from the term to the idea and from the idea to the term.
+
+# Required by the contract and read by no ramp here: a deck has no lessons.
+framework:
+  id: cse-depth
+  levels: [vocabulary, mechanism, design, review]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Where a card can, its analogy maps the idea onto a
+      counterpart in another stack — a CDK construct against a Terraform module, a Spring filter
+      chain against Express middleware, an OpenShift Route against an Ingress — and says where the
+      mapping breaks.
+    - >-
+      Name the confusion, then separate it. Controlled and uncontrolled inputs, MVC and WebFlux,
+      edge and re-encrypt termination, metric and log alerts: a pair that gets confused is either
+      two cards or one card whose back says how they differ.
+    - >-
+      Mechanism and trade-off before vocabulary. The back says what the thing does and when not to
+      use it, not only what it is called.
+    - >-
+      One idea per card.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides or the vendor documentation, and says where in
+      `details.source`
+    front: the term as practitioners write it — `@Transactional`, "restricted-v2", "cdk synth"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
+    group: a concept theme, ordered from application code out to the platform and its governance
+    code: a short snippet where seeing it is faster than reading about it
+    analogy: the counterpart in a stack the learner already knows, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: cloud
+  tagline: From the component to the control plane.
+  surfaces: [drills:terms]

@@ -75,7 +75,7 @@ api/src/
                      `route.ts` is the fastify bridge (ADR-0010)
   importer/          local markdown/CSV → pack payload → coach API
                      (also `validate-manifests.ts`, the linter CI runs over every
-                      committed `packs/*/pack.yaml` — ADR-0008)
+                      committed `skills/*/skill.yaml` — ADR-0008, ADR-0029)
                      `migrate-to-skills.ts` runs services/skill-migration.ts; `remove-pack.ts` deletes a
                       pack — both inside the api container, via the `maintain-skills` workflow
                      `reading-source.ts` / `import-reading.ts` are the same idea for a
@@ -95,6 +95,10 @@ capability gate and writing the same audit trail, not a fork.
 
 ```
 
+skills/<id>/         one folder per skill (ADR-0029): `skill.yaml` is the manifest, `guides/*.md` the
+                     curated reference guides its cards are written from. Cards are content and are
+                     not here; `skills/demo-*` is the one skill committed whole
+
 web/src/
   app/               no locale segment — the interface is English only (ADR-0025)
     layout.tsx         the document: <html lang="en">, theme and palette. No chrome.
@@ -108,6 +112,8 @@ web/src/
     theme/palettes   the hue axis — a palette is data, not code
     menu.ts          grouping the rail by the learner's menu — pure, unit-tested
     legacy-locale.ts which old `/nl/…` `/en/…` paths the middleware redirects — pure, unit-tested
+    guides.ts        a skill's guides, read off `skills/<id>/guides/` (server-only, ADR-0029); its test
+                     is the impersonality guard over every committed guide
   components/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives

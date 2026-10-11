@@ -55,7 +55,8 @@ that constrains future work means an ADR; a changed drill rule means the mapping
 
 It is public. Do not commit training content, learner answers, error logs, session logs, or anything
 naming a real person or employer — including in test fixtures and doc examples. Real packs are
-imported into MongoDB from a local directory; only `packs/demo-*` is committed. See
+imported into MongoDB from a local directory; a skill's `skill.yaml` and curated `guides/` are
+committed, and only `skills/demo-*` is committed whole. See
 [ADR-0006](docs/architecture/decisions/0006-content-and-learner-data-stay-out-of-the-repo.md).
 
 ## Reporting a security issue

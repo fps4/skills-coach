@@ -1,0 +1,69 @@
+# Architecture & leadership — a skill that is only a deck of flashcards (ADR-0022, ADR-0027).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill and it names no
+# person, employer or client. The cards are content, written from the reference guides and published
+# into a deck block through `/coach/v1`; none of them is committed (ADR-0006).
+
+packId: architecture-leadership
+
+# One string each, in the skill's one language (ADR-0026).
+title: Architecture & leadership
+
+description: >-
+  The architect's working methods and the step into leadership — TOGAF's ADM and architecture
+  governance, C4 system diagrams, SAFe release trains and the architect's runway, bid and presales
+  practice, and engineering leadership: org design, commercial ownership, executive communication and
+  delivery governance.
+
+contentLanguage: en
+translationLanguage: en
+skill: architecture-leadership # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each method, role and practice is for, when it is the wrong tool, and how it differs from
+  the one it is confused with, without notes, in both directions — from the term to the idea and from
+  the idea to the term.
+
+# Required by the contract and read by no ramp here: a deck has no lessons. Kept as the ladder a coach
+# writes cards against.
+framework:
+  id: architecture-leadership-depth
+  levels: [vocabulary, mechanism, judgement, defence]
+
+method:
+  principles:
+    - >-
+      Method over ceremony. A card says what a practice is for and when to skip it — the ADM as a
+      menu, C4's code level left undrawn — not only what it is called.
+    - >-
+      Name the confusion, then separate it. ABB and SBB, phase E and phase F, System Demo and
+      Inspect & Adapt, Bid Manager and Solution Manager, showback and chargeback: a pair that gets
+      confused becomes one card whose back says how the two differ.
+    - >-
+      Translate technical work into organisational and commercial terms. Leadership cards state
+      outcomes as headcount, money, risk and delivery, not as technology.
+    - >-
+      One idea per card. A back that needs more than two sentences is two cards.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides, and says which guide and section in
+      `details.source`
+    front: the term as practitioners say it — "ABB before SBB", "architectural runway", "WSJF"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer, and never the front's own words
+    group: a concept theme, numbered from foundations to advanced
+    code: a short formula or DSL snippet where seeing it is faster than reading about it
+    analogy: the counterpart the learner already knows, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: violet
+  icon: briefcase
+  tagline: From the architecture board to the leadership table.
+  surfaces: [drills:terms]

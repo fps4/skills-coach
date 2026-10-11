@@ -23,6 +23,7 @@ import { LearnerRail, type RailPack } from '@/components/learner-rail';
 import { SkillHeader } from '@/components/skill-header';
 import { PackPaletteSync } from '@/components/pack-palette-sync';
 import { PACK_HEADER } from '@/lib/pack-scope';
+import { guideList } from '@/lib/guides';
 import { getDictionary } from '@/i18n/dictionaries';
 import { api } from '@/lib/api';
 import { currentToken } from '@/lib/auth';
@@ -57,6 +58,8 @@ async function railPacks(): Promise<{ packs: RailPack[]; palettes: Record<string
           wordOrder: entry.decks.wordOrder.total,
           quiz: entry.decks.quiz.total,
           reading: entry.reading?.total ?? 0,
+          // Committed beside the manifest, so counted from disk rather than asked of the api (ADR-0029).
+          guides: guideList(entry.pack.packId).length,
         },
       })),
       palettes: Object.fromEntries(packs.map((entry) => [entry.pack.packId, entry.pack.presentation?.palette])),
