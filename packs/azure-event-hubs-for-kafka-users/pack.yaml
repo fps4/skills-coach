@@ -1,0 +1,55 @@
+# Azure Event Hubs for Kafka users — a skill that is only a deck of flashcards (ADR-0022).
+# This file is the whole definition of the skill and names no person, employer or client.
+# The cards are content: a coach writes them from the reference guides and publishes them through
+# `/coach/v1` or the MCP `publish_block` tool. None of them is committed (ADR-0006).
+
+packId: azure-event-hubs-for-kafka-users
+
+title: Azure Event Hubs for Kafka users
+
+description: >-
+  Event Hubs through a Kafka lens — the mapping, the units you buy, where offsets live, what Capture
+  does and does not do — as flashcards, each one mapped onto the Kafka you already know.
+
+contentLanguage: en
+translationLanguage: en
+skill: streaming-architecture
+
+goal: >-
+  Say where Event Hubs behaves like Kafka and where the Kafka mental model breaks, without notes, in
+  both directions — from the term to the idea and from the idea to the term.
+
+framework:
+  id: eventhubs-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. A card maps the Event Hubs idea onto its Kafka
+      counterpart and says where the mapping stops holding.
+    - >-
+      Name the seam. Offsets, units, retention, Capture and disaster recovery are where Kafka habits
+      mislead; each gets a card whose back says what is different.
+    - >-
+      Date the claim. Limits and Kafka-parity gaps move; a card about them says it needs checking.
+    - >-
+      One idea per card.
+
+  rules:
+    sources: every card is written from the reference guides or the Azure documentation, and says where in `details.source`
+    front: the term as practitioners write it — "throughput unit", "checkpoint store", "Geo-DR"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short client configuration where seeing it is faster than reading about it
+    analogy: the Kafka counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: cloud
+  tagline: Kafka's protocol, Azure's operating model.
+  surfaces: [drills:terms]

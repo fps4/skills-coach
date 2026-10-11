@@ -1,0 +1,61 @@
+# SAP Advanced Event Mesh for data and integration architects — a skill that is only a deck of
+# flashcards (ADR-0022).
+#
+# This manifest is the whole definition of the skill and names no person, employer or client.
+# The cards are content: a coach writes them from the reference guides and publishes them into a
+# deck block through `/coach/v1` or `publish_block`. None of them is committed (ADR-0006).
+
+packId: sap-advanced-event-mesh
+
+title: SAP Advanced Event Mesh for data and integration architects
+
+description: >-
+  SAP's Solace-based event broker from the consuming side — the product names, Solace against
+  Kafka, AMQP 1.0 addressing and acks, thin SAP business events and enrichment, landing patterns,
+  security, operations and anti-patterns — as flashcards.
+
+contentLanguage: en
+translationLanguage: en
+skill: integration-architecture
+
+goal: >-
+  Explain how events move through Advanced Event Mesh, how it differs from a Kafka log, and how a
+  cloud consumer lands SAP business events without losing them, without notes, in both directions.
+
+framework:
+  id: aem-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. A card that can maps the Solace idea onto its
+      Kafka or cloud-messaging counterpart — a queue subscription against a consumer group, the
+      spool against retention — and says where the mapping breaks, because that is where designs
+      go wrong.
+    - >-
+      Name the confusion, then separate it. Event Mesh, Advanced Event Mesh and Event Broker;
+      exclusive and non-exclusive queues; a durable queue and a direct topic consumer: each pair
+      becomes a card that says how they differ.
+    - >-
+      Mechanism before vocabulary. A back says what happens to the message — routed, spooled,
+      acked, redelivered, dead-lettered — not only what the setting is called.
+    - One idea per card.
+
+  rules:
+    sources: every card is written from the reference guides or the Solace, SAP and CloudEvents documentation, and says where in `details.source`
+    front: the term as practitioners write it — "Dynamic Message Routing", "partitioned queue", "REST Delivery Point"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short topic, address or envelope snippet where seeing it is faster than reading about it
+    analogy: the Kafka or cloud-messaging counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: orange
+  icon: sparkles
+  tagline: A router, not a log.
+  surfaces: [drills:terms]

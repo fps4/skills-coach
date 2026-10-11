@@ -1,0 +1,58 @@
+# Data Vault 2.0 with dbt — a skill that is only a deck of flashcards (ADR-0022, ADR-0027).
+#
+# Committed: this is the whole definition of the skill, and it names no person, employer or client.
+# The cards are content a coach writes from the reference guides and publishes into a deck block
+# through `/coach/v1` or the MCP `publish_block` tool; none of them is committed (ADR-0006).
+
+packId: data-vault-dbt
+
+title: Data Vault 2.0 with dbt
+
+description: >-
+  Hubs, links and satellites, the raw and business vault, PIT and bridge tables, and the dbt
+  package pattern that generates them — as flashcards, each set against the dimensional modelling
+  you already know.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-architecture
+
+goal: >-
+  Explain Data Vault 2.0 in two minutes, sketch hub-link-satellite over an ERP source, and say when
+  it is the wrong choice, without notes, in both directions.
+
+framework:
+  id: data-vault-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Set each vault construct against its dimensional
+      or 3NF counterpart — a hub against a conformed dimension's key, a satellite against SCD2 —
+      and say where the analogy breaks.
+    - >-
+      Name the confusion, then separate it. Raw vault and business vault, PIT and bridge, a link and
+      an effectivity satellite: a pair that gets confused becomes cards whose backs say how they
+      differ.
+    - Mechanism before vocabulary. The back says what the construct does and why it exists.
+    - One idea per card.
+  rules:
+    sources: >-
+      every card is written from the reference guides or the AutomateDV documentation, and says
+      where in `details.source`
+    front: the term as practitioners write it — "hashdiff", "effectivity satellite", "PIT table"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short SQL or dbt snippet where seeing it is faster than reading about it
+    analogy: the dimensional or relational counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: violet
+  icon: list-checks
+  tagline: Nouns, verbs and descriptions, insert-only.
+  surfaces: [drills:terms]

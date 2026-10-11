@@ -1,0 +1,55 @@
+# AWS EventBridge event platform patterns — a skill that is only a deck of flashcards (ADR-0022).
+#
+# This manifest defines the skill and names no person, employer or client. The cards are content: a
+# coach writes them from the reference guides and publishes them through `publish_block`. None of them
+# is committed (ADR-0006). Cards are concepts, so they are self-graded (ADR-0027).
+
+packId: aws-eventbridge
+
+title: AWS EventBridge event platform patterns
+
+description: >-
+  EventBridge in its own terms — buses, rules, Pipes, Scheduler, archive and replay, retries and DLQs,
+  bus topology — as flashcards, each one set against the Kafka and SNS/SQS patterns you already know.
+
+contentLanguage: en
+translationLanguage: en
+skill: event-platforms
+
+goal: >-
+  Say what each EventBridge primitive is for, how it fails and when it is the wrong choice against SNS,
+  SQS, Kinesis or Kafka, without notes, in both directions.
+
+framework:
+  id: eventbridge-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Every card that can carries an analogy onto Kafka,
+      Schema Registry or SNS/SQS, and says where the analogy breaks — a bus is a router, not a log.
+    - >-
+      Name the confusion, then separate it. The rule-target DLQ and the queue's DLQ, archive-replay and
+      an offset seek, Pipes and rules: a pair that gets confused becomes two cards or one "X vs Y" card.
+    - >-
+      Mechanism before vocabulary. The back says what the thing does and how it fails, not only its name.
+    - >-
+      One idea per card.
+  rules:
+    sources: every card is written from the reference guide or the AWS EventBridge documentation, and says where in `details.source`
+    front: the term as practitioners write it — "rule target DLQ", `anything-but`, "claim-check pattern"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short event pattern, envelope or config snippet where seeing it is faster than reading about it
+    analogy: the Kafka or SNS/SQS counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: orange
+  icon: cloud
+  tagline: A router, not a log.
+  surfaces: [drills:terms]

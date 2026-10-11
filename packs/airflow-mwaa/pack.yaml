@@ -1,0 +1,53 @@
+# Apache Airflow and Amazon MWAA for data architects — a skill that is only a deck of flashcards
+# (ADR-0022, ADR-0027). This file is the whole definition of the skill and names no person, employer
+# or client. The cards are content: a coach writes them from the reference guides and publishes them
+# through `/coach/v1` or the MCP `publish_block` tool. None of them is committed (ADR-0006).
+
+packId: airflow-mwaa
+
+title: Apache Airflow and Amazon MWAA for data architects
+
+description: >-
+  Orchestration at scale — scheduling, dependencies, idempotency, deferrable waits, parse-time
+  hygiene, concurrency knobs and managed Airflow on AWS — as flashcards.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-engineering
+
+goal: >-
+  Explain why a scheduler is slow, how pipelines depend on each other and how a task stays safe to
+  re-run, and choose between Airflow, MWAA and the alternatives, without notes, in both directions.
+
+framework:
+  id: airflow-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Every card that can maps the Airflow idea onto a
+      data-platform counterpart — a pool against a connection limit, a dataset trigger against an
+      event subscription — and says where the analogy breaks.
+    - >-
+      Name the confusion, then separate it: poke and deferrable, logical date and wall clock,
+      TriggerDagRun and ExternalTaskSensor each become a card whose back says how they differ.
+    - Operations before syntax. The back says what the thing does to a running fleet, not only how to write it.
+    - One idea per card.
+  rules:
+    sources: every card is written from the reference guides or the Apache Airflow and MWAA documentation, and says where in `details.source`
+    front: the term as practitioners write it — `catchup`, "deferrable operator", `none_failed_min_one_success`
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short Python DAG snippet or config where seeing it is faster than reading about it
+    analogy: the data-platform counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: orange
+  icon: list-checks
+  tagline: Trigger and wait; let the platform do the work.
+  surfaces: [drills:terms]

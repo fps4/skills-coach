@@ -1,0 +1,57 @@
+# SAP commercial-data migration and trade promotion management — a skill that is only a deck of
+# flashcards (ADR-0022). This file is the whole definition of the skill and names no person,
+# employer or client. The cards are content: a coach writes them from the reference guides and
+# publishes them through `/coach/v1` or the MCP `publish_block` tool. None is committed (ADR-0006).
+
+packId: sap-commercial-data-migration-and-tpm
+
+title: SAP commercial-data migration and TPM
+
+description: >-
+  ECC to S/4HANA on the commercial side — design artefacts, the Migration Cockpit, Business Partner
+  and CVI, pricing and rebates, trade promotion management and distributor data — as flashcards,
+  each one mapped onto the data migration practice you already know.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-migration
+
+goal: >-
+  Read a migration design critically and name what each SAP object, tool and artefact is, what it
+  changes and where it goes wrong, without notes, in both directions.
+
+framework:
+  id: sap-migration-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. A card maps the SAP idea onto the generic data
+      migration or warehouse counterpart where there is a real one, and says where it breaks.
+    - >-
+      Name the failure mode. Unowned value mappings, late mandatory fields, duplicates at CVI and
+      undocumented pricing are what a design lead must see coming; each gets a card.
+    - >-
+      Mechanism before vocabulary. A table name alone is not knowledge; the back says what it holds
+      and why it matters to the migration.
+    - >-
+      One idea per card.
+
+  rules:
+    sources: every card is written from the reference guides or SAP and Salesforce documentation, and says where in `details.source`
+    front: the term as practitioners write it — "CVI", "KNVV", "PRCD_ELEMENTS", "bill-back"
+    back: one sentence, at most two; what it is and what it means for the migration
+    hint: a cue, not the answer
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: rarely; a table or field list only where seeing it beats reading about it
+    analogy: the generic migration or warehouse counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: violet
+  icon: briefcase
+  tagline: The tool loads; the design decides.
+  surfaces: [drills:terms]

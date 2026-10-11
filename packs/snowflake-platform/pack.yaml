@@ -1,0 +1,57 @@
+# Snowflake platform for architects — a skill that is only a deck of self-graded flashcards
+# (ADR-0022, ADR-0027).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill and it names no
+# person, employer or client. The cards are content a coach publishes into a deck block through
+# `/coach/v1` or `publish_block`; none of them is committed (ADR-0006).
+
+packId: snowflake-platform
+
+title: Snowflake platform for architects
+
+description: >-
+  Snowflake's architecture, warehouses, loading patterns, in-engine transformation and governance
+  as flashcards — a refresher for someone who has used it and needs the current vocabulary.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-platforms # free label, descriptive only
+
+goal: >-
+  Say what each Snowflake feature does, what it costs and when it is the wrong choice, without
+  notes, from the term to the idea and back.
+
+framework:
+  id: snowflake-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Where a card can, it maps the feature onto its
+      counterpart in a classic warehouse or lakehouse — pruning against indexes, a stream against a
+      CDC log — and says where the analogy breaks.
+    - >-
+      Name the confusion, then separate it: the three caches, Time Travel and Fail-safe, size and
+      concurrency, Streams + Tasks and Dynamic Tables.
+    - >-
+      Mechanism before vocabulary: which of storage, compute or cloud services does the work, and
+      who pays for it.
+    - One idea per card.
+  rules:
+    sources: every card is written from the reference guide or the Snowflake documentation, and says where in `details.source`
+    front: the feature as practitioners write it — "Dynamic Table", "TARGET_LAG", "Query Profile"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer
+    group: the guide's section, so the deck reads in the order the guide teaches
+    code: a short SQL snippet where seeing it is faster than reading about it
+    analogy: the warehouse or lakehouse counterpart, and where it stops holding
+
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: cloud
+  tagline: Storage, compute and services, billed apart.
+  surfaces: [drills:terms]
