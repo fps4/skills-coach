@@ -11,13 +11,15 @@ and optional drill decks. Everything skill-specific enters the platform this way
 ([ADR-0004](../architecture/decisions/0004-pack-contract-and-typed-sections.md)) — the runtime never
 branches on which pack it is serving.
 
-`packs/demo-conversation-nl/` is a complete worked example, and CI imports it on every run.
+`skills/demo-conversation-nl/` is a complete worked example, and CI imports it on every run.
 
 ## Layout
 
 ```
-your-pack/
-  pack.yaml
+your-skill/
+  skill.yaml
+  guides/                     optional, committed — curated reference guides (ADR-0029)
+    some-topic.md             frontmatter `title` + `summary`; impersonal, no employer or person names
   blocks/                     (or blokken/)
     01-introductions/         (or blok-01-introductions/)
       README.md               optional — block title, level, theme, milestone
@@ -150,7 +152,7 @@ A committed manifest is published on its own, without blocks — that is what ma
 a deployment at all:
 
 ```sh
-cd api && npm run import:pack -- --source ../packs/your-pack --manifest-only --dry-run
+cd api && npm run import:pack -- --source ../skills/your-skill --manifest-only --dry-run
 ```
 
 On ds1 that is the `publish-pack` workflow rather than a local run, because the api binds to
@@ -171,7 +173,7 @@ always safe.
 ## A skill that is only a deck, or only a reading list
 
 Not every skill is a course ([ADR-0022](../architecture/decisions/0022-a-skill-can-be-only-a-deck-or-a-library.md)).
-`packs/woordtrainer-nl` is only a word deck and `packs/knowledge-graphs` only a deck of concept
+`skills/woordtrainer-nl` is only a word deck and `skills/data-modelling` only a deck of concept
 flashcards: no lessons, no error categories, and a `surfaces` list naming the one thing each does.
 A reading-list skill is the same idea with `surfaces: [reading]`.
 
@@ -204,7 +206,7 @@ presentation:
   exists to drill it. The Woordtrainer is typed.
 - **`self`** — the learner turns the card over and says *Got it* or *Missed it*. Right for concepts:
   the back is a sentence nobody would reproduce verbatim, so matching it would only ever be wrong.
-  `packs/knowledge-graphs` is self-graded.
+  `skills/data-modelling` is self-graded.
 
 Both run the same machine: two in a row clears a direction, direction 2 opens only after direction
 1, a miss resets the streak, mastered is final. Both offer **learn mode**, which shows every card
@@ -337,7 +339,7 @@ Les,Zin,Delen,Vertaling,Tip,DelenB
 make import PACK=/path/to/your-pack
 
 # a manifest kept apart from content authored elsewhere:
-cd api && npm run import:pack -- --source /path/to/content --manifest /path/to/pack.yaml
+cd api && npm run import:pack -- --source /path/to/content --manifest /path/to/skill.yaml
 
 # see what would happen, and every warning, without publishing:
 cd api && npm run import:pack -- --source /path/to/your-pack --dry-run

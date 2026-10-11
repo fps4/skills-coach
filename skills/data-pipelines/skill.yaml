@@ -1,0 +1,68 @@
+# Data pipelines — a category skill that is only a deck of flashcards (ADR-0022, ADR-0027): the SQL,
+# Spark, DataFrame, dbt, orchestration and migration ideas a data architect holds in their head.
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill and it names no person,
+# employer or client. The cards are content, written from the reference guides and published into a
+# deck block through `/coach/v1` or the MCP `publish_block` tool; none of them is committed (ADR-0006).
+
+packId: data-pipelines
+
+# One string each, in the skill's one language (ADR-0026).
+title: Data pipelines
+
+description: >-
+  Building and running data pipelines as flashcards — query grain and SQL patterns, reconciliation,
+  slowly changing dimensions and change data capture, Spark execution and skew, partitioning and file
+  layout, Polars and Pandas, dbt, Airflow orchestration, and migrating databases to AWS.
+
+contentLanguage: en
+translationLanguage: en
+skill: data-engineering # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each mechanism does, what it costs and when it is the wrong choice, without notes, in both
+  directions — from the term to the idea and from the idea to the term.
+
+# Required by the contract and read by no ramp here: a deck has no lessons, so nothing is authored
+# block by block. Kept as the ladder a coach writes cards against.
+framework:
+  id: pipeline-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Grain first. A card about a query, a join or a table says what one row means before it says
+      anything else, because most pipeline bugs are a grain the author never stated.
+    - >-
+      Name the confusion, then separate it. repartition and coalesce, append and merge, poke and
+      deferrable, rehost and replatform: a pair that gets confused becomes one card whose back says
+      how the two differ.
+    - >-
+      Mechanism before vocabulary. The back says what the thing does and what it costs — a shuffle,
+      a scan, a held worker slot — not only what it is called.
+    - >-
+      One idea per card. A back that needs three sentences is two cards.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides or the tools' own documentation, and says where
+      in `details.source`
+    front: the term as practitioners write it — `QUALIFY`, "sort-merge join", `none_failed_min_one_success`
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
+    group: a concept theme within the category, numbered from foundations to advanced
+    code: a short SQL, PySpark, Polars, dbt or Airflow snippet where seeing it is faster than reading about it
+    analogy: the warehouse or relational counterpart, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: blue
+  icon: list-checks
+  tagline: From the source table to the trusted mart.
+  surfaces: [drills:terms]

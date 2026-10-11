@@ -1,6 +1,6 @@
 name: publish-pack
 
-# Publishes a committed pack manifest to the ds1 deployment.
+# Publishes a committed skill manifest — `skills/<id>/skill.yaml` (ADR-0029) — to the ds1 deployment.
 #
 # Content does not ride the deploy pipeline (ADR-0006): a block gets written every week or two and
 # should not need a pull request and a release. But a *manifest* is committed (ADR-0008), and until
@@ -16,8 +16,8 @@ name: publish-pack
 on:
   workflow_dispatch:
     inputs:
-      pack:
-        description: "Directory under packs/ holding the manifest to publish"
+      skill:
+        description: "Directory under skills/ holding the skill.yaml to publish"
         type: string
         required: true
         default: woordtrainer-nl
@@ -43,10 +43,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Refuse a pack that is not in the tree
+      - name: Refuse a skill that is not in the tree
+        env:
+          SKILL: ${{ inputs.skill }}
         run: |
-          test -f "packs/${{ inputs.pack }}/pack.yaml" \
-            || { echo "no manifest at packs/${{ inputs.pack }}/pack.yaml"; exit 1; }
+          # Slug-shaped or nothing: this value reaches a command line below.
+          [[ "$SKILL" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "skill must be a directory name, got '$SKILL'"; exit 1; }
+          test -f "skills/$SKILL/skill.yaml" \
+            || { echo "no manifest at skills/$SKILL/skill.yaml"; exit 1; }
 
       - name: Build the CI image
         run: docker build -t sc-publish:${{ github.run_id }} -f infra/docker/ci.Dockerfile .
@@ -75,7 +79,7 @@ jobs:
             -e COACH_API_TOKEN='${{ steps.token.outputs.token }}' \
             sc-publish:${{ github.run_id }} \
             bash -lc "cd api && npm run import:pack -- \
-              --source ../packs/${{ inputs.pack }} --manifest-only ${{ inputs.dry_run && '--dry-run' || '' }}"
+              --source ../skills/${{ inputs.skill }} --manifest-only ${{ inputs.dry_run && '--dry-run' || '' }}"
 
       - name: Cleanup
         if: always()

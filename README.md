@@ -71,7 +71,8 @@ make typecheck   # tsc --noEmit for api and web
 |---|---|
 | `api/` | Fastify runtime — domain rules, persistence, learner + coach APIs, pack importer |
 | `web/` | Next.js learner surface, UI in Dutch and English |
-| `packs/demo-conversation-nl/` | A small synthetic pack so the app runs out of the box |
+| `skills/<id>/` | One folder per skill: `skill.yaml` (the manifest) and `guides/*.md` (the reference guides its cards are written from) |
+| `skills/demo-conversation-nl/` | A small synthetic skill so the app runs out of the box |
 | `infra/docker/` | Compose stack and images for local, CI and ds1 |
 | `config/ds1/` | Non-secret deploy configuration (secrets are injected at deploy time) |
 | `docs/` | Product intent, architecture, decisions, API reference, guides |

@@ -28,6 +28,9 @@ COPY web/package.json web/package-lock.json ./
 RUN npm ci
 
 COPY web/ ./
+# A skill's guides are read off disk by `src/lib/guides.ts` (ADR-0029) at `../skills` from the working
+# directory: here for the tests, in the runtime stage for the pages, which render per request.
+COPY skills/ /skills/
 RUN npm run typecheck && npm run lint && npm test && npm run build
 
 # --- runtime stage ---
@@ -38,6 +41,7 @@ WORKDIR /web
 COPY --from=build --chown=node:node /web/.next/standalone ./
 COPY --from=build --chown=node:node /web/.next/static ./.next/static
 COPY --from=build --chown=node:node /web/public ./public
+COPY --from=build --chown=node:node /skills /skills
 
 USER node
 EXPOSE 3000

@@ -17,6 +17,7 @@ export const dictionary = {
     yourData: 'Your data',
     lessons: 'Lessons',
     reading: 'Reading',
+    guides: 'Guides',
     words: 'Flashcards',
     sentences: 'Sentence puzzle',
     quiz: 'Practice test',
@@ -134,6 +135,12 @@ export const dictionary = {
     alreadySubmitted: 'You have already sent this lesson.',
     viewSessionLog: 'View the correction',
     emptySubmission: 'Fill in at least one answer.',
+  },
+  guides: {
+    title: 'Guides',
+    subtitle: 'The reference guides the flashcards were written from.',
+    empty: 'This skill has no guides.',
+    back: 'All guides',
   },
   reading: {
     title: 'Reading',

@@ -48,7 +48,7 @@ wrong one ([ADR-0018](../../architecture/decisions/0018-the-rail-is-packs-one-le
 **Out**, and neither is an oversight:
 
 - **The pack's material.** No lessons, no vocabulary, no questions. That is the coach's, republished
-  from `packs/`, and copying it into a personal file would put content where it does not belong
+  from `skills/`, and copying it into a personal file would put content where it does not belong
   ([ADR-0006](../../architecture/decisions/0006-content-and-learner-data-stay-out-of-the-repo.md)).
   The file carries a drill item's *content digest*, never its text.
 - **`subject` and `email`.** Identity-service owns who somebody is; this product borrows it

@@ -4,7 +4,7 @@
  * The layout is the one authors already use — a manifest, then one directory per block holding
  * numbered lesson files and optional drill CSVs:
  *
- *   pack.yaml
+ *   skill.yaml
  *   blocks/            (or blokken/)
  *     01-slug/         (or blok-01-slug/)
  *       README.md      optional — block title and metadata
@@ -28,6 +28,9 @@ import {
 import type { SectionMapEntry } from '../domain/types.js';
 import { column, parseCsv, splitParts } from './csv.js';
 import { DEFAULT_SECTION_MAP, parseBlockReadme, parseLesson } from './markdown.js';
+
+/** A skill's manifest, at the root of its directory: `skills/<id>/skill.yaml` (ADR-0029). */
+export const MANIFEST_FILE = 'skill.yaml';
 
 const BLOCK_DIRECTORIES = ['blocks', 'blokken'];
 const BLOCK_DIRECTORY_PATTERN = /^(?:blok|block)?-?(\d+)[-_](.+)$/i;
@@ -210,14 +213,14 @@ async function loadBlock(
 export interface LoadOptions {
   /** Content root — the directory holding `blocks/` (or `blokken/`). */
   source: string;
-  /** Manifest path. Defaults to `<source>/pack.yaml`. */
+  /** Manifest path. Defaults to `<source>/skill.yaml` (ADR-0029). */
   manifest?: string;
   /** Import only this block order. */
   only?: number;
 }
 
 export async function loadPack(options: LoadOptions): Promise<LoadedPack> {
-  const manifestPath = options.manifest ?? join(options.source, 'pack.yaml');
+  const manifestPath = options.manifest ?? join(options.source, MANIFEST_FILE);
   if (!(await exists(manifestPath))) {
     throw new Error(
       `no manifest at ${manifestPath}. Pass --manifest <path> when the content directory does not hold one ` +

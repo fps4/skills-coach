@@ -5,7 +5,7 @@
 # checks the DoD gate runs, so a green `make check` should mean a green pipeline.
 
 COMPOSE := docker compose -f infra/docker/compose.yml -p skills-coach
-PACK    ?= packs/demo-conversation-nl
+PACK    ?= skills/demo-conversation-nl
 
 .DEFAULT_GOAL := help
 .PHONY: help install dev up down logs ps seed import import-errorlog import-reading validate test test-unit lint format typecheck check clean
@@ -46,10 +46,10 @@ dev: ## Run api + web with hot reload against the compose MongoDB
 
 ## --- content ------------------------------------------------------------------
 
-seed: ## Publish the bundled demo pack into the running stack
+seed: ## Publish the bundled demo skill into the running stack
 	cd api && npm run import:pack -- --source ../$(PACK)
 
-import: ## Import a pack from a local directory: make import PACK=/path/to/pack
+import: ## Import a skill from a local directory holding skill.yaml: make import PACK=/path/to/skill
 	cd api && npm run import:pack -- --source $(PACK)
 
 import-errorlog: ## Backfill a learner's error log: make import-errorlog SOURCE=... LEARNER=...
@@ -58,7 +58,7 @@ import-errorlog: ## Backfill a learner's error log: make import-errorlog SOURCE=
 import-reading: ## Load a reading library: make import-reading SOURCE=... PACKID=... LEARNER=...
 	cd api && npm run import:reading -- --source $(SOURCE) --pack $(PACKID) --learner $(LEARNER)
 
-validate: ## Parse and lint every pack manifest in the tree
+validate: ## Parse and lint every skills/*/skill.yaml in the tree
 	cd api && npm run validate:manifests
 
 ## --- checks -------------------------------------------------------------------

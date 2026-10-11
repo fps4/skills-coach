@@ -1,0 +1,69 @@
+# ML and AI engineering — a skill that is only a deck of flashcards (ADR-0022, ADR-0027).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill and it names no
+# person, employer or client. The cards themselves are content, published into a deck block through
+# `/coach/v1` or the MCP `publish_block` tool, and none of them is committed (ADR-0006).
+
+packId: ml-ai-engineering
+
+# One string each, in the skill's one language (ADR-0026).
+title: ML and AI engineering
+
+description: >-
+  Taking models to production and keeping them honest — training deep models under class
+  imbalance, feature stores and training/serving skew, serving and rollout patterns, drift
+  monitoring, online experimentation and marketplace interference, evaluating and guarding LLM
+  systems, and the managed GenAI stack on AWS.
+
+contentLanguage: en
+translationLanguage: en
+skill: ml-engineering # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say what each mechanism does, what it costs and when it is the wrong choice, without notes, in
+  both directions — from the term to the idea and from the idea to the term.
+
+# Required by the contract and read by no ramp here: a deck has no lessons. Kept as the ladder a
+# coach writes cards against.
+framework:
+  id: ml-eng-depth
+  levels: [vocabulary, mechanism, design, defence]
+
+method:
+  principles:
+    - >-
+      Build from what the learner already knows. Where a card can, it carries an analogy to data
+      engineering or ordinary software delivery — a point-in-time join against an as-of join, an
+      eval gate against a test suite in CI, a trace against distributed tracing — and says where the
+      analogy breaks.
+    - >-
+      Name the confusion, then separate it. Canary and A/B, data and concept drift, shadow and
+      canary, faithfulness and context relevance, Bedrock Agents and AgentCore: a pair that gets
+      confused becomes one card whose back says how the two differ.
+    - >-
+      Mechanism before vocabulary. The back of a card says what the thing does and what it costs,
+      not only what it is called.
+    - >-
+      One idea per card.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides and says where in `details.source`
+    front: the term as practitioners write it — "point-in-time join", "CUPED", "ApplyGuardrail"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer, and never the front's own words
+    group: a concept theme, numbered from foundations to advanced
+    code: a short Python, config or pseudo-code snippet where seeing it is faster than reading
+    analogy: the data-engineering or software-delivery counterpart, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+
+presentation:
+  palette: violet
+  icon: sparkles
+  tagline: From a trained model to a trusted one.
+  surfaces: [drills:terms]

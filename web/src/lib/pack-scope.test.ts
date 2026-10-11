@@ -37,6 +37,9 @@ const material = (overrides: Partial<PackMaterial> = {}): PackMaterial => ({
   wordOrder: 20,
   quiz: 20,
   reading: 4,
+  // Zero unless a test is about them: guides bypass a manifest's `surfaces`, so a non-zero default
+  // would show up in every opt-out assertion below.
+  guides: 0,
   ...overrides,
 });
 
@@ -102,7 +105,7 @@ describe('resolvePalette', () => {
 
 describe('surfaces', () => {
   it('offers every surface by default — a pack opts out, never in', () => {
-    expect(DEFAULT_SURFACES).toEqual(['lessons', 'reading', 'drills:terms', 'drills:word-order', 'quiz']);
+    expect(DEFAULT_SURFACES).toEqual(['lessons', 'guides', 'reading', 'drills:terms', 'drills:word-order', 'quiz']);
     expect(Object.keys(SURFACES).sort()).toEqual([...DEFAULT_SURFACES].sort());
   });
 
@@ -116,7 +119,7 @@ describe('surfaces', () => {
   // new entry here, never a branch in the rail (ADR-0019).
   it('asks each surface whether the pack has any of it', () => {
     for (const id of DEFAULT_SURFACES) {
-      expect(SURFACES[id].has(material())).toBe(true);
+      expect(SURFACES[id].has(material({ guides: 2 }))).toBe(true);
     }
 
     expect(SURFACES.quiz.has(material({ quiz: 0 }))).toBe(false);
@@ -124,6 +127,7 @@ describe('surfaces', () => {
     expect(SURFACES['drills:word-order'].has(material({ wordOrder: 0 }))).toBe(false);
     expect(SURFACES.reading.has(material({ reading: 0 }))).toBe(false);
     expect(SURFACES.lessons.has(material({ blocks: 0 }))).toBe(false);
+    expect(SURFACES.guides.has(material({ guides: 0 }))).toBe(false);
   });
 
   it('disables everything block-scoped before the learner has a block', () => {
@@ -145,7 +149,7 @@ describe('surfaces', () => {
 
 describe('visibleSurfaces', () => {
   it('shows everything a pack offers and has when it declares nothing', () => {
-    expect(visibleSurfaces(undefined, material())).toEqual(DEFAULT_SURFACES);
+    expect(visibleSurfaces(undefined, material({ guides: 2 }))).toEqual(DEFAULT_SURFACES);
   });
 
   it('honours a pack that opts out of one', () => {
@@ -169,7 +173,9 @@ describe('visibleSurfaces', () => {
   });
 
   it('leaves a pack with nothing in it yet with nothing under it', () => {
-    expect(visibleSurfaces(undefined, material({ blocks: 0, terms: 0, wordOrder: 0, quiz: 0, reading: 0 }))).toEqual([]);
+    expect(visibleSurfaces(undefined, material({ blocks: 0, terms: 0, wordOrder: 0, quiz: 0, reading: 0, guides: 0 }))).toEqual(
+      [],
+    );
   });
 
   // Packs published against ADR-0009 name it, and the api still accepts it. It moves nothing now
@@ -191,7 +197,7 @@ describe('skillTabs', () => {
   const skill = (overrides: Partial<Parameters<typeof skillTabs>[0]> = {}) => ({
     packId: 'demo',
     currentBlockId: 'demo.b1',
-    material: material(),
+    material: material({ guides: 2 }),
     ...overrides,
   });
 
@@ -201,7 +207,7 @@ describe('skillTabs', () => {
   });
 
   it('leaves out a surface the skill has no material for, as the rail did (ADR-0019)', () => {
-    const tabs = skillTabs(skill({ material: material({ quiz: 0, wordOrder: 0, blocks: 0, reading: 0 }) }));
+    const tabs = skillTabs(skill({ material: material({ quiz: 0, wordOrder: 0, blocks: 0, reading: 0, guides: 0 }) }));
     expect(tabs.map((tab) => tab.id)).toEqual(['overview', 'drills:terms']);
   });
 
@@ -227,5 +233,17 @@ describe('activeTab', () => {
   it('is null outside a skill', () => {
     expect(activeTab('/')).toBeNull();
     expect(activeTab('/archive')).toBeNull();
+  });
+});
+
+describe('guides', () => {
+  it("shows a skill's guides whatever its manifest declares — they are not a surface to opt out of", () => {
+    expect(visibleSurfaces(['drills:terms'], material({ guides: 2 }))).toEqual(['guides', 'drills:terms']);
+  });
+
+  it("opens on the skill's own guide list and claims the URL for that skill", () => {
+    expect(SURFACES.guides.href(context())).toBe('/guides/demo');
+    expect(packIdFromUrl('/guides/demo/some-guide')).toBe('demo');
+    expect(activeTab('/guides/demo/some-guide')).toBe('guides');
   });
 });

@@ -9,7 +9,8 @@
  * just another coach-API caller, and anything it can do, a person or a service can do too.
  */
 
-import { loadManifest, loadPack } from './pack-source.js';
+import { join } from 'node:path';
+import { MANIFEST_FILE, loadManifest, loadPack } from './pack-source.js';
 
 interface Args {
   source: string;
@@ -83,7 +84,7 @@ async function main(): Promise<void> {
   // author against its ramp. `loadPack` insists on a block directory, and rightly; this path does
   // not go through it.
   if (args.manifestOnly) {
-    const manifest = await loadManifest(args.manifest ?? `${args.source}/pack.yaml`);
+    const manifest = await loadManifest(args.manifest ?? join(args.source, MANIFEST_FILE));
     log(`pack     ${manifest.packId} (${manifest.contentLanguage} → ${manifest.translationLanguage})`);
     log(`manifest only — no blocks are published by this run`);
 
