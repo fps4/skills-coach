@@ -20,7 +20,7 @@
  * surface is mounted — it is this page's keyboard, not the app's.
  */
 
-import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
@@ -61,7 +61,7 @@ interface Props {
   translationLanguage: string;
   grading: CardGrading;
   dictionary: Dictionary;
-  /** Where "Add cards" goes, for the empty deck. */
+  /** Where "Add cards" goes: the button beside the controls, and the empty deck's prompt. */
   addHref: string;
 }
 
@@ -119,12 +119,13 @@ function SummaryRow({ summary, dictionary }: { summary: DeckSummary; dictionary:
     [t.inDirection2, summary.stage2Unlocked],
     [t.mastered, summary.mastered],
   ];
+  // One line rather than four tiles: the counts are context for the card, not the thing to look at.
   return (
-    <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
       {cells.map(([label, value]) => (
-        <div key={label} className="rounded-lg border border-border bg-card px-3 py-2">
-          <dt className="text-xs text-muted-foreground">{label}</dt>
-          <dd className="text-lg font-semibold tabular-nums">{value}</dd>
+        <div key={label} className="flex items-baseline gap-1.5">
+          <dt className="text-muted-foreground">{label}</dt>
+          <dd className="font-semibold tabular-nums">{value}</dd>
         </div>
       ))}
     </dl>
@@ -486,8 +487,8 @@ export function Flashcards({ blockId, contentLanguage, translationLanguage, grad
   };
 
   return (
-    <PageShell title={t.title} subtitle={mode === 'learn' ? t.learnIntro : grading === 'self' ? t.introSelf : t.introTyped}>
-      <div className="flex flex-wrap items-center gap-3">
+    <PageShell tab title={t.title} subtitle={mode === 'learn' ? t.learnIntro : grading === 'self' ? t.introSelf : t.introTyped}>
+      <div className="flex flex-wrap items-center gap-2">
         <Segmented
           label={t.mode}
           value={mode}
@@ -506,6 +507,12 @@ export function Flashcards({ blockId, contentLanguage, translationLanguage, grad
             { value: 2 as Stage, label: t.direction2, action: 'direction' },
           ]}
         />
+        {/* Adding is the deck's other view; it sits with the controls instead of on a row of its own. */}
+        <Button asChild variant="outline" size="sm" className="ml-auto">
+          <Link href={addHref}>
+            <Plus className="h-4 w-4" /> {t.addCards}
+          </Link>
+        </Button>
       </div>
 
       {summary ? <SummaryRow summary={summary} dictionary={dictionary} /> : null}

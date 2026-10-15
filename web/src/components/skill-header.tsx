@@ -42,15 +42,18 @@ export function SkillHeader({ dictionary, packs, menu }: Props) {
   const current = activeTab(pathname);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 pt-6 md:px-8 md:pt-8">
-      {folder ? <p className="text-xs text-muted-foreground">{folder.name} ›</p> : null}
-      <p className="text-2xl font-semibold tracking-tight">{skill.title}</p>
+    <div className="mx-auto w-full max-w-3xl px-6 pt-4 md:px-8 md:pt-5">
+      {/* One line, folder then skill, so a laptop screen keeps its height for the work below. */}
+      <p className="flex flex-wrap items-baseline gap-x-2">
+        {folder ? <span className="text-sm text-muted-foreground">{folder.name} ›</span> : null}
+        <span className="text-xl font-semibold tracking-tight">{skill.title}</span>
+      </p>
 
       {/* Only worth a row when there is more than the overview to switch to. */}
       {tabs.length > 1 ? (
         <nav
           aria-label={dictionary.nav.sections}
-          className="mt-3 flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_hsl(var(--border))]"
+          className="mt-2 flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_hsl(var(--border))]"
         >
           {tabs.map((tab) => {
             const Icon = tab.icon;

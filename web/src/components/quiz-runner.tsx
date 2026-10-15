@@ -205,7 +205,7 @@ export function QuizRunner({ blockId, contentLanguage, dictionary }: Props) {
 
   if (!view) {
     return (
-      <PageShell title={t.title} subtitle={t.intro}>
+      <PageShell tab title={t.title} subtitle={t.intro}>
         {expired ? <SessionExpired dictionary={dictionary} /> : null}
         {error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -272,6 +272,7 @@ export function QuizRunner({ blockId, contentLanguage, dictionary }: Props) {
 
   return (
     <PageShell
+      tab
       title={t.title}
       subtitle={
         <>

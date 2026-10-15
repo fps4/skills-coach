@@ -63,18 +63,41 @@ export function Stat({ icon, value, label }: { icon?: ReactNode; value: ReactNod
   );
 }
 
-/** The standard page frame: a back link, a title, an optional subtitle, then content. */
+/**
+ * The standard page frame: a back link, a title, an optional subtitle, then content.
+ *
+ * `tab` is for a page that *is* one of a skill's tabs (ADR-0021). The skill header above already
+ * names it — the skill, then the active tab — so a second heading saying "Flashcards" under the
+ * Flashcards tab only pushes the work down the screen. The title stays, for screen readers, and the
+ * content starts just under the tabs.
+ */
 export function PageShell({
   title,
   subtitle,
   back,
+  tab = false,
   children,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   back?: ReactNode;
+  tab?: boolean;
   children: ReactNode;
 }) {
+  if (tab) {
+    return (
+      <>
+        {/* Out of the flow, so it opens no gap above the content. */}
+        <h1 className="sr-only">{title}</h1>
+        <div className="mx-auto w-full max-w-3xl space-y-4 px-6 pb-6 pt-4 md:px-8 md:pb-8 md:pt-5">
+          {back}
+          {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
+          {children}
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 p-6 md:p-8">
       {back}
