@@ -138,6 +138,7 @@ export default async function ReadingPage({ searchParams }: { searchParams: Prom
 
   return (
     <PageShell
+      tab
       title={t.title}
       subtitle={
         library.counts.total > 0

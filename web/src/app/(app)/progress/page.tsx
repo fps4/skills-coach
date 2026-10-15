@@ -63,7 +63,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
 
   return (
     // The skill's name is already in the header above (ADR-0021); this page is its overview.
-    <PageShell title={dictionary.nav.overview}>
+    <PageShell tab title={dictionary.nav.overview}>
       {/*
         Only what this skill actually has: a skill that is only a word deck or only a reading list
         has no sentences and nothing on its error log to count (ADR-0022).

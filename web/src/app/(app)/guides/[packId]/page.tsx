@@ -22,7 +22,7 @@ export default async function GuidesPage({ params }: { params: Promise<{ packId:
   const t = getDictionary().guides;
 
   return (
-    <PageShell title={t.title} subtitle={t.subtitle}>
+    <PageShell tab title={t.title} subtitle={t.subtitle}>
       <ul className="space-y-3">
         {guides.map((guide) => (
           <li key={guide.slug}>

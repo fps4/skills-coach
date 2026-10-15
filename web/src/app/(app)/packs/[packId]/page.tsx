@@ -31,6 +31,7 @@ export default async function PackPage({ params }: { params: Promise<{ packId: s
 
   return (
     <PageShell
+      tab
       // The skill's name is in the header above (ADR-0021); this page is its lessons.
       title={dictionary.nav.lessons}
       subtitle={progress.pack.description ? progress.pack.description : undefined}

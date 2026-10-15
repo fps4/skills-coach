@@ -58,7 +58,7 @@ export function DrillShell({
   const t = dictionary.drills;
 
   return (
-    <PageShell title={title} subtitle={intro}>
+    <PageShell tab title={title} subtitle={intro}>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={onSwitchStage}>
           ⇄ {stage === 2 ? t.stage1 : t.stage2}
