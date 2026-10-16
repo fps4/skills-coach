@@ -63,6 +63,8 @@ interface Props {
   dictionary: Dictionary;
   /** Where "Add cards" goes: the button beside the controls, and the empty deck's prompt. */
   addHref: string;
+  /** The mode the deck opens in — learn when a search result led here (ADR-0030). */
+  initialMode?: DeckMode;
 }
 
 /** A key badge on a button. Coloured by the button it sits on, so it never needs a colour of its own. */
@@ -215,10 +217,18 @@ function CardBack({
   );
 }
 
-export function Flashcards({ blockId, contentLanguage, translationLanguage, grading, dictionary, addHref }: Props) {
+export function Flashcards({
+  blockId,
+  contentLanguage,
+  translationLanguage,
+  grading,
+  dictionary,
+  addHref,
+  initialMode = 'practice',
+}: Props) {
   const t = dictionary.flashcards;
 
-  const [mode, setMode] = useState<DeckMode>('practice');
+  const [mode, setMode] = useState<DeckMode>(initialMode);
   /** The direction asked for. Undefined serves each card at whatever stage it sits on. */
   const [stage, setStage] = useState<Stage | undefined>(undefined);
   const [deck, setDeck] = useState<DeckPage | null>(null);

@@ -44,6 +44,8 @@ export async function addTerm(
   const doc = { packId: block.packId, blockId, payload, learnerId, origin: 'learner' as const };
 
   await ctx.store.collections.drillItems.replaceOne({ _id: drillItemId }, doc, { upsert: true });
+  // Findable by its owner straight away, and by nobody else ever (ADR-0030).
+  await ctx.search?.blockChanged(blockId);
   return { ...doc, drillItemId };
 }
 
@@ -70,7 +72,12 @@ export async function listTerms(ctx: ServiceContext, learnerId: string, blockId:
  * learner, which `FROM_LEARNER` is what excludes. A word that is not theirs is simply not found.
  */
 export async function removeTerm(ctx: ServiceContext, learnerId: string, drillItemId: string): Promise<void> {
-  const removed = await ctx.store.collections.drillItems.deleteOne({ _id: drillItemId, learnerId, ...FROM_LEARNER });
-  if (removed.deletedCount === 0) throw notFound(`word ${drillItemId}`);
+  const removed = await ctx.store.collections.drillItems.findOneAndDelete({
+    _id: drillItemId,
+    learnerId,
+    ...FROM_LEARNER,
+  });
+  if (!removed) throw notFound(`word ${drillItemId}`);
   await ctx.store.collections.drillState.deleteOne({ _id: drillStateIdFor(learnerId, drillItemId) });
+  await ctx.search?.blockChanged(removed.blockId);
 }

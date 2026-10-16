@@ -191,6 +191,8 @@ export async function upsertPack(ctx: ServiceContext, input: PackManifestInput):
   };
 
   await ctx.store.collections.packs.replaceOne({ _id: packId }, withoutId(doc), { upsert: true });
+  // A result names its skill, and the title may be what changed (ADR-0030).
+  await ctx.search?.skillsChanged();
   return toPack(doc);
 }
 
@@ -341,6 +343,9 @@ export async function publishBlock(
     await ctx.store.collections.drillState.deleteMany({ drillItemId: { $in: staleIds } });
   }
 
+  // Searchable as soon as it is published — and gone from search as soon as it is not (ADR-0030).
+  await ctx.search?.blockChanged(blockId);
+
   return {
     block: toBlock(blockDoc),
     lessonsPublished: lessonIds.length,
@@ -381,5 +386,6 @@ export async function archiveBlock(ctx: ServiceContext, blockId: string): Promis
     { returnDocument: 'after' },
   );
   if (!result) throw notFound(`block ${blockId}`);
+  await ctx.search?.blockChanged(blockId);
   return toBlock(result);
 }

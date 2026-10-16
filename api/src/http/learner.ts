@@ -88,6 +88,17 @@ const readingQuerySchema = z.object({
   language: z.string().min(2).max(35).optional(),
 });
 
+/**
+ * A search (ADR-0030). An empty `q` is a valid search for nothing, not an error: the bar asks as the
+ * learner types, and clearing it is part of typing.
+ */
+const searchQuerySchema = z.object({
+  q: z.string().trim().max(200).default(''),
+  kind: z.enum(['guide', 'card']).optional(),
+  skill: z.string().max(100).optional(),
+  limit: z.coerce.number().int().positive().max(50).default(20),
+});
+
 /** Stamped into every archive, so a file found later says which build wrote it. */
 const GENERATOR = 'skills-coach-api';
 
@@ -131,6 +142,23 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
   app.post('/api/v1/me/menu/skills', async (request) => {
     const learner = await caller(request, 'lesson:read');
     return { menu: await learners.addSkill(ctx, learner.learnerId, addSkillSchema.parse(request.body)) };
+  });
+
+  // --- search ---------------------------------------------------------------
+
+  // Request logging is held to `warn` on this route: the query is in the URL, and what a learner
+  // searched for is theirs, with no product use in keeping it. How many results, and how fast, is
+  // logged instead (ADR-0030). Search records nothing — no attempt, no state, no audit event.
+  app.get('/api/v1/search', { logLevel: 'warn' }, async (request) => {
+    const learner = await caller(request, 'lesson:read');
+    const { q, kind, skill, limit } = searchQuerySchema.parse(request.query);
+    const started = performance.now();
+    const response = q ? ctx.search?.query(learner.learnerId, q, { kind, skill, limit }) : undefined;
+    app.log.info(
+      { route: '/api/v1/search', results: response?.total ?? 0, ms: Math.round(performance.now() - started) },
+      'search',
+    );
+    return response ?? { query: q, hits: [], total: 0, counts: { guide: 0, card: 0 }, skills: [] };
   });
 
   // --- content --------------------------------------------------------------

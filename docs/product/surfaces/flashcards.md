@@ -9,7 +9,7 @@ status: built
 | | |
 |---|---|
 | **Surface key** | `drills:terms` — the key predates the name and is kept, because every published manifest carries it |
-| **Route** | `/flashcards?blockId=…` (`&view=add` for adding cards). `/drills/words` redirects here, query intact |
+| **Route** | `/flashcards?blockId=…` (`&view=add` for adding cards; `&mode=learn` opens in learn mode — where a [search](search.md) result for a card leads). `/drills/words` redirects here, query intact |
 | **Capability** | `drill:practice` — and `drill:curate` for a learner's own cards |
 | **Appears when** | the block has at least one `term` drill item, and the pack has not opted out ([ADR-0019](../../architecture/decisions/0019-a-surface-appears-when-the-pack-has-material-for-it.md)) |
 | **Decides** | `drillState` for `term` items, and `attempts` rows |

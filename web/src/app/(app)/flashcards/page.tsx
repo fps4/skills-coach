@@ -20,10 +20,15 @@ export const dynamic = 'force-dynamic';
  * The switch between them is a button beside the deck's controls and a back link here, not a row of
  * its own: on a laptop screen that row was what pushed the card under the fold.
  *
- * This was `/drills/words`; that address redirects here with its query intact.
+ * This was `/drills/words`; that address redirects here with its query intact. `?mode=learn` opens
+ * it in learn mode, which is how a search result for a card arrives (ADR-0030).
  */
-export default async function FlashcardsPage({ searchParams }: { searchParams: Promise<{ blockId?: string; view?: string }> }) {
-  const { blockId, view } = await searchParams;
+export default async function FlashcardsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ blockId?: string; view?: string; mode?: string }>;
+}) {
+  const { blockId, view, mode } = await searchParams;
   if (!blockId) redirect('/');
 
   const dictionary = getDictionary();
@@ -58,6 +63,9 @@ export default async function FlashcardsPage({ searchParams }: { searchParams: P
       contentLanguage={pack.contentLanguage}
       translationLanguage={pack.translationLanguage}
       grading={pack.flashcards?.grading ?? 'typed'}
+      // `?mode=learn` opens the deck with its answers showing — where a search result for a card
+      // leads (ADR-0030). Anything else is practice, as it always was.
+      initialMode={mode === 'learn' ? 'learn' : 'practice'}
       dictionary={dictionary}
       addHref={`${base}&view=add`}
     />

@@ -5,6 +5,7 @@
  * happens to need the missing value — so anything required in production is checked here.
  */
 
+import { join } from 'node:path';
 import { z } from 'zod';
 
 const envSchema = z.object({
@@ -57,6 +58,15 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default(''),
 
   AUDIT_RETENTION_DAYS: z.coerce.number().int().positive().default(365),
+
+  /**
+   * Where the skills' guides are read from for search (ADR-0030). The image copies `skills/` to
+   * `/skills`, which is `../skills` from its working directory — the same relative path as in a
+   * checkout, so the default serves both.
+   */
+  SKILLS_DIR: z.string().optional(),
+  /** Minutes between full rebuilds of the search index; 0 turns the timer off (ADR-0030). */
+  SEARCH_REBUILD_MINUTES: z.coerce.number().int().nonnegative().default(15),
 });
 
 export type Environment = z.infer<typeof envSchema>['COACH_ENV'];
@@ -81,6 +91,11 @@ export interface MongoCredentials {
   authSource: string;
 }
 
+export interface SearchConfig {
+  skillsDir: string;
+  rebuildMinutes: number;
+}
+
 export interface Config {
   env: Environment;
   port: number;
@@ -94,6 +109,7 @@ export interface Config {
   mcp: McpConfig;
   corsOrigins: string[];
   auditRetentionDays: number;
+  search: SearchConfig;
 }
 
 export class ConfigError extends Error {}
@@ -156,6 +172,10 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       .map((origin) => origin.trim())
       .filter(Boolean),
     auditRetentionDays: env.AUDIT_RETENTION_DAYS,
+    search: {
+      skillsDir: env.SKILLS_DIR ?? join(process.cwd(), '..', 'skills'),
+      rebuildMinutes: env.SEARCH_REBUILD_MINUTES,
+    },
   };
 
   assertSafe(config, env.NODE_ENV);

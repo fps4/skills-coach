@@ -127,3 +127,10 @@ there are no schema migrations, and indexes are applied idempotently at boot.
 
 **Audit** lives in the `auditEvents` collection with a TTL index (`AUDIT_RETENTION_DAYS`, default a
 year).
+
+**Search** is an index in the api's memory, built at boot from MongoDB and the guides in the image
+([ADR-0030](../architecture/decisions/0030-search-is-lexical-and-held-by-the-api.md)). There is
+nothing to back up or migrate. A write through the api is searchable at once; one made by a
+`maintain-skills` script appears at the next rebuild (`SEARCH_REBUILD_MINUTES`, default 15) — or
+restart the api to rebuild now. `search index built` in the api log gives the document count and
+how long it took.

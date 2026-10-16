@@ -46,6 +46,9 @@ api/src/
     menu.ts            the learner's folders of skills: every started skill placed exactly once (ADR-0021)
     term-request.ts    a word asked for, suggested by a coach, accepted by the learner — the lifecycle,
                        and how an accepted card is assembled from suggestion and edits (ADR-0023)
+    search.ts          what search finds and how it shows why: a guide as sections anchored the way the
+                       page renders them, a card as a document, who may see a result, the snippet's
+                       marked words (ADR-0030)
     portable.ts        what a reference is, once it has to outlive a learner id —
                        content digests, and the never-demote merge rule (ADR-0020)
 
@@ -53,6 +56,9 @@ api/src/
   services/          domain rules + persistence, transport-agnostic
     term-requests.ts   word requests: the learner's queue, and the coach's view of it — which names
                        the word and its languages and never the learner (ADR-0023)
+    search.ts          the search index, held in memory: built at boot, told by the services that change
+                       cards (`ctx.search.blockChanged`), rebuilt on a timer for writes made by scripts.
+                       Derived, never stored (ADR-0030)
     learner-terms.ts   the words a learner adds themselves — owned, private, and
                        untouched by a republish (ADR-0012)
     error-log.ts       the ONE place counters are written — a coach's correction and a
@@ -112,12 +118,15 @@ web/src/
     theme/palettes   the hue axis — a palette is data, not code
     menu.ts          grouping the rail by the learner's menu — pure, unit-tested
     legacy-locale.ts which old `/nl/…` `/en/…` paths the middleware redirects — pure, unit-tested
+    search.ts        where a search result leads, how results group, which keys reach for the bar (ADR-0030)
     guides.ts        a skill's guides, read off `skills/<id>/guides/` (server-only, ADR-0029); its test
                      is the impersonality guard over every committed guide
   components/
     ui/              Button, Card, Input, Textarea — shadcn-shaped, copied not depended on
     atoms.tsx        Pill, Meter, Stat, PageShell — the vocabulary above the primitives
-    app-header.tsx   sticky brand header with the accent wordmark, and sign-out
+    app-header.tsx   sticky brand header with the accent wordmark, the search bar, and sign-out
+    search-bar.tsx   search as you type, a popover of the best results, `/` and ⌘K to reach it (ADR-0030)
+    search-result.tsx one result's title, where it lives, and its snippet — shared by the bar and `/search`
     learner-rail.tsx the learner's menu: their folders, then the skills in them — two levels, never three
     skill-header.tsx a skill's name, its folder, and its surfaces as tabs (ADR-0021)
     menu-editor.tsx  "All my skills": folders, which folder a skill is in, and what shows

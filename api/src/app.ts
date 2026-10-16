@@ -18,6 +18,7 @@ import { PUBLIC_PATHS, registerOpsRoutes } from './http/ops.js';
 import { registerWellKnownRoutes, wellKnownPaths } from './http/well-known.js';
 import { registerMcpRoutes } from './mcp/route.js';
 import { createContext } from './services/context.js';
+import { createSearchIndex } from './services/search.js';
 
 export interface BuildOptions {
   config: Config;
@@ -60,7 +61,19 @@ export async function buildApp(options: BuildOptions): Promise<FastifyInstance> 
     publicPaths: [...PUBLIC_PATHS, ...wellKnownPaths(config.mcp.resourceUrl)],
   });
 
-  const ctx = createContext(store, config, options.now);
+  // Built before the app listens, so the first request finds an index rather than an empty one, and
+  // rebuilt on a timer for the writes this process does not see (ADR-0030).
+  const search = createSearchIndex({
+    store,
+    skillsDir: config.search.skillsDir,
+    rebuildMinutes: config.search.rebuildMinutes,
+    log: app.log,
+  });
+  await search.rebuild();
+  search.start();
+  app.addHook('onClose', async () => search.stop());
+
+  const ctx = createContext(store, config, options.now, search);
   registerOpsRoutes(app, ctx);
   registerWellKnownRoutes(app, ctx);
   registerLearnerRoutes(app, ctx);
