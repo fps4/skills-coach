@@ -14,16 +14,27 @@ import type { Config } from '../config.js';
 import type { Store } from '../db/client.js';
 import { contentDigest } from '../domain/portable.js';
 import type { DrillPayload } from '../domain/types.js';
+import type { SearchIndex } from './search.js';
 
 export interface ServiceContext {
   store: Store;
   config: Config;
   /** Injected so tests can pin time and so nothing in a service reads the clock directly. */
   now(): Date;
+  /**
+   * The server's search index (ADR-0030). A service that changes cards tells it, through the hooks.
+   * Absent in a context a script builds: a script's writes reach search through the timed rebuild.
+   */
+  search?: SearchIndex;
 }
 
-export function createContext(store: Store, config: Config, now: () => Date = () => new Date()): ServiceContext {
-  return { store, config, now };
+export function createContext(
+  store: Store,
+  config: Config,
+  now: () => Date = () => new Date(),
+  search?: SearchIndex,
+): ServiceContext {
+  return { store, config, now, ...(search ? { search } : {}) };
 }
 
 /** Eight hex characters of the owner, so an id can be scoped to a person without naming one. */

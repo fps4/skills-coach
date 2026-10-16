@@ -23,7 +23,9 @@ summary: Hubs, links and satellites, and how dbt builds them.
 ```
 
 The web reads the folder on the server (`web/src/lib/guides.ts`); the image carries `skills/` at
-`/skills`. There is no api for guides and no per-learner state.
+`/skills`. There is no api for guides and no per-learner state. The api image carries the same folder
+for one reason: [search](search.md) indexes the guides, section by section
+([ADR-0030](../../architecture/decisions/0030-search-is-lexical-and-held-by-the-api.md)).
 
 ## The condition
 

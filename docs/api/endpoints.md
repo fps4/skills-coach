@@ -74,6 +74,7 @@ reach another's work.
 | POST | `/term-requests/:requestId/accept` | `drill:curate` | Add the suggestion, with your edits, to the deck |
 | POST | `/term-requests/:requestId/retry` | `drill:curate` | Send it back to the coach, dropping the suggestion |
 | DELETE | `/term-requests/:requestId` | `drill:curate` | Throw it away. It can be asked for again |
+| GET | `/search` | `lesson:read` | `?q` (≤ 200 chars), `?kind=guide\|card`, `?skill`, `?limit` (≤ 50, default 20) — guide sections and cards, ranked, with marked snippets, per-kind and per-skill counts. Only cards you may see; an empty `q` is an empty answer, not an error. Records nothing, and the query is not logged (ADR-0030) |
 | GET | `/packs/:packId/reading` | `lesson:read` | Your reading library for this pack. `?labels`, `?sources`, `?unread`, `?language` |
 | GET | `/reading/:articleId` | `lesson:read` | One article, in the resolved language. `?language` |
 | POST | `/reading/:articleId/read` | `reading:track` | `{ read: boolean }` — mark read, or put it back |

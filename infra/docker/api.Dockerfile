@@ -27,6 +27,10 @@ WORKDIR /api
 COPY --from=build --chown=node:node /api/node_modules ./node_modules
 COPY --from=build --chown=node:node /api/dist ./dist
 COPY --from=build --chown=node:node /api/package.json ./package.json
+# The guides search indexes (ADR-0030), read at boot from `../skills` — `/skills` from this working
+# directory, the same relative path as in a checkout. The web image carries the same folder to
+# render them (ADR-0029); only `skill.yaml` and `guides/*.md` survive `.dockerignore`.
+COPY --chown=node:node skills/ /skills/
 
 USER node
 EXPOSE 8000

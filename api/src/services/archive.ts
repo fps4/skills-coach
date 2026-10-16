@@ -405,6 +405,8 @@ export async function importArchive(
   // so it has to be back in the deck before the streak on it has anything to attach to.
 
   const ownTermIds = new Map<string, string>();
+  /** The decks a word landed in, so search can be told once per deck rather than once per word. */
+  const ownTermBlocks = new Set<string>();
   for (const entry of archive.ownTerms) {
     const blockId = blockIdOf(entry);
     if (!(await exists(blockId, 'blocks'))) {
@@ -430,7 +432,10 @@ export async function importArchive(
       origin: 'learner',
     };
     await c.drillItems.replaceOne({ _id }, doc, { upsert: true });
+    ownTermBlocks.add(blockId);
   }
+  // A word brought back is a word its owner can find again (ADR-0030).
+  for (const blockId of ownTermBlocks) await ctx.search?.blockChanged(blockId);
 
   /** An item id, if this system actually has that item. Own words count: they were just written. */
   const resolveItem = async (ref: ItemRef): Promise<string | null> => {

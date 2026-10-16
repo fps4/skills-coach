@@ -15,6 +15,7 @@ the same one. There is no per-pack branching anywhere in the runtime.
 | [Reading — the reading library](reading.md) | `reading` | `/reading` |
 | [Flashcards — words and concepts](flashcards.md) | `drills:terms` | `/flashcards` (was `/drills/words`) |
 | [Guides](guides.md) | — (any skill with `guides/`) | `/guides/<skillId>` |
+| [Search](search.md) | — (every signed-in page) | the header bar · `/search?q=` |
 | [Sentence puzzle](sentence-puzzle.md) | `drills:word-order` | `/drills/sentences` |
 | [Practice test](quiz.md) | `quiz` | `/quiz` |
 | [Progress and the menu](progress-and-navigation.md) | — (not declarable) | `/` · `/skills` · `/progress` |
