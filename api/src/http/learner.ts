@@ -52,6 +52,8 @@ const drillQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),
   // Learn mode serves each card's back with its front and records nothing (ADR-0027).
   mode: z.enum(['practice', 'learn']).optional(),
+  // A card's `group`, or `_none` for the cards without one (ADR-0031).
+  topic: z.string().trim().min(1).max(120).optional(),
 });
 
 /** A comma-separated query parameter as the list it stands for. Empty means absent, not "none". */

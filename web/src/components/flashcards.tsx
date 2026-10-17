@@ -22,6 +22,7 @@
 
 import { ArrowLeft, ArrowRight, Check, Plus, X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { OwnWords } from './own-words';
@@ -41,6 +42,7 @@ import {
   type FlashcardPhase,
   type KeyContext,
 } from '@/lib/flashcards';
+import { topicHref, topicTitle } from '@/lib/topics';
 import { cn } from '@/lib/utils';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type {
@@ -65,6 +67,8 @@ interface Props {
   addHref: string;
   /** The mode the deck opens in — learn when a search result led here (ADR-0030). */
   initialMode?: DeckMode;
+  /** Only this topic's cards — a card's `group`, or `NO_TOPIC` (ADR-0031). The whole deck without one. */
+  topic?: string;
 }
 
 /** A key badge on a button. Coloured by the button it sits on, so it never needs a colour of its own. */
@@ -225,8 +229,10 @@ export function Flashcards({
   dictionary,
   addHref,
   initialMode = 'practice',
+  topic,
 }: Props) {
   const t = dictionary.flashcards;
+  const router = useRouter();
 
   const [mode, setMode] = useState<DeckMode>(initialMode);
   /** The direction asked for. Undefined serves each card at whatever stage it sits on. */
@@ -271,7 +277,7 @@ export function Flashcards({
     try {
       // The API's maximum, so a batch is the whole rotation wherever the deck fits in one.
       const page = await clientApi<DeckPage>(
-        `/v1/drills${query({ blockId, kind: 'term', stage, limit: 100, mode: mode === 'learn' ? 'learn' : undefined })}`,
+        `/v1/drills${query({ blockId, kind: 'term', stage, limit: 100, mode: mode === 'learn' ? 'learn' : undefined, topic })}`,
       );
       setDeck(page);
       setSummary(page.summary);
@@ -284,7 +290,7 @@ export function Flashcards({
     } finally {
       setLoading(false);
     }
-  }, [blockId, stage, mode, fail]);
+  }, [blockId, stage, mode, topic, fail]);
 
   useEffect(() => {
     void load();
@@ -362,6 +368,10 @@ export function Flashcards({
     if (value !== mode) setMode(value);
   };
   const switchDirection = (value: Stage): void => setStage(value);
+  // The topic lives in the address, so a tile on the overview and this picker are the same link and
+  // either can be bookmarked. The mode travels with it; the direction is this sitting's own.
+  const switchTopic = (value: string): void =>
+    router.push(topicHref(blockId, value || undefined, mode === 'learn' ? 'learn' : undefined));
   const toggleDirection = (): void => setStage(shownDirection === 2 ? 1 : 2);
 
   // --- the keyboard ---------------------------------------------------------
@@ -464,7 +474,21 @@ export function Flashcards({
   const typedFace: CardFace | null =
     result && grading === 'typed' ? { expected: result.expected, example: result.example, details: result.details } : null;
 
+  const topics = deck?.topics ?? [];
+
   const emptyState = (): ReactNode => {
+    // A topic link that no longer matches — renamed since it was bookmarked — is not an empty deck.
+    if (topic && summary?.total === 0) {
+      return (
+        <>
+          <p className="text-sm font-medium">{t.topicEmpty}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t.topicEmptyHint}</p>
+          <Button asChild variant="outline" size="sm" className="mt-3">
+            <Link href={topicHref(blockId)}>{t.allTopics}</Link>
+          </Button>
+        </>
+      );
+    }
     if (!summary || summary.total === 0) {
       return (
         <>
@@ -517,6 +541,30 @@ export function Flashcards({
             { value: 2 as Stage, label: t.direction2, action: 'direction' },
           ]}
         />
+        {/*
+          A select rather than a row of chips: a deck has ten topics or so, and a row of them is what
+          would push the card under the fold on a laptop. Absent for a deck with no topics.
+        */}
+        {topics.length > 0 ? (
+          <>
+            <label className="sr-only" htmlFor="flashcards-topic">
+              {t.topic}
+            </label>
+            <select
+              id="flashcards-topic"
+              value={topic ?? ''}
+              onChange={(event) => switchTopic(event.target.value)}
+              className="h-9 max-w-64 rounded-md border border-border bg-background px-2 text-sm"
+            >
+              <option value="">{t.allTopics}</option>
+              {topics.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {topicTitle(entry, t.noTopic)} · {entry.summary.mastered}/{entry.summary.total}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : null}
         {/* Adding is the deck's other view; it sits with the controls instead of on a row of its own. */}
         <Button asChild variant="outline" size="sm" className="ml-auto">
           <Link href={addHref}>

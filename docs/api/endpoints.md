@@ -57,7 +57,7 @@ reach another's work.
 | POST | `/lessons/:lessonId/submissions` | `submission:write` | Submit written answers → `201` |
 | GET | `/submissions` | `submission:write` | Own submissions. `?lessonId`, `?blockId`, `?status` |
 | GET | `/submissions/:id` | `submission:write` | The session log. `403` for another learner's |
-| GET | `/drills` | `drill:practice` | Due items as **prompts**. Requires `blockId` or `packId`. `?mode=learn` adds each card's back and records nothing |
+| GET | `/drills` | `drill:practice` | Due items as **prompts**. Requires `blockId` or `packId`. `?mode=learn` adds each card's back and records nothing. `?topic=` narrows a deck to one topic |
 | POST | `/drills/:drillItemId/attempts` | `drill:practice` | Grade an attempt — typed, or `{ self: got\|missed }` on a self-graded skill |
 | POST | `/drills/:drillItemId/reveal` | `drill:practice` | `{ stage }` — the back of a card on a self-graded skill. Records nothing |
 | POST | `/drills/reset` | `drill:practice` | Clear progress for a scope. Refuses an unscoped reset |
@@ -78,7 +78,7 @@ reach another's work.
 | GET | `/packs/:packId/reading` | `lesson:read` | Your reading library for this pack. `?labels`, `?sources`, `?unread`, `?language` |
 | GET | `/reading/:articleId` | `lesson:read` | One article, in the resolved language. `?language` |
 | POST | `/reading/:articleId/read` | `reading:track` | `{ read: boolean }` — mark read, or put it back |
-| GET | `/progress` | `progress:read` | Overview, or one pack with `?packId` |
+| GET | `/progress` | `progress:read` | Overview, or one pack with `?packId`. `decks.topics` is the current block's deck by topic |
 | GET | `/archive` | `progress:read` | Everything about you, as a JSON attachment |
 | POST | `/archive/import` | `progress:restore` | Put an archive back. `?dryRun=true` reports and writes nothing |
 
@@ -117,9 +117,17 @@ when `folderId` is given, moves it there; progress is untouched. `404` if no suc
 ### `GET /drills`
 
 `?blockId` · `?packId` · `?lessonOrder` · `?kind=term|word-order|mcq` · `?stage=1|2` · `?limit` ·
-`?mode=practice|learn`
+`?mode=practice|learn` · `?topic=<group>|_none`
 
-Returns `{ items: DueItem[], summary: DeckSummary }`, ordered least-practised first.
+Returns `{ items: DueItem[], summary: DeckSummary, topics: TopicSummary[] }`, ordered least-practised
+first.
+
+**`?topic=`** serves only the cards whose `group` is that topic — or, with `_none`, the cards that have
+none ([ADR-0031](../architecture/decisions/0031-a-deck-is-practised-by-topic.md)). It applies in learn
+mode too, and `summary` is then the topic's. `topics` is always the **whole** deck's —
+`{ id, title?, summary }` per topic, ordered by title with numbers compared as numbers, `_none` last
+and untitled — and empty for a deck none of whose cards has a topic. A topic the deck does not have
+serves nothing rather than the whole deck; a blank one is a `400`.
 
 **A prompt never contains its answer.** The trainers this replaces had to ship the answer to the
 page in order to check it; here grading is server-side, so the answer arrives only after the learner
@@ -142,7 +150,8 @@ answer sheet), the stage gate still holds, and **nothing is written**: no attemp
     "prompt": { "kind": "term", "stage": 1, "prompt": "nadat", "hint": "Nadat ik had gegeten, …" },
     "progress": { "stage": 1, "streak": 0, "stage1Cleared": false, "mastered": false, "attempts": 0 }
   }],
-  "summary": { "total": 20, "stage1Cleared": 3, "stage2Unlocked": 2, "mastered": 1, "inProgress": 19 }
+  "summary": { "total": 20, "stage1Cleared": 3, "stage2Unlocked": 2, "mastered": 1, "inProgress": 19 },
+  "topics": []
 }
 ```
 

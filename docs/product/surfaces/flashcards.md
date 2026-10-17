@@ -204,7 +204,7 @@ in it.
 ## API
 
 ```http
-GET  /api/v1/drills?blockId=…&kind=term&stage=1|2&limit=100[&mode=learn]  → DeckPage
+GET  /api/v1/drills?blockId=…&kind=term&stage=1|2&limit=100[&mode=learn][&topic=…]  → DeckPage
 POST /api/v1/drills/:drillItemId/attempts   { stage, given, override? } | { stage, self }  → AttemptResult
 POST /api/v1/drills/:drillItemId/reveal     { stage }                    → RevealResult (writes nothing)
 POST /api/v1/drills/reset                   { blockId | packId }         → { reset: n }
@@ -217,8 +217,8 @@ DELETE /api/v1/terms/:drillItemId                                        → 204
 each card is served at whatever stage it is sitting on. Passing it explicitly is what the direction
 switch does.
 
-A `DeckPage` is `{ items: DueItem[], summary: DeckSummary }`. The summary is computed over the
-**whole** deck, not the batch:
+A `DeckPage` is `{ items: DueItem[], summary: DeckSummary, topics: TopicSummary[] }`. The summary is
+computed over the **whole** deck — or the whole topic, when one is chosen — not the batch:
 
 ```jsonc
 { "total": 120, "stage1Cleared": 45, "stage2Unlocked": 30, "mastered": 15, "inProgress": 105 }
@@ -243,6 +243,23 @@ canonical answer), `acceptedAlso` (typed only — every form that would have bee
 group?, example?, details? }`.
 
 `POST /drills/reset` refuses a body with neither `blockId` nor `packId`. **No screen calls it.**
+
+### Topics
+
+A card's `group` is its **topic** ([ADR-0031](../../architecture/decisions/0031-a-deck-is-practised-by-topic.md)):
+one per card, so a deck's topics partition it and their counts add up to the deck's. `?topic=<group>`
+serves only that topic's cards — in practice and learn mode alike — and `?topic=_none` the cards
+without one. `topics` lists the **whole** deck's topics whichever one is chosen, each
+`{ id, title?, summary }`, ordered by title with numbers compared as numbers ("10 · …" after
+"9 · …"), `_none` last. A deck none of whose cards has a topic has no topics. A topic the deck does not
+have serves nothing — never silently the whole deck.
+
+On screen the topic is a **select** beside the mode and direction switches — *All topics*, then each
+topic with `mastered/total` — present only when the deck has topics. Choosing one navigates to
+`/flashcards?blockId=…&topic=…`, keeping learn mode if it is on; the direction resets with the page.
+A topic address that matches nothing (a section renamed since it was bookmarked) says *No cards in
+this topic* and offers *All topics*, rather than the empty-deck prompt. The overview's topic tiles
+link to the same addresses ([progress](progress-and-navigation.md#topics-on-the-overview)).
 
 ## The screen
 
@@ -389,10 +406,12 @@ learner's list only once opened. On any deck, *Add cards* asks a coach to fill c
 | Matching | `api/src/domain/matching.ts` |
 | Prompt, masking, verdict (typed and self) | `api/src/domain/grading.ts` |
 | Grading mode, reveal, learn card, payload builder | `api/src/domain/flashcards.ts` |
+| A card's topic, the filter, the per-topic summaries | `api/src/domain/topics.ts` |
 | Serving, persisting, reveal | `api/src/services/drills.ts` |
 | Own cards | `api/src/services/learner-terms.ts` |
 | Routes | `api/src/http/learner.ts` |
 | Screen | `web/src/components/flashcards.tsx`, `own-words.tsx`, `term-card.tsx` |
 | Keyboard map, status line | `web/src/lib/flashcards.ts` |
+| Topic links and names | `web/src/lib/topics.ts` |
 | Page and old-address redirect | `web/src/app/(app)/flashcards/page.tsx`, `web/src/app/(app)/drills/words/page.tsx` |
 | Strings | `web/src/i18n/dictionaries.ts` → `flashcards` |

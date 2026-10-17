@@ -285,6 +285,11 @@ export const dictionary = {
     emptyHint: 'Add cards and a coach fills them in — or a coach publishes a deck for this skill.',
     addCards: 'Add cards',
     shortcuts: 'Keyboard shortcuts',
+    topic: 'Topic',
+    allTopics: 'All topics',
+    noTopic: 'No topic',
+    topicEmpty: 'No cards in this topic.',
+    topicEmptyHint: 'It may have been renamed. Pick another topic, or practise the whole deck.',
   },
   assist: {
     practise: 'Practise',
@@ -433,6 +438,8 @@ export const dictionary = {
     noErrorsHint: 'The error log fills up once a coach corrects your first submission.',
     redrill: 'Coming back as practice',
     retired: 'Out of active practice',
+    topics: 'Topics',
+    topicsIntro: 'Practise or study one topic at a time.',
   },
   search: {
     label: 'Search guides and cards',

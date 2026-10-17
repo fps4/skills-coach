@@ -24,6 +24,7 @@ import {
   revealCard,
   type CardFace,
 } from '../domain/flashcards.js';
+import { deckTopics, inTopic, type TopicSummary } from '../domain/topics.js';
 import type { PostAttemptInput } from '../domain/schemas.js';
 import type { DrillItem, DrillKind, McqPayload, PackManifest, Stage } from '../domain/types.js';
 import type { DrillStateDoc } from '../db/collections.js';
@@ -73,7 +74,13 @@ export type DeckMode = 'practice' | 'learn';
 
 export interface DeckPage {
   items: DueItem[];
+  /** The counts for what is being practised — the topic when one is chosen, the deck otherwise. */
   summary: DeckSummary;
+  /**
+   * The deck's topics, each with its own counts, whichever one is chosen — so the surface can offer
+   * the others without a second call (ADR-0031). Empty for a deck whose cards have no topic.
+   */
+  topics: TopicSummary[];
 }
 
 export interface NextItemsQuery {
@@ -87,6 +94,8 @@ export interface NextItemsQuery {
   limit?: number;
   /** Learn mode serves the back of each card too. Only for cards; it records nothing (ADR-0027). */
   mode?: DeckMode;
+  /** Only the cards of this topic — a card's `group`, or `NO_TOPIC` (ADR-0031). */
+  topic?: string;
 }
 
 /**
@@ -96,20 +105,24 @@ export interface NextItemsQuery {
  * attempted twice, so a session works through the deck rather than re-showing favourites.
  */
 export async function nextItems(ctx: ServiceContext, query: NextItemsQuery): Promise<DeckPage> {
-  const items = await listDrillItems(ctx, {
+  const inScope = await listDrillItems(ctx, {
     blockId: query.blockId,
     packId: query.packId,
     lessonOrder: query.lessonOrder,
     kind: query.kind,
     learnerId: query.learnerId,
   });
-  if (items.length === 0) return { items: [], summary: summarize([], 0) };
+  if (inScope.length === 0) return { items: [], summary: summarize([], 0), topics: [] };
 
   const progressById = await loadProgress(
     ctx,
     query.learnerId,
-    items.map((item) => item.drillItemId),
+    inScope.map((item) => item.drillItemId),
   );
+  // The topics are the whole deck's; the page and its counts are the chosen topic's.
+  const topics = deckTopics(inScope, progressById);
+  const topic = query.topic;
+  const items = topic === undefined ? inScope : inScope.filter((item) => inTopic(item, topic));
 
   const due: DueItem[] = [];
   for (const item of items) {
@@ -142,7 +155,11 @@ export async function nextItems(ctx: ServiceContext, query: NextItemsQuery): Pro
 
   return {
     items: due.slice(0, Math.min(query.limit ?? 20, 100)),
-    summary: summarize([...progressById.values()], items.length),
+    summary: summarize(
+      items.flatMap((item) => progressById.get(item.drillItemId) ?? []),
+      items.length,
+    ),
+    topics,
   };
 }
 
@@ -332,6 +349,24 @@ export async function deckSummary(
     items.map((item) => item.drillItemId),
   );
   return summarize([...progressById.values()], items.length);
+}
+
+/**
+ * A deck's topics with their counts — what the overview's topic tiles read (ADR-0031). The same list
+ * `nextItems` hands the flashcards surface, so a tile and the surface it opens never disagree.
+ */
+export async function topicSummaries(
+  ctx: ServiceContext,
+  learnerId: string,
+  scope: { blockId?: string; packId?: string },
+): Promise<TopicSummary[]> {
+  const items = await listDrillItems(ctx, { ...scope, kind: 'term', learnerId });
+  const progressById = await loadProgress(
+    ctx,
+    learnerId,
+    items.map((item) => item.drillItemId),
+  );
+  return deckTopics(items, progressById);
 }
 
 export async function getProgressFor(
