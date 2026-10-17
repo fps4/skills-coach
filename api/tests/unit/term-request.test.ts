@@ -159,3 +159,17 @@ describe('acceptedTerm with a concept card’s fields (ADR-0027)', () => {
     expect(accepted.details?.analogy).toBe('Like a SQL inner join.');
   });
 });
+
+describe('acceptedTerm with a topic (ADR-0031)', () => {
+  const suggestion = { translation: 'the meeting', group: 'work' };
+
+  it('carries the topic the coach suggested', () => {
+    expect(acceptedTerm('de vergadering', suggestion).group).toBe('work');
+  });
+
+  it('lets the learner put it somewhere else, or leave it out', () => {
+    expect(acceptedTerm('de vergadering', suggestion, { group: 'Projects' }).group).toBe('Projects');
+    expect(acceptedTerm('de vergadering', suggestion, {}, ['group'])).not.toHaveProperty('group');
+    expect(acceptedTerm('de vergadering', suggestion, { group: '  ' })).not.toHaveProperty('group');
+  });
+});

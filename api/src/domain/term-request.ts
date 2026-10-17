@@ -44,15 +44,18 @@ export interface TermSuggestion {
   translation: string;
   example?: string;
   hint?: string;
+  /** The topic the word belongs in (ADR-0031) — one the deck already uses, or a new label. */
+  group?: string;
   details?: TermDetails;
 }
 
 /** A field the learner can leave off the card. The translation is not one: it is what is practised. */
-export type OptionalTermField = 'example' | 'hint' | keyof TermDetails;
+export type OptionalTermField = 'example' | 'hint' | 'group' | keyof TermDetails;
 
 export const OPTIONAL_TERM_FIELDS: readonly OptionalTermField[] = [
   'example',
   'hint',
+  'group',
   'exampleTranslation',
   'partOfSpeech',
   'forms',
@@ -119,6 +122,7 @@ export interface AcceptedTerm {
   translation: string;
   example?: string;
   hint?: string;
+  group?: string;
   details?: TermDetails;
 }
 
@@ -144,10 +148,11 @@ export function acceptedTerm(
 
   const example = left.has('example') ? undefined : clean(edits.example ?? suggestion.example);
   const hint = left.has('hint') ? undefined : clean(edits.hint ?? suggestion.hint);
+  const group = left.has('group') ? undefined : clean(edits.group ?? suggestion.group);
   const merged: TermDetails = { ...suggestion.details, ...edits.details };
   const details: TermDetails = {};
   for (const field of OPTIONAL_TERM_FIELDS) {
-    if (field === 'example' || field === 'hint' || left.has(field)) continue;
+    if (field === 'example' || field === 'hint' || field === 'group' || left.has(field)) continue;
     // Code keeps its indentation: only the blank lines around it go.
     const value = field === 'code' ? cleanCode(merged.code) : cleanDetail(merged[field]);
     if (value !== undefined) (details as Record<string, unknown>)[field] = value;
@@ -158,6 +163,7 @@ export function acceptedTerm(
     translation,
     ...(example ? { example } : {}),
     ...(hint ? { hint } : {}),
+    ...(group ? { group } : {}),
     ...(Object.keys(details).length > 0 ? { details } : {}),
   };
 }

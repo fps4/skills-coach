@@ -53,6 +53,7 @@ export default async function FlashcardsPage({
           contentLanguage={pack.contentLanguage}
           translationLanguage={pack.translationLanguage}
           dictionary={dictionary}
+          topics={pack.flashcards?.topics}
         />
       </PageShell>
     );
@@ -69,6 +70,7 @@ export default async function FlashcardsPage({
       initialMode={mode === 'learn' ? 'learn' : 'practice'}
       // `?topic=` practises one topic of the deck — where an overview tile leads (ADR-0031).
       topic={topic?.trim() ? topic.trim() : undefined}
+      declaredTopics={pack.flashcards?.topics}
       dictionary={dictionary}
       addHref={`${base}&view=add`}
     />

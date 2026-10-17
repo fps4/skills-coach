@@ -403,6 +403,15 @@ learner's list only once opened. On any deck, *Add cards* asks a coach to fill c
 - Only the owner sees it, a republish never sweeps it, and deleting it takes its progress with it.
 - `FROM_LEARNER` (`origin: 'learner'`), not `learnerId`, separates these from the pack's own items
   ([ADR-0015](../../architecture/decisions/0015-a-block-may-be-owned-by-a-learner.md)).
+- A card can go in a **topic** ([ADR-0033](../../architecture/decisions/0033-a-learner-files-their-own-words-by-topic.md)):
+  the form has a topic box, and each word in the list has one too, saved on blur or Enter and only
+  when it changed (`PATCH /terms/:drillItemId { group }`, blank for none — the streak stays). The box
+  offers the skill's declared topics by title, then the learner's own labels; a declared title is
+  stored as its id, anything else as typed. A learner's labels are not held to the declared list.
+  The Woordtrainer declares nine starter topics.
+- On *Add cards*, a coach's suggestion may place the word in a topic; the review card shows it by
+  title and lets the learner move or clear it — and, on a skill with topics, place a word the coach
+  did not.
 
 ## Deliberate refusals
 

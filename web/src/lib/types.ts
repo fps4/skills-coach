@@ -6,7 +6,7 @@
  * how they actually relate. `docs/api/endpoints.md` is the contract these follow.
  */
 
-import type { TopicSummary } from './topics';
+import type { DeclaredTopic, TopicSummary } from './topics';
 
 export interface Learner {
   learnerId: string;
@@ -75,7 +75,7 @@ export interface Pack {
   errorCategories: { id: string; label?: string; group?: string }[];
   presentation?: PackPresentation;
   /** How the skill's cards are answered (ADR-0027). Absent means typed. */
-  flashcards?: { grading?: CardGrading };
+  flashcards?: { grading?: CardGrading; topics?: DeclaredTopic[] };
 }
 
 export interface Block {
@@ -335,6 +335,8 @@ export interface TermSuggestion {
   translation: string;
   example?: string;
   hint?: string;
+  /** The topic a coach suggests the word belongs in (ADR-0031). */
+  group?: string;
   details?: TermDetails;
 }
 
@@ -355,7 +357,7 @@ export interface TermRequest {
 }
 
 /** A field the learner can leave off the card; the translation is not one. */
-export type OptionalTermField = 'example' | 'hint' | keyof TermDetails;
+export type OptionalTermField = 'example' | 'hint' | 'group' | keyof TermDetails;
 
 export interface DeckPage {
   items: DueItem[];
