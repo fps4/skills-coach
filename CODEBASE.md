@@ -34,6 +34,7 @@ api/src/
     drill-progress.ts  the stage/streak/mastery machine, shared by all drill kinds
     flashcards.ts      a card answered typed or self-graded, per pack; the reveal and learn mode, which
                        record nothing; the one builder every card payload goes through (ADR-0027)
+    topics.ts          a card's topic is its group: the filter, and a deck's topics with their counts (ADR-0031)
     word-order.ts      order checking, alternative orders, per-chunk marks
     mcq.ts             answer keys: set-equality grading, deterministic option shuffle
     reading.ts         which language variant a learner is shown, and the library's three filters
@@ -119,6 +120,8 @@ web/src/
     menu.ts          grouping the rail by the learner's menu — pure, unit-tested
     legacy-locale.ts which old `/nl/…` `/en/…` paths the middleware redirects — pure, unit-tested
     search.ts        where a search result leads, how results group, which keys reach for the bar (ADR-0030)
+    topics.ts        where a topic opens and what it is called — shared by the overview's tiles and the
+                     flashcards' topic select (ADR-0031)
     guides.ts        a skill's guides, read off `skills/<id>/guides/` (server-only, ADR-0029); its test
                      is the impersonality guard over every committed guide
   components/

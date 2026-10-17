@@ -8,11 +8,12 @@
 import { blockProgress, type BlockProgress } from '../domain/progression.js';
 import { redrillCategories, retireCategories, topRecurring } from '../domain/error-log.js';
 import type { DeckSummary } from '../domain/drill-progress.js';
+import type { TopicSummary } from '../domain/topics.js';
 import type { ReadingCounts } from '../domain/reading.js';
 import type { Block, ErrorLogEntry, PackManifest } from '../domain/types.js';
 import { getBlockFor, getPack, listBlocks } from './content.js';
 import { listErrorLog } from './corrections.js';
-import { deckSummary } from './drills.js';
+import { deckSummary, topicSummaries } from './drills.js';
 import { getEnrollment, listEnrollments } from './learners.js';
 import { packBreakdown } from './quiz.js';
 import { counts as readingCountsFor } from './reading.js';
@@ -26,7 +27,16 @@ export interface PackProgress {
   currentBlock: Block | null;
   blockProgress: BlockProgress | null;
   blocks: { block: Block; progress: BlockProgress }[];
-  decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary };
+  decks: {
+    terms: DeckSummary;
+    wordOrder: DeckSummary;
+    quiz: DeckSummary;
+    /**
+     * The topics of the deck the Flashcards tab opens — the current block's — each with its counts
+     * (ADR-0031). Empty when that deck's cards have no topic, or there is no current block.
+     */
+    topics: TopicSummary[];
+  };
   /** How much is in this learner's library and how much is unread — what the rail shows (ADR-0017). */
   reading: ReadingCounts;
   /** Words asked to be filled in: waiting on a coach, and ready for the learner to review (ADR-0023). */
@@ -73,6 +83,7 @@ export async function packProgress(ctx: ServiceContext, learnerId: string, packI
       terms: await deckSummary(ctx, learnerId, { packId, kind: 'term' }),
       wordOrder: await deckSummary(ctx, learnerId, { packId, kind: 'word-order' }),
       quiz: await deckSummary(ctx, learnerId, { packId, kind: 'mcq' }),
+      topics: current ? await topicSummaries(ctx, learnerId, { blockId: current.block.blockId }) : [],
     },
     reading: await readingCountsFor(ctx, learnerId, packId),
     wordRequests: await countRequests(ctx, learnerId, packId),

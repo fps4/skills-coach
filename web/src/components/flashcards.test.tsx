@@ -23,6 +23,9 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
+const push = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+
 const dictionary = getDictionary();
 const t = dictionary.flashcards;
 
@@ -52,7 +55,13 @@ const DECK: DeckPage = {
     },
   ],
   summary: { total: 2, stage1Cleared: 0, stage2Unlocked: 0, mastered: 0, inProgress: 2 },
+  topics: [],
 };
+
+const TOPICS: DeckPage['topics'] = [
+  { id: 'Basics', title: 'Basics', summary: { total: 1, stage1Cleared: 0, stage2Unlocked: 0, mastered: 0, inProgress: 1 } },
+  { id: '_none', summary: { total: 1, stage1Cleared: 1, stage2Unlocked: 0, mastered: 1, inProgress: 0 } },
+];
 
 function respond() {
   clientApi.mockImplementation(async (path: string, init?: { body?: Record<string, unknown> }) => {
@@ -91,7 +100,7 @@ function respond() {
 const key = (k: string, init: KeyboardEventInit = {}, target: Element = document.body) =>
   fireEvent.keyDown(target, { key: k, ...init });
 
-function mount(grading: 'self' | 'typed' = 'self') {
+function mount(grading: 'self' | 'typed' = 'self', topic?: string) {
   return render(
     <Flashcards
       blockId="kg.b1"
@@ -100,6 +109,7 @@ function mount(grading: 'self' | 'typed' = 'self') {
       grading={grading}
       dictionary={dictionary}
       addHref="/flashcards?blockId=kg.b1&view=add"
+      topic={topic}
     />,
   );
 }
@@ -233,5 +243,64 @@ describe('Flashcards — the keyboard', () => {
     const show = screen.getByRole('button', { name: new RegExp(t.showAnswer) });
     expect(show.getAttribute('aria-keyshortcuts')).toBe('F Space');
     expect(show.querySelector('kbd')?.textContent).toBe('F');
+  });
+});
+
+describe('Flashcards — topics (ADR-0031)', () => {
+  beforeEach(() => {
+    clientApi.mockReset();
+    push.mockReset();
+    respond();
+  });
+  afterEach(cleanup);
+
+  const withTopics = () => {
+    const plain = clientApi.getMockImplementation()!;
+    clientApi.mockImplementation(async (path: string, init?: unknown) => {
+      const page = await plain(path, init);
+      return path.startsWith('/v1/drills?') ? { ...page, topics: TOPICS } : page;
+    });
+  };
+
+  it('offers no topic picker for a deck whose cards have no topic', async () => {
+    mount();
+    await screen.findByText('Widget join');
+    expect(screen.queryByLabelText(t.topic)).toBeNull();
+  });
+
+  it('lists every topic with its counts, the cards without one by the interface’s own word', async () => {
+    withTopics();
+    mount();
+    const picker = (await screen.findByLabelText(t.topic)) as HTMLSelectElement;
+    expect([...picker.options].map((option) => option.textContent)).toEqual([t.allTopics, 'Basics · 0/1', `${t.noTopic} · 1/1`]);
+  });
+
+  it('asks the api for only the chosen topic', async () => {
+    withTopics();
+    mount('self', 'Basics');
+    await screen.findByText('Widget join');
+    expect(clientApi.mock.calls[0][0]).toContain('topic=Basics');
+    expect(((await screen.findByLabelText(t.topic)) as HTMLSelectElement).value).toBe('Basics');
+  });
+
+  it('changes topic by address, keeping learn mode, and back to the whole deck', async () => {
+    withTopics();
+    mount();
+    const picker = await screen.findByLabelText(t.topic);
+    key('l');
+    await screen.findByText('back of Widget join');
+    fireEvent.change(picker, { target: { value: '_none' } });
+    expect(push).toHaveBeenLastCalledWith('/flashcards?blockId=kg.b1&topic=_none&mode=learn');
+    key('p');
+    await waitFor(() => expect(screen.queryByText('back of Widget join')).toBeNull());
+    fireEvent.change(picker, { target: { value: '' } });
+    expect(push).toHaveBeenLastCalledWith('/flashcards?blockId=kg.b1');
+  });
+
+  it('says a topic link that matches nothing is not an empty deck', async () => {
+    clientApi.mockImplementation(async () => ({ ...DECK, items: [], summary: { ...DECK.summary, total: 0 }, topics: TOPICS }));
+    mount('self', 'Renamed');
+    expect(await screen.findByText(t.topicEmpty)).toBeTruthy();
+    expect(screen.queryByText(t.empty)).toBeNull();
   });
 });

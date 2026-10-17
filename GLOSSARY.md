@@ -52,6 +52,11 @@ code, a source, and a word's forms, synonyms and note. A word and a concept are 
 runtime ([ADR-0027](docs/architecture/decisions/0027-flashcards-are-one-engine-with-two-ways-of-answering.md)).
 The learner-facing surface is called *Flashcards*; the Woordtrainer is a skill that is one deck of them.
 
+**Topic** — what a card is about: its `group`. One per card, so a deck's topics partition it and a
+deck can be practised, studied and tracked one topic at a time — the overview shows a tile per topic
+([ADR-0031](docs/architecture/decisions/0031-a-deck-is-practised-by-topic.md)). Cards without one are
+the topic `_none`, listed last; a deck where no card has one has no topics.
+
 **Grading mode** — how a pack's cards are answered, declared in its manifest
 (`flashcards.grading`). **Typed**: the learner types the back and the server matches it tolerantly,
 with *Accept anyway* (an override). **Self-graded**: the learner turns the card over — a **reveal**,

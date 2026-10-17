@@ -115,7 +115,8 @@ already making — and no branch anywhere on which pack it is.
   "decks": {                              // pack-wide deck summaries, one per drill kind
     "terms":     { "total": 120, "stage1Cleared": 45, "stage2Unlocked": 30, "mastered": 15, "inProgress": 105 },
     "wordOrder": { … },
-    "quiz":      { … }
+    "quiz":      { … },
+    "topics":    [{ "id": "1 · Basics", "title": "1 · Basics", "summary": { … } }, …]
   },
   "reading": { "total": 12, "unread": 9 },
   "quiz": { "byCategory": [ … ], "sessions": 4, "score": { … } },
@@ -125,6 +126,18 @@ already making — and no branch anywhere on which pack it is.
 
 Without `packId` it returns `{ packs: [...] }` — the same shape per enrolled pack, which is what the
 landing tiles read.
+
+### Topics on the overview
+
+`decks.topics` is the deck the Flashcards tab opens — the current block's — sorted by topic
+([ADR-0031](../../architecture/decisions/0031-a-deck-is-practised-by-topic.md)): the same list
+`GET /drills` returns beside the cards, so a tile and the page it opens agree. It is empty when that
+deck's cards have no topic, and the overview then shows no *Topics* card.
+
+When it is not, the overview shows one tile per topic, in that order: the topic's name, which opens
+practice on just that topic; a bar and `mastered/total`; and *Learn*, which opens the topic with its
+answers showing. Tiles are not ranked or recoloured by how well a topic is going — the bar is the only
+signal, and it is advisory like every count here.
 
 ### Which block is "current"
 

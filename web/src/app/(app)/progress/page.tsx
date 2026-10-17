@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { formatDate, statusLabel, statusTone } from '@/lib/text';
+import { topicHref, topicTitle, type TopicSummary } from '@/lib/topics';
 import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
 import type { DeckSummary, PackProgress } from '@/lib/types';
 
@@ -46,6 +47,37 @@ function DeckRow({ label, summary, dictionary }: { label: string; summary: DeckS
       </div>
       <Meter value={summary.mastered} total={summary.total} tone="success" />
     </div>
+  );
+}
+
+/**
+ * One topic of the deck (ADR-0031): its name opens practice on just that topic, and *Learn* opens it
+ * with the answers showing. How much of it is mastered is the bar; nothing here ranks topics.
+ */
+function TopicTile({ blockId, topic, dictionary }: { blockId: string; topic: TopicSummary; dictionary: Dictionary }) {
+  const { summary } = topic;
+  const done = summary.total > 0 && summary.mastered === summary.total;
+  const title = topicTitle(topic, dictionary.flashcards.noTopic);
+
+  return (
+    <li className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50">
+      <Link href={topicHref(blockId, topic.id)} className="min-w-0 break-words text-sm font-medium hover:text-primary">
+        {title}
+      </Link>
+      <Meter value={summary.mastered} total={summary.total} tone={done ? 'success' : 'primary'} />
+      <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+        <span className="tabular-nums">
+          {summary.mastered}/{summary.total} {dictionary.block.mastered.toLowerCase()}
+        </span>
+        <Link
+          href={topicHref(blockId, topic.id, 'learn')}
+          className="hover:text-foreground"
+          aria-label={`${dictionary.flashcards.learn}: ${title}`}
+        >
+          {dictionary.flashcards.learn}
+        </Link>
+      </div>
+    </li>
   );
 }
 
@@ -127,6 +159,23 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             <DeckRow label={t.words} summary={entry.decks.terms} dictionary={dictionary} />
             <DeckRow label={t.sentences} summary={entry.decks.wordOrder} dictionary={dictionary} />
             <DeckRow label={dictionary.nav.quiz} summary={entry.decks.quiz} dictionary={dictionary} />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* The deck by topic, when its cards have topics (ADR-0031). Each tile opens just that topic. */}
+      {entry.decks.topics.length > 0 && entry.currentBlock ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{t.topics}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t.topicsIntro}</p>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {entry.decks.topics.map((topic) => (
+                <TopicTile key={topic.id} blockId={entry.currentBlock!.blockId} topic={topic} dictionary={dictionary} />
+              ))}
+            </ul>
           </CardContent>
         </Card>
       ) : null}

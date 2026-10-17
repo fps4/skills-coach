@@ -6,6 +6,8 @@
  * how they actually relate. `docs/api/endpoints.md` is the contract these follow.
  */
 
+import type { TopicSummary } from './topics';
+
 export interface Learner {
   learnerId: string;
   subject: string;
@@ -357,7 +359,10 @@ export type OptionalTermField = 'example' | 'hint' | keyof TermDetails;
 
 export interface DeckPage {
   items: DueItem[];
+  /** The chosen topic's counts when there is one, the deck's otherwise. */
   summary: DeckSummary;
+  /** The whole deck's topics, whichever is chosen (ADR-0031). Empty when its cards have none. */
+  topics: TopicSummary[];
 }
 
 export interface AttemptResult {
@@ -465,7 +470,8 @@ export interface PackProgress {
   currentBlock: Block | null;
   blockProgress: BlockProgress | null;
   blocks: { block: Block; progress: BlockProgress }[];
-  decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary };
+  /** `topics` are the current block's deck's — the one the Flashcards tab opens (ADR-0031). */
+  decks: { terms: DeckSummary; wordOrder: DeckSummary; quiz: DeckSummary; topics: TopicSummary[] };
   reading: ReadingCounts;
   /** Words this learner asked to have filled in: waiting on a coach, and waiting on them (ADR-0023). */
   wordRequests: { waiting: number; ready: number };
