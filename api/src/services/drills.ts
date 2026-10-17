@@ -24,7 +24,7 @@ import {
   revealCard,
   type CardFace,
 } from '../domain/flashcards.js';
-import { deckTopics, inTopic, type TopicSummary } from '../domain/topics.js';
+import { deckTopics, inTopic, type TopicDeclaration, type TopicSummary } from '../domain/topics.js';
 import type { PostAttemptInput } from '../domain/schemas.js';
 import type { DrillItem, DrillKind, McqPayload, PackManifest, Stage } from '../domain/types.js';
 import type { DrillStateDoc } from '../db/collections.js';
@@ -120,7 +120,8 @@ export async function nextItems(ctx: ServiceContext, query: NextItemsQuery): Pro
     inScope.map((item) => item.drillItemId),
   );
   // The topics are the whole deck's; the page and its counts are the chosen topic's.
-  const topics = deckTopics(inScope, progressById);
+  const pack = await getPack(ctx, inScope[0]!.packId);
+  const topics = deckTopics(inScope, progressById, pack.flashcards?.topics);
   const topic = query.topic;
   const items = topic === undefined ? inScope : inScope.filter((item) => inTopic(item, topic));
 
@@ -359,6 +360,7 @@ export async function topicSummaries(
   ctx: ServiceContext,
   learnerId: string,
   scope: { blockId?: string; packId?: string },
+  declared?: readonly TopicDeclaration[],
 ): Promise<TopicSummary[]> {
   const items = await listDrillItems(ctx, { ...scope, kind: 'term', learnerId });
   const progressById = await loadProgress(
@@ -366,7 +368,7 @@ export async function topicSummaries(
     learnerId,
     items.map((item) => item.drillItemId),
   );
-  return deckTopics(items, progressById);
+  return deckTopics(items, progressById, declared);
 }
 
 export async function getProgressFor(

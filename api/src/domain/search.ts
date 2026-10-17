@@ -9,6 +9,7 @@
  */
 
 import GithubSlugger from 'github-slugger';
+import { topicTitle, type TopicDeclaration } from './topics.js';
 import type { DrillItem } from './types.js';
 
 export type SearchKind = 'guide' | 'card';
@@ -271,7 +272,11 @@ export function guideDocuments(guide: GuideSource): SearchDocument[] {
  * exercise, and finding one by its answer would be finding the answer. `owner` is the block's, for
  * an item written before visibility was stamped onto items (ADR-0015).
  */
-export function cardDocument(item: DrillItem, owner?: string): SearchDocument | null {
+export function cardDocument(
+  item: DrillItem,
+  owner?: string,
+  topics: readonly TopicDeclaration[] = [],
+): SearchDocument | null {
   const payload = item.payload;
   if (payload.kind !== 'term') return null;
   const details = payload.details ?? {};
@@ -294,7 +299,8 @@ export function cardDocument(item: DrillItem, owner?: string): SearchDocument | 
     kind: 'card',
     skillId: item.packId,
     title: payload.term,
-    context: payload.group ?? '',
+    // A declared topic is shown by its title, not the id the card carries (ADR-0032).
+    context: payload.group ? topicTitle(payload.group, topics) : '',
     body: payload.translation,
     extra,
     blockId: item.blockId,

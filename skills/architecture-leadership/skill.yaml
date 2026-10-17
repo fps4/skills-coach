@@ -52,7 +52,7 @@ method:
     front: the term as practitioners say it — "ABB before SBB", "architectural runway", "WSJF"
     back: one sentence, at most two; what it does and when it is the wrong choice
     hint: a cue, not the answer, and never the front's own words
-    group: a concept theme, numbered from foundations to advanced
+    group: the id of one of the topics declared under flashcards.topics
     code: a short formula or DSL snippet where seeing it is faster than reading about it
     analogy: the counterpart the learner already knows, and where it stops holding
 
@@ -61,6 +61,49 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: enterprise-architecture-method
+      title: Enterprise architecture method
+      description: "The TOGAF ADM phases, building blocks and where the method is overkill."
+      guides: [togaf]
+    - id: architecture-governance
+      title: Architecture governance
+      description: "Principles, review boards, compliance reviews, dispensations and contracts."
+      guides: [togaf]
+    - id: diagramming-systems
+      title: Diagramming systems
+      description: "C4's levels and shapes, its rivals, and diagrams that mislead."
+      guides: [c4-model]
+    - id: scaled-agile-delivery
+      title: Scaled agile delivery
+      description: "Release trains, PI planning, the program board and who owns what."
+      guides: [safe-for-architects]
+    - id: architecture-in-agile-backlog
+      title: Architecture in an agile backlog
+      description: "Enablers, the architectural runway, NFRs and WSJF."
+      guides: [safe-for-architects]
+    - id: bids-presales
+      title: "Bids & presales"
+      description: "The gated pursuit, costing, solution review and the architect's part in a bid."
+      guides: [bid-and-presales-process]
+    - id: people-organisation
+      title: "People & organisation"
+      description: "Hiring, ladders, calibration, team topologies and influence without authority."
+      guides: [engineering-leadership]
+    - id: commercial-ownership
+      title: Commercial ownership
+      description: "Run-rate, TCO, business cases, build vs buy and FinOps."
+      guides: [engineering-leadership]
+    - id: executive-communication
+      title: Executive communication
+      description: "Strategy on two pages, risk in business terms, selling invisible work."
+      guides: [engineering-leadership]
+    - id: delivery-governance-accountability
+      title: "Delivery governance & accountability"
+      description: "DORA, SLOs and error budgets, paved roads and incident command."
+      guides: [engineering-leadership]
 
 presentation:
   palette: violet

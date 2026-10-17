@@ -48,7 +48,7 @@ async function isDirectory(path: string): Promise<boolean> {
  * is not on the ladder, so the brief loses the rung it is climbing toward; a duplicated category id
  * merges two vocabularies into one counter.
  */
-function lint(manifest: PackManifestInput): string[] {
+function lint(manifest: PackManifestInput, guides: ReadonlySet<string>): string[] {
   const problems: string[] = [];
 
   const ids = manifest.errorCategories.map((category) => category.id);
@@ -94,6 +94,14 @@ function lint(manifest: PackManifestInput): string[] {
     problems.push('flashcards declares a grading mode, but presentation.surfaces leaves out drills:terms');
   }
 
+  // A topic's guides are links on its tile (ADR-0032). The api never sees the guide files, so a slug
+  // that names no file would publish fine and render a link to a 404 — this is the only place to catch it.
+  for (const topic of manifest.flashcards?.topics ?? []) {
+    for (const slug of topic.guides ?? []) {
+      if (!guides.has(slug)) problems.push(`topic "${topic.id}" names guide "${slug}", which is not in guides/`);
+    }
+  }
+
   return problems;
 }
 
@@ -114,6 +122,14 @@ function emptyKeys(value: unknown, path = ''): string[] {
       ? [`"${here}" has no value — a comma in an unquoted {…} value splits it; quote the value`]
       : emptyKeys(child, here);
   });
+}
+
+/** The slugs of a skill's guides (`guides/<slug>.md`, ADR-0029). None when it has no `guides/`. */
+async function guideSlugs(skillDir: string): Promise<Set<string>> {
+  const directory = join(skillDir, 'guides');
+  if (!(await isDirectory(directory))) return new Set();
+  const files = await readdir(directory);
+  return new Set(files.filter((name) => name.endsWith('.md')).map((name) => name.slice(0, -3)));
 }
 
 async function main(): Promise<void> {
@@ -141,14 +157,19 @@ async function main(): Promise<void> {
 
     try {
       const manifest = await loadManifest(manifestPath);
-      const problems = [...emptyKeys(parseYaml(await readFile(manifestPath, 'utf8'))), ...lint(manifest)];
+      const problems = [
+        ...emptyKeys(parseYaml(await readFile(manifestPath, 'utf8'))),
+        ...lint(manifest, await guideSlugs(join(skillsDir, entry.name))),
+      ];
       const ramp = manifest.framework.ramp?.length ?? 0;
+      const topics = manifest.flashcards?.topics?.length ?? 0;
 
       log(
         `${problems.length === 0 ? '✓' : '✗'} ${entry.name}/${MANIFEST_FILE} — ${manifest.packId} ` +
           `(${manifest.contentLanguage} → ${manifest.translationLanguage}), ` +
           `${manifest.framework.levels.length} levels, ${ramp} ramp step${ramp === 1 ? '' : 's'}, ` +
-          `${manifest.errorCategories.length} error categories`,
+          `${manifest.errorCategories.length} error categories` +
+          (topics > 0 ? `, ${topics} topics` : ''),
       );
 
       for (const problem of problems) log(`    · ${problem}`);

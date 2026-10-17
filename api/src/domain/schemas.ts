@@ -10,6 +10,7 @@
  */
 
 import { z } from 'zod';
+import { TOPIC_ID } from './topics.js';
 import { ARCHIVE_KIND } from './portable.js';
 
 const nonEmpty = z.string().trim().min(1);
@@ -415,7 +416,26 @@ export const packManifestSchema = z.object({
    * anyway" — is the default and what a word deck wants; `self` turns the card over and lets the
    * learner say whether they had it, which is what a concept whose back is a sentence wants.
    */
-  flashcards: z.object({ grading: z.enum(['typed', 'self']).default('typed') }).optional(),
+  flashcards: z
+    .object({
+      grading: z.enum(['typed', 'self']).default('typed'),
+      /**
+       * The deck's topics (ADR-0032): ids the cards carry in `group`, in the order the skill is
+       * learned. Optional — a skill that declares none has its topics read off its cards' labels.
+       */
+      topics: z
+        .array(
+          z.object({
+            id: z.string().max(60).regex(TOPIC_ID, 'a topic id is lowercase letters, digits and hyphens'),
+            title: z.string().trim().min(1).max(120),
+            description: z.string().trim().min(1).max(300).optional(),
+            guides: z.array(z.string().regex(TOPIC_ID, 'a guide is named by its file slug')).optional(),
+          }),
+        )
+        .refine((topics) => new Set(topics.map((topic) => topic.id)).size === topics.length, 'topic ids must be unique')
+        .optional(),
+    })
+    .optional(),
 });
 
 // ---------------------------------------------------------------------------

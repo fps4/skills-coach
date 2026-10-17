@@ -34,7 +34,8 @@ api/src/
     drill-progress.ts  the stage/streak/mastery machine, shared by all drill kinds
     flashcards.ts      a card answered typed or self-graded, per pack; the reveal and learn mode, which
                        record nothing; the one builder every card payload goes through (ADR-0027)
-    topics.ts          a card's topic is its group: the filter, and a deck's topics with their counts (ADR-0031)
+    topics.ts          a card's topic is its group: the filter, a deck's topics with their counts, and the
+                       ones a skill declares in its manifest (ADR-0031, ADR-0032)
     word-order.ts      order checking, alternative orders, per-chunk marks
     mcq.ts             answer keys: set-equality grading, deterministic option shuffle
     reading.ts         which language variant a learner is shown, and the library's three filters
@@ -71,6 +72,8 @@ api/src/
                        move identical state
     skill-migration.ts forking a programme's words and reading into skills of their own — copies
                        every learner's words, progress and library, never deletes (ADR-0022)
+    retopic.ts         moving a deck's cards from section labels onto the topic ids its manifest declares —
+                       `group` only, so streaks stay; reachable only through `retopic:cards` (ADR-0032)
     pack-removal.ts    deleting a pack *with* everyone's history in it — reachable only through
                        `remove-pack --including-history`, never through an API (ADR-0022)
     archive.ts         a learner's work in and out of a file: gathers everything of
@@ -84,7 +87,8 @@ api/src/
                      (also `validate-manifests.ts`, the linter CI runs over every
                       committed `skills/*/skill.yaml` — ADR-0008, ADR-0029)
                      `migrate-to-skills.ts` runs services/skill-migration.ts; `remove-pack.ts` deletes a
-                      pack — both inside the api container, via the `maintain-skills` workflow
+                      pack; `retopic-cards.ts` runs services/retopic.ts — all inside the api container,
+                      via the `maintain-skills` workflow
                      `reading-source.ts` / `import-reading.ts` are the same idea for a
                       library: `<slug>.<lang>.md` files → articles → coach API
 ```
@@ -120,8 +124,8 @@ web/src/
     menu.ts          grouping the rail by the learner's menu — pure, unit-tested
     legacy-locale.ts which old `/nl/…` `/en/…` paths the middleware redirects — pure, unit-tested
     search.ts        where a search result leads, how results group, which keys reach for the bar (ADR-0030)
-    topics.ts        where a topic opens and what it is called — shared by the overview's tiles and the
-                     flashcards' topic select (ADR-0031)
+    topics.ts        where a topic opens, what it is called, which topics a guide is practised in — shared
+                     by the overview's tiles, the flashcards' topic select and a guide's footer (ADR-0031/32)
     guides.ts        a skill's guides, read off `skills/<id>/guides/` (server-only, ADR-0029); its test
                      is the impersonality guard over every committed guide
   components/

@@ -48,7 +48,7 @@ method:
     front: the term as practitioners write it, at most eight words
     back: one sentence, at most two; what it does and how it differs from its neighbour
     hint: a cue, not the answer, and never repeating the front's words
-    group: a concept theme, numbered from foundations to the specialised regulated domains
+    group: the id of one of the topics declared under flashcards.topics
     code: a short snippet where seeing it is faster than reading about it
     analogy: the engineering counterpart, and where it stops holding
 
@@ -57,6 +57,45 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: foundations-vocabulary
+      title: "Foundations & vocabulary"
+      description: "DMBOK, its knowledge areas, and governance vs management vs catalog."
+      guides: [dama-dmbok-governance, data-governance-catalog-quality]
+    - id: operating-models-roles
+      title: "Operating models & roles"
+      description: "Centralised, federated and mesh governance; owners, stewards, custodians."
+      guides: [dama-dmbok-governance, data-governance-catalog-quality]
+    - id: policy-enforcement
+      title: "Policy & enforcement"
+      description: "The policy lifecycle, policy as code, ABAC and meaningful KPIs."
+      guides: [data-governance-catalog-quality]
+    - id: master-reference-metadata
+      title: "Master, reference & metadata"
+      description: "Master vs reference data, golden records and kinds of metadata."
+      guides: [dama-dmbok-governance, data-governance-catalog-quality]
+    - id: catalogs-lineage
+      title: "Catalogs & lineage"
+      description: "Choosing a catalog, metadata ingestion, OpenLineage and lineage depth."
+      guides: [data-governance-catalog-quality, dama-dmbok-governance]
+    - id: data-quality
+      title: Data quality
+      description: "Quality dimensions, layered checks, observability, SLAs and DQ as code."
+      guides: [data-governance-catalog-quality, dama-dmbok-governance]
+    - id: clinical-real-world-data
+      title: "Clinical & real-world data"
+      description: "Trial phases, CDISC standards, RWD vs RWE and OMOP."
+      guides: [pharma-rd-data-and-gxp]
+    - id: validated-systems-data-integrity
+      title: "Validated systems & data integrity"
+      description: "GxP, CSV vs CSA, Part 11, ALCOA+ and AI in validated systems."
+      guides: [pharma-rd-data-and-gxp]
+    - id: legal-publication-standards
+      title: Legal publication standards
+      description: "Akoma Ntoso, FRBR, ELI and the EU publication chain."
+      guides: [eu-legal-publication-standards]
 
 presentation:
   palette: blue

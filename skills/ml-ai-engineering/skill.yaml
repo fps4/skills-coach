@@ -52,7 +52,7 @@ method:
     front: the term as practitioners write it — "point-in-time join", "CUPED", "ApplyGuardrail"
     back: one sentence, at most two; what it does and when it is the wrong choice
     hint: a cue, not the answer, and never the front's own words
-    group: a concept theme, numbered from foundations to advanced
+    group: the id of one of the topics declared under flashcards.topics
     code: a short Python, config or pseudo-code snippet where seeing it is faster than reading
     analogy: the data-engineering or software-delivery counterpart, and where it stops holding
 
@@ -61,6 +61,45 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: training-deep-models
+      title: Training deep models
+      description: "Segmentation, U-Net, losses for imbalance, metrics and the training loop."
+      guides: [image-segmentation-with-pytorch]
+    - id: features-training-serving-skew
+      title: "Features & training/serving skew"
+      description: "Feature stores, point-in-time joins, leakage and skew."
+      guides: [feature-platforms]
+    - id: serving-inference
+      title: "Serving & inference"
+      description: "Batch vs real time, retrieval and ranking, batching, GPUs and autoscaling."
+      guides: [model-serving-patterns]
+    - id: rollout-production-monitoring
+      title: "Rollout & production monitoring"
+      description: "Shadow, canary and blue-green rollout, and drift."
+      guides: [model-serving-patterns]
+    - id: experiment-design
+      title: Experiment design
+      description: "Randomisation units, SRM, A/A tests, exposure and guardrail metrics."
+      guides: [online-experimentation]
+    - id: experiment-statistics-interference
+      title: "Experiment statistics & interference"
+      description: "Peeking, power, CUPED, interleaving and interference."
+      guides: [online-experimentation]
+    - id: evaluating-llm-systems
+      title: Evaluating LLM systems
+      description: "Eval harnesses, golden sets, LLM-as-judge and its biases, RAG metrics."
+      guides: [llmops-and-llm-eval]
+    - id: guardrails-gating-observability
+      title: "Guardrails, gating & observability"
+      description: "Input and output guardrails, deploy gates, tracing and red-teaming."
+      guides: [llmops-and-llm-eval]
+    - id: managed-genai-aws
+      title: Managed GenAI on AWS
+      description: "Bedrock's APIs, throughput, guardrails, knowledge bases and agents."
+      guides: [aws-bedrock-genai-platform]
 
 presentation:
   palette: violet

@@ -21,6 +21,7 @@
 
 import { promptFor, type TermPrompt } from './grading.js';
 import type { TermDetails } from './term-request.js';
+import type { TopicDeclaration } from './topics.js';
 import type { DrillItem, PackManifest, Stage, TermCardFields, TermPayload } from './types.js';
 
 /** How a pack's cards are answered. */
@@ -34,6 +35,8 @@ export type SelfGrade = 'got' | 'missed';
 /** A pack's flashcard settings, as its manifest declares them. */
 export interface FlashcardSettings {
   grading?: CardGrading;
+  /** The deck's declared topics, in learning order (ADR-0032). */
+  topics?: TopicDeclaration[];
 }
 
 /** Typed unless the manifest says otherwise — so every pack published before this is unchanged. */

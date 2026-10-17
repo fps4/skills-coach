@@ -55,7 +55,10 @@ The learner-facing surface is called *Flashcards*; the Woordtrainer is a skill t
 **Topic** — what a card is about: its `group`. One per card, so a deck's topics partition it and a
 deck can be practised, studied and tracked one topic at a time — the overview shows a tile per topic
 ([ADR-0031](docs/architecture/decisions/0031-a-deck-is-practised-by-topic.md)). Cards without one are
-the topic `_none`, listed last; a deck where no card has one has no topics.
+the topic `_none`, listed last; a deck where no card has one has no topics. A skill may **declare** its
+topics in its manifest — id, title, a line on what is in it, and the guides it is practised from — and
+then every published card names one by id
+([ADR-0032](docs/architecture/decisions/0032-a-skill-declares-its-topics.md)).
 
 **Grading mode** — how a pack's cards are answered, declared in its manifest
 (`flashcards.grading`). **Typed**: the learner types the back and the server matches it tolerantly,

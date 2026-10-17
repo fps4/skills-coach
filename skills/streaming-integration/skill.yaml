@@ -53,7 +53,7 @@ method:
     front: the term as practitioners write it — "watermark", "outbox pattern", "FULL_TRANSITIVE"
     back: one sentence, at most two; what it does and when it is the wrong choice
     hint: a cue, not the answer — and never the front's own words
-    group: a concept theme, numbered from foundations to advanced
+    group: the id of one of the topics declared under flashcards.topics
     code: a short SQL, config or payload snippet where seeing it is faster than reading about it
     analogy: the Kafka, SQL or warehouse counterpart, and where it stops holding
 
@@ -62,6 +62,49 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: logs-brokers-routers
+      title: "Logs, brokers & routers"
+      description: "Logs vs routers, partitions and ordering, Kafka, Solace and EventBridge."
+      guides: [sap-advanced-event-mesh, aws-eventbridge-event-platform-patterns, azure-event-hubs-for-kafka-users]
+    - id: schemas-event-contracts
+      title: "Schemas & event contracts"
+      description: "Schema Registry, compatibility modes, data contracts and CloudEvents."
+      guides: [confluent-platform-and-connectors, sap-advanced-event-mesh]
+    - id: connectors-cdc-replication
+      title: "Connectors, CDC & replication"
+      description: "Connectors, CDC, the outbox pattern, SMTs and cluster linking."
+      guides: [confluent-platform-and-connectors]
+    - id: stream-processing-time-state
+      title: "Stream processing: time & state"
+      description: "Event time, watermarks, windows, state and exactly-once in Flink SQL."
+      guides: [confluent-flink-sql]
+    - id: streaming-joins-engines
+      title: "Streaming joins & engines"
+      description: "Regular, interval, temporal and lookup joins; Flink vs the rest."
+      guides: [confluent-flink-sql]
+    - id: routing-delivery-failure
+      title: "Routing, delivery & failure"
+      description: "Idempotent consumers, queues vs topics, DLQs and ordering."
+      guides: [aws-eventbridge-event-platform-patterns, sap-advanced-event-mesh]
+    - id: operating-event-platform
+      title: Operating an event platform
+      description: "Platform standards, topology, capacity, geo-replication and alarms."
+      guides: [aws-eventbridge-event-platform-patterns, azure-event-hubs-for-kafka-users, confluent-platform-and-connectors]
+    - id: ipaas-api-led-integration
+      title: "iPaaS & API-led integration"
+      description: "iPaaS, API-led connectivity, MuleSoft vs Boomi and rate limits."
+      guides: [mulesoft-anypoint-fundamentals, boomi]
+    - id: integrating-saas-erp-systems
+      title: "Integrating SaaS & ERP systems"
+      description: "Workday's write paths and connectors, and eventing a SaaS that does not."
+      guides: [workday-integration-architecture, sap-advanced-event-mesh]
+    - id: streams-ai-ml-agents
+      title: "Streams for AI/ML & agents"
+      description: "Inference in and beside the stream, streaming features and MCP."
+      guides: [kafka-ai-ml-mcp-integration]
 
 presentation:
   palette: blue

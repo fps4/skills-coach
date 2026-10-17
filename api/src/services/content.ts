@@ -11,6 +11,7 @@
  */
 
 import type { Filter } from 'mongodb';
+import { undeclaredTopics } from '../domain/topics.js';
 import { conflict, notFound } from '../http/errors.js';
 import { packManifestSchema, publishBlockSchema } from '../domain/schemas.js';
 import type { PackManifestInput, PublishBlockInput } from '../domain/schemas.js';
@@ -240,6 +241,19 @@ export async function publishBlock(
   if (unknownTags.length > 0) {
     throw conflict(
       `question categories the pack does not declare: ${unknownTags.join(', ')} — declared: ${[...known].sort().join(', ')}`,
+    );
+  }
+
+  // A skill that declares its topics names every card's topic from that list (ADR-0032). A label
+  // outside it is a typo that would quietly become a topic of its own, so it is refused the same way.
+  const declaredTopics = pack.flashcards?.topics ?? [];
+  const unknownTopics = undeclaredTopics(
+    parsed.drillItems.map((item) => (item.payload.kind === 'term' ? item.payload.group : undefined)),
+    declaredTopics,
+  );
+  if (unknownTopics.length > 0) {
+    throw conflict(
+      `card topics the skill does not declare: ${unknownTopics.join(', ')} — declared: ${declaredTopics.map((topic) => topic.id).join(', ')}`,
     );
   }
 

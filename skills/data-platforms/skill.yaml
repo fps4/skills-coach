@@ -58,7 +58,7 @@ method:
     front: the term as practitioners write it, at most eight words
     back: one sentence, at most two; what it does and when it is the wrong choice
     hint: a cue, not the answer, and never the front's own words
-    group: a numbered concept theme, ordered from foundations to platform choice
+    group: the id of one of the topics declared under flashcards.topics
     code: a short SQL, YAML, DAX or Python snippet where seeing it is faster than reading about it
     analogy: the equivalent on a platform the learner already knows, and where it stops holding
     note: a dated claim to verify, or a caveat that does not fit the back
@@ -68,6 +68,49 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: lakehouse-foundations
+      title: Lakehouse foundations
+      description: "Lake, warehouse and lakehouse, medallion layers, control vs compute plane."
+      guides: [databricks-platform, microsoft-fabric-platform, aws-data-engineering-stack]
+    - id: table-formats-file-layout
+      title: "Table formats & file layout"
+      description: "Delta, Iceberg and Hudi, time travel, clustering and pruning."
+      guides: [databricks-platform, snowflake-platform]
+    - id: compute-cost-models
+      title: "Compute & cost models"
+      description: "Clusters, warehouses and capacities, caches, scaling and throttling."
+      guides: [snowflake-platform, microsoft-fabric-platform, aws-data-engineering-stack, databricks-platform]
+    - id: engines-query-tuning
+      title: "Engines & query tuning"
+      description: "Photon, AQE, Redshift distribution and sort keys, Athena levers."
+      guides: [aws-data-engineering-stack, databricks-platform]
+    - id: ingestion-incremental-pipelines
+      title: "Ingestion & incremental pipelines"
+      description: "Auto Loader, Snowpipe, streams and tasks, shortcuts and mirroring."
+      guides: [snowflake-platform, databricks-platform, aws-data-engineering-stack, microsoft-fabric-platform]
+    - id: orchestration-release-migration
+      title: "Orchestration, release & migration"
+      description: "Workflows vs Airflow, asset bundles, Fabric deployment, migration waves."
+      guides: [microsoft-fabric-platform, databricks-platform, aws-data-engineering-stack]
+    - id: catalogs-governance-security
+      title: "Catalogs, governance & security"
+      description: "Unity Catalog, Glue and Lake Formation, masking and row policies."
+      guides: [aws-data-engineering-stack, databricks-platform, snowflake-platform]
+    - id: bi-serving-semantic-models
+      title: "BI serving & semantic models"
+      description: "Semantic models, storage modes, Direct Lake, RLS and DAX context."
+      guides: [power-bi-for-data-architects]
+    - id: sap-operational-data-layers
+      title: SAP and operational data layers
+      description: "Datasphere and BDC, SAP extraction, Foundry's ontology and actions."
+      guides: [sap-datasphere-bdc-btp, palantir-foundry-aip]
+    - id: platform-choice-coexistence
+      title: "Platform choice & coexistence"
+      description: "Databricks, Snowflake, Fabric and AWS: who wins where, and together."
+      guides: [microsoft-fabric-platform, aws-data-engineering-stack]
 
 presentation:
   palette: blue

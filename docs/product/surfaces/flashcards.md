@@ -250,9 +250,28 @@ A card's `group` is its **topic** ([ADR-0031](../../architecture/decisions/0031-
 one per card, so a deck's topics partition it and their counts add up to the deck's. `?topic=<group>`
 serves only that topic's cards — in practice and learn mode alike — and `?topic=_none` the cards
 without one. `topics` lists the **whole** deck's topics whichever one is chosen, each
-`{ id, title?, summary }`, ordered by title with numbers compared as numbers ("10 · …" after
-"9 · …"), `_none` last. A deck none of whose cards has a topic has no topics. A topic the deck does not
-have serves nothing — never silently the whole deck.
+`{ id, title?, description?, guides?, summary }`. A deck none of whose cards has a topic has no
+topics. A topic the deck does not have serves nothing — never silently the whole deck.
+
+A skill may **declare** its topics in its manifest
+([ADR-0032](../../architecture/decisions/0032-a-skill-declares-its-topics.md)):
+
+```yaml
+flashcards:
+  grading: self
+  topics:
+    - id: data-vault-mechanics            # what cards carry in `group`, and what a link names
+      title: Data Vault mechanics
+      description: Hubs, links, satellites, hash keys, PIT and bridge tables.
+      guides: [data-vault-2-dbt]          # guide files beside the manifest; checked by validate:manifests
+```
+
+Declared topics come first, in manifest order, and are shown by their title — on the card's front,
+in search and on the tiles. A label the manifest does not declare is still a topic, after them,
+titled by itself and ordered with numbers compared as numbers ("10 · …" after "9 · …"); `_none` is
+last. Publishing a card under an undeclared topic, on a skill that declares some, is a `409`. Decks
+labelled before their skill declared topics are moved onto the ids once with the `maintain-skills`
+workflow's `retopic-cards` task, which changes `group` and nothing else — streaks stay.
 
 On screen the topic is a **select** beside the mode and direction switches — *All topics*, then each
 topic with `mastered/total` — present only when the deck has topics. Choosing one navigates to
@@ -406,7 +425,8 @@ learner's list only once opened. On any deck, *Add cards* asks a coach to fill c
 | Matching | `api/src/domain/matching.ts` |
 | Prompt, masking, verdict (typed and self) | `api/src/domain/grading.ts` |
 | Grading mode, reveal, learn card, payload builder | `api/src/domain/flashcards.ts` |
-| A card's topic, the filter, the per-topic summaries | `api/src/domain/topics.ts` |
+| A card's topic, the filter, the per-topic summaries, declared topics | `api/src/domain/topics.ts` |
+| Moving labels onto declared ids | `api/src/services/retopic.ts`, `api/src/importer/retopic-cards.ts` |
 | Serving, persisting, reveal | `api/src/services/drills.ts` |
 | Own cards | `api/src/services/learner-terms.ts` |
 | Routes | `api/src/http/learner.ts` |

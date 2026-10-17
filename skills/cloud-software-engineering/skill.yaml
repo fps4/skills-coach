@@ -49,7 +49,7 @@ method:
     front: the term as practitioners write it — `@Transactional`, "restricted-v2", "cdk synth"
     back: one sentence, at most two; what it does and when it is the wrong choice
     hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
-    group: a concept theme, ordered from application code out to the platform and its governance
+    group: the id of one of the topics declared under flashcards.topics
     code: a short snippet where seeing it is faster than reading about it
     analogy: the counterpart in a stack the learner already knows, and where it stops holding
 
@@ -58,6 +58,49 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: react-components-hooks
+      title: "React components & hooks"
+      description: "Hooks and their rules, effects, state ownership and error boundaries."
+      guides: [react-node-full-stack]
+    - id: frontend-tooling-typed-contracts
+      title: "Frontend tooling & typed contracts"
+      description: "Vite, its dev proxy, typed request state and file uploads."
+      guides: [react-node-full-stack]
+    - id: node-services-bff
+      title: "Node services & the BFF"
+      description: "The event loop, Express middleware, the BFF and honest status codes."
+      guides: [react-node-full-stack]
+    - id: spring-boot-services
+      title: Spring Boot services
+      description: "Auto-configuration, injection, controllers, WebFlux and Spring Security."
+      guides: [spring-boot-for-architects]
+    - id: data-access-transactions
+      title: "Data access & transactions"
+      description: "JPA vs SQL-first access, N+1, @Transactional, pools and Flyway."
+      guides: [spring-boot-for-architects]
+    - id: testing-production-readiness
+      title: "Testing & production readiness"
+      description: "Test pyramids, Testcontainers, Actuator, JVM sizing and image builds."
+      guides: [spring-boot-for-architects, react-node-full-stack]
+    - id: openshift-container-security
+      title: "OpenShift & container security"
+      description: "Routes, S2I, ImageStreams, SCCs and arbitrary-UID images."
+      guides: [openshift-for-kubernetes-users]
+    - id: infrastructure-as-code
+      title: Infrastructure as code
+      description: "CDK synth and constructs, CloudFormation's limits, CDK or Terraform."
+      guides: [aws-cdk-for-terraform-users]
+    - id: hybrid-governance
+      title: Hybrid governance
+      description: "Azure Arc onboarding, Azure Policy and landing zones."
+      guides: [azure-arc-monitor-and-policy]
+    - id: observability-alerting
+      title: "Observability & alerting"
+      description: "Azure Monitor metrics and logs, collection rules and alert discipline."
+      guides: [azure-arc-monitor-and-policy]
 
 presentation:
   palette: blue
