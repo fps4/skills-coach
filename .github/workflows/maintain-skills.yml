@@ -9,6 +9,9 @@ name: maintain-skills
 #   remove-pack              delete a pack. With `including_history`, every learner's work in it
 #                            goes too — the one irreversible thing this repository can do to a
 #                            deployment, and only for a pack whose learners asked for it.
+#   retopic-cards            move a deck's cards from section labels onto the topic ids its
+#                            manifest declares (ADR-0032). Changes `payload.group` only; streaks
+#                            stay. Publish the manifest first.
 #
 # It talks to MongoDB directly through the api container's own environment, so no credential is
 # minted, typed or printed. It defaults to reporting only: `apply` must be ticked to write.
@@ -21,10 +24,10 @@ on:
       task:
         description: "What to run"
         type: choice
-        options: [remove-pack]
+        options: [remove-pack, retopic-cards]
         required: true
       pack:
-        description: "remove-pack only: the pack to remove"
+        description: "The pack to remove (remove-pack) or retopic (retopic-cards)"
         type: string
         required: false
       including_history:
@@ -61,4 +64,13 @@ jobs:
           [[ "$PACK" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "pack must be a packId, got '$PACK'"; exit 1; }
           docker exec "$API_CONTAINER" node dist/importer/remove-pack.js --pack "$PACK" \
             ${{ inputs.including_history && '--including-history' || '' }} \
+            ${{ !inputs.apply && '--dry-run' || '' }}
+
+      - name: Move cards onto declared topics
+        if: inputs.task == 'retopic-cards'
+        env:
+          PACK: ${{ inputs.pack }}
+        run: |
+          [[ "$PACK" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "pack must be a packId, got '$PACK'"; exit 1; }
+          docker exec "$API_CONTAINER" node dist/importer/retopic-cards.js --pack "$PACK" \
             ${{ !inputs.apply && '--dry-run' || '' }}

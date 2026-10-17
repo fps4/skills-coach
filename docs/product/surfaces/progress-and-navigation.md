@@ -135,8 +135,9 @@ landing tiles read.
 deck's cards have no topic, and the overview then shows no *Topics* card.
 
 When it is not, the overview shows one tile per topic, in that order: the topic's name, which opens
-practice on just that topic; a bar and `mastered/total`; and *Learn*, which opens the topic with its
-answers showing. Tiles are not ranked or recoloured by how well a topic is going — the bar is the only
+practice on just that topic; its one-line description, when the skill declares it; a bar and
+`mastered/total`; *Learn*, which opens the topic with its answers showing; and a link to each guide
+the topic is practised from ([ADR-0032](../../architecture/decisions/0032-a-skill-declares-its-topics.md)). Tiles are not ranked or recoloured by how well a topic is going — the bar is the only
 signal, and it is advisory like every count here.
 
 ### Which block is "current"

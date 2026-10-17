@@ -6,11 +6,17 @@
  * the same topics for the deck its Flashcards tab opens; and a learner's own card is sorted by the
  * topic it was given like any published one.
  *
+ * And for a skill that declares its topics (ADR-0032): declared topics lead, in manifest order, with
+ * their titles, lines and guides; publishing a card under an undeclared topic is refused; and a deck
+ * labelled before its skill declared topics moves onto the ids without losing a streak.
+ *
  * Every card here is invented (ADR-0006).
  */
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { auth, createHarness, mongoAvailable, TEST_PACK, type Harness } from './helpers.js';
+import { createContext } from '../../src/services/context.js';
+import { retopicCards } from '../../src/services/retopic.js';
 
 const available = await mongoAvailable();
 const describeIfMongo = available ? describe : describe.skip;
@@ -167,5 +173,109 @@ describeIfMongo('topics', () => {
       headers: auth('learner-token'),
     });
     expect(response.statusCode).toBe(400);
+  });
+
+  describe('declared by the skill (ADR-0032)', () => {
+    const TOPICS = [
+      { id: 'basics', title: 'Basics', description: 'Joins and fan-out.', guides: ['widgets-guide'] },
+      { id: 'scale', title: 'Scale' },
+    ];
+
+    const declare = async () => {
+      const response = await harness.app.inject({
+        method: 'POST',
+        url: '/coach/v1/packs',
+        headers: auth('coach-token'),
+        payload: { ...PACK, flashcards: { grading: 'self', topics: TOPICS } },
+      });
+      expect(response.statusCode).toBe(200);
+    };
+
+    const publish = (cards: Record<string, unknown>[]) =>
+      harness.app.inject({
+        method: 'POST',
+        url: `/coach/v1/packs/${PACK.packId}/blocks`,
+        headers: auth('coach-token'),
+        payload: { order: 1, slug: 'deck', title: 'Deck', drillItems: cards.map((payload) => ({ payload })) },
+      });
+
+    it('lead in manifest order, with their title, line and guides', async () => {
+      await declare();
+      const published = await publish([
+        { kind: 'term', term: 'Sprocket sharding', translation: 'Splitting sprockets.', group: 'scale' },
+        { kind: 'term', term: 'Widget join', translation: 'Matching widgets.', group: 'basics' },
+      ]);
+      expect(published.statusCode).toBeLessThan(300);
+
+      const { topics } = await deck();
+      expect(topics).toEqual([
+        expect.objectContaining({
+          id: 'basics',
+          title: 'Basics',
+          description: 'Joins and fan-out.',
+          guides: ['widgets-guide'],
+        }),
+        expect.objectContaining({ id: 'scale', title: 'Scale' }),
+      ]);
+    });
+
+    it('refuses to publish a card under a topic the skill does not declare', async () => {
+      await declare();
+      const published = await publish([
+        { kind: 'term', term: 'Widget join', translation: 'Matching widgets.', group: 'basic' },
+      ]);
+      expect(published.statusCode).toBe(409);
+      expect(published.body).toContain('card topics the skill does not declare: basic');
+    });
+
+    it('refuses a manifest whose topic ids repeat or are not slugs', async () => {
+      for (const topics of [[TOPICS[0], TOPICS[0]], [{ id: 'Not A Slug', title: 'x' }]]) {
+        const response = await harness.app.inject({
+          method: 'POST',
+          url: '/coach/v1/packs',
+          headers: auth('coach-token'),
+          payload: { ...PACK, flashcards: { grading: 'self', topics } },
+        });
+        expect(response.statusCode).toBe(400);
+      }
+    });
+
+    it('moves a labelled deck onto the ids, keeping every streak, and reports what it cannot place', async () => {
+      // The deck from beforeEach is labelled "1 · Basics" / "10 · Scale"; one card has no topic.
+      await gotIt('Widget join');
+      await declare();
+      const ctx = createContext(harness.store, harness.config);
+
+      const dry = await retopicCards(ctx, PACK.packId, { dryRun: true });
+      expect(dry.moved).toEqual([
+        { from: '1 · Basics', to: 'basics', cards: 2 },
+        { from: '10 · Scale', to: 'scale', cards: 1 },
+      ]);
+      expect((await deck()).topics.map((topic) => topic.id)).toEqual(['1 · Basics', '10 · Scale', '_none']);
+
+      const applied = await retopicCards(ctx, PACK.packId, { dryRun: false });
+      expect(applied.unmatched).toEqual([]);
+      // Widget join cleared direction 1 before the move, so it is asked the other way round now.
+      const after = await deck('&topic=basics');
+      expect(after.items.map((item) => item.prompt.prompt).sort()).toEqual([
+        'Gadget fan-out',
+        'Matching widgets on a key.',
+      ]);
+      expect(after.summary).toMatchObject({ total: 2, stage1Cleared: 1 });
+
+      expect((await retopicCards(ctx, PACK.packId, { dryRun: false })).moved).toEqual([]);
+    });
+
+    it('leaves a label it cannot match where it is, and says so', async () => {
+      await harness.app.inject({
+        method: 'POST',
+        url: '/coach/v1/packs',
+        headers: auth('coach-token'),
+        payload: { ...PACK, flashcards: { grading: 'self', topics: [TOPICS[0]] } },
+      });
+      const report = await retopicCards(createContext(harness.store, harness.config), PACK.packId, { dryRun: false });
+      expect(report.unmatched).toEqual([{ label: '10 · Scale', cards: 1 }]);
+      expect((await deck(`&topic=${encodeURIComponent('10 · Scale')}`)).items).toHaveLength(1);
+    });
   });
 });

@@ -9,7 +9,15 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { cardTopic, deckTopics, inTopic, NO_TOPIC } from '../../src/domain/topics.js';
+import {
+  cardTopic,
+  declaredTopicFor,
+  deckTopics,
+  inTopic,
+  NO_TOPIC,
+  topicTitle,
+  undeclaredTopics,
+} from '../../src/domain/topics.js';
 import { initialProgress, type DrillProgress } from '../../src/domain/drill-progress.js';
 import type { DrillItem } from '../../src/domain/types.js';
 
@@ -111,5 +119,74 @@ describe('a deck’s topics', () => {
     expect(deckTopics([sentence, card('1', 'Widgets')], new Map())).toEqual([
       expect.objectContaining({ id: 'Widgets', summary: expect.objectContaining({ total: 1 }) }),
     ]);
+  });
+});
+
+describe('a skill’s declared topics (ADR-0032)', () => {
+  const declared = [
+    { id: 'basics', title: 'Basics', description: 'Joins and fan-out.', guides: ['widgets'] },
+    { id: 'scale', title: 'Scale' },
+    { id: 'unused', title: 'Nothing here yet' },
+  ];
+
+  it('come first, in the order the manifest lists them, with their title, line and guides', () => {
+    const topics = deckTopics([card('1', 'scale'), card('2', 'basics')], new Map(), declared);
+    expect(topics.map((topic) => topic.id)).toEqual(['basics', 'scale']);
+    expect(topics[0]).toMatchObject({ title: 'Basics', description: 'Joins and fan-out.', guides: ['widgets'] });
+    expect(topics[1]).not.toHaveProperty('guides');
+  });
+
+  it('leave out a declared topic no card is in yet', () => {
+    const topics = deckTopics([card('1', 'basics')], new Map(), declared);
+    expect(topics.map((topic) => topic.id)).toEqual(['basics']);
+  });
+
+  it('are followed by any undeclared label, titled by itself, then the cards without a topic', () => {
+    const topics = deckTopics([card('1'), card('2', 'Mine'), card('3', 'basics')], new Map(), declared);
+    expect(topics.map((topic) => [topic.id, topic.title])).toEqual([
+      ['basics', 'Basics'],
+      ['Mine', 'Mine'],
+      [NO_TOPIC, undefined],
+    ]);
+  });
+
+  it('name a card’s topic by its declared title, or by the label when undeclared', () => {
+    expect(topicTitle('basics', declared)).toBe('Basics');
+    expect(topicTitle('Mine', declared)).toBe('Mine');
+    expect(topicTitle('basics')).toBe('basics');
+  });
+});
+
+describe('publishing against declared topics', () => {
+  const declared = [{ id: 'basics', title: 'Basics' }];
+
+  it('finds a card group the skill does not declare, once each', () => {
+    expect(undeclaredTopics(['basics', 'typo', 'typo', undefined, '  '], declared)).toEqual(['typo']);
+  });
+
+  it('finds nothing when the skill declares no topics — its labels are free', () => {
+    expect(undeclaredTopics(['anything'], [])).toEqual([]);
+  });
+});
+
+describe('moving a labelled deck onto declared ids', () => {
+  const declared = [
+    { id: 'data-vault', title: 'Data Vault mechanics' },
+    { id: 'rdf', title: 'RDF & ontologies' },
+  ];
+
+  it('matches a label by its title, with or without a section number, regardless of case', () => {
+    expect(declaredTopicFor('3 · Data Vault mechanics', declared)).toBe('data-vault');
+    expect(declaredTopicFor('data vault mechanics', declared)).toBe('data-vault');
+    expect(declaredTopicFor('6. RDF & ontologies', declared)).toBe('rdf');
+  });
+
+  it('keeps a label that already is an id', () => {
+    expect(declaredTopicFor('rdf', declared)).toBe('rdf');
+  });
+
+  it('matches nothing it would have to guess at', () => {
+    expect(declaredTopicFor('3 · Data Vault', declared)).toBeNull();
+    expect(declaredTopicFor('Mine', declared)).toBeNull();
   });
 });

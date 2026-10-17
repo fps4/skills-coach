@@ -125,8 +125,11 @@ first.
 **`?topic=`** serves only the cards whose `group` is that topic — or, with `_none`, the cards that have
 none ([ADR-0031](../architecture/decisions/0031-a-deck-is-practised-by-topic.md)). It applies in learn
 mode too, and `summary` is then the topic's. `topics` is always the **whole** deck's —
-`{ id, title?, summary }` per topic, ordered by title with numbers compared as numbers, `_none` last
-and untitled — and empty for a deck none of whose cards has a topic. A topic the deck does not have
+`{ id, title?, description?, guides?, summary }` per topic — the skill's declared topics first, in
+manifest order, with their title, line and guide slugs
+([ADR-0032](../architecture/decisions/0032-a-skill-declares-its-topics.md)); then any undeclared label,
+titled by itself, ordered with numbers compared as numbers; `_none` last and untitled — and empty for
+a deck none of whose cards has a topic. A topic the deck does not have
 serves nothing rather than the whole deck; a blank one is a `400`.
 
 **A prompt never contains its answer.** The trainers this replaces had to ship the answer to the
@@ -477,7 +480,7 @@ Beyond `term` and `translation` every field is optional, and only the pair is ev
     "term": "Widget join",                                   // the front
     "translation": "Matching two widget lists on a key.",    // the back — "translation" for a concept too
     "hint": "Works like a zipper.",                          // ≤ 300; masked where it holds the answer
-    "group": "Basics",                                       // ≤ 120; the section, shown on the front
+    "group": "basics",                                       // ≤ 120; its topic — a declared id, if the skill declares topics
     "example": "A widget join pairs each left widget with its twin.",
     "details": {
       "analogy": "Like a SQL inner join, but for widgets.",  // ≤ 1000; "map onto what you know"
@@ -497,6 +500,10 @@ Two ways this fails the publish, both deliberately loud rather than degrading:
 - `categories` naming an id the pack does not declare → `409`, with the declared list in the
   message. Same rule as a correction's categories, and for the same reason: an invented one would
   accumulate its own history and never join anything.
+- A card's `group` naming a topic the skill does not declare, when it declares any under
+  `flashcards.topics` → `409`, with the declared ids in the message
+  ([ADR-0032](../architecture/decisions/0032-a-skill-declares-its-topics.md)). A skill that declares no
+  topics keeps free labels.
 
 Returns counts, including `ignoredAlternatives` — alternative word orders dropped because they were
 not permutations of the same chunks. An authoring typo degrades an item to single-order rather than

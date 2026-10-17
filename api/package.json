@@ -23,6 +23,7 @@
     "migrate:block-ownership": "tsx src/importer/migrate-block-ownership.ts",
     "migrate:to-skills": "tsx src/importer/migrate-to-skills.ts",
     "remove:pack": "tsx src/importer/remove-pack.ts",
+    "retopic:cards": "tsx src/importer/retopic-cards.ts",
     "validate:manifests": "tsx src/importer/validate-manifests.ts"
   },
   "dependencies": {

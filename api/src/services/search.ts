@@ -20,6 +20,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import type { TopicDeclaration } from '../domain/topics.js';
 import { join } from 'node:path';
 import MiniSearch, { type SearchResult } from 'minisearch';
 import type { Store } from '../db/client.js';
@@ -266,11 +267,20 @@ export function createSearchIndex(options: SearchIndexOptions): SearchIndex {
     return new Map(packs.map((pack) => [pack._id, singleLanguageText(pack.title, pack.contentLanguage) ?? pack._id]));
   };
 
+  /** Each skill's declared topics, so a card's context reads as its topic's title (ADR-0032). */
+  const declaredTopics = async (packIds?: string[]): Promise<Map<string, TopicDeclaration[]>> => {
+    const packs = await c.packs
+      .find(packIds ? { _id: { $in: packIds } } : {}, { projection: { _id: 1, 'flashcards.topics': 1 } })
+      .toArray();
+    return new Map(packs.map((pack) => [pack._id, pack.flashcards?.topics ?? []]));
+  };
+
   const blockDocuments = async (blockId: string): Promise<SearchDocument[]> => {
-    const block = await c.blocks.findOne({ _id: blockId }, { projection: { status: 1, learnerId: 1 } });
+    const block = await c.blocks.findOne({ _id: blockId }, { projection: { status: 1, learnerId: 1, packId: 1 } });
     if (block?.status !== 'published') return [];
+    const topics = (await declaredTopics([block.packId])).get(block.packId);
     const items = await c.drillItems.find({ blockId, 'payload.kind': 'term' }).toArray();
-    return items.map((doc) => cardDocument(toItem(doc), block.learnerId)).filter((doc) => doc !== null);
+    return items.map((doc) => cardDocument(toItem(doc), block.learnerId, topics)).filter((doc) => doc !== null);
   };
 
   const applyBlock = async (blockId: string) => engine.replaceBlock(blockId, await blockDocuments(blockId));
@@ -290,8 +300,9 @@ export function createSearchIndex(options: SearchIndexOptions): SearchIndex {
         const items = await c.drillItems
           .find({ blockId: { $in: [...owners.keys()] }, 'payload.kind': 'term' })
           .toArray();
+        const topics = await declaredTopics();
         for (const doc of items) {
-          const document = cardDocument(toItem(doc), owners.get(doc.blockId));
+          const document = cardDocument(toItem(doc), owners.get(doc.blockId), topics.get(doc.packId));
           if (document) next.add(document);
         }
 

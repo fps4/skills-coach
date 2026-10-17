@@ -212,6 +212,24 @@ Both run the same machine: two in a row clears a direction, direction 2 opens on
 1, a miss resets the streak, mastered is final. Both offer **learn mode**, which shows every card
 with its answer and records nothing.
 
+**Topics.** A card's `group` is its topic, and a deck can be practised one topic at a time from the
+overview's tiles ([ADR-0031](../architecture/decisions/0031-a-deck-is-practised-by-topic.md)). Declare
+them in the manifest, in learning order, and every card names one by id
+([ADR-0032](../architecture/decisions/0032-a-skill-declares-its-topics.md)):
+
+```yaml
+flashcards:
+  grading: self
+  topics:
+    - id: data-vault-mechanics
+      title: Data Vault mechanics
+      description: Hubs, links, satellites, hash keys, PIT and bridge tables.
+      guides: [data-vault-2-dbt]   # slugs of files in guides/ — validate:manifests checks them
+```
+
+A published card under an undeclared topic is refused. Renaming a topic is a change to its `title`;
+the `id` stays, and with it every card and link.
+
 **The cards are content and are never committed** (ADR-0006). A coach writes them — for an upskilling
 deck, from the reference guides — and publishes them into the skill's deck block: order 1, no
 lessons, `drillItems` only. Through the coach API or the MCP `publish_block` tool:

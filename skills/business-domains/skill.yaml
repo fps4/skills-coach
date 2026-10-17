@@ -50,7 +50,7 @@ method:
     front: the term as practitioners write it — `ACDOCA`, "deemed supplier", "ice-supersaturated region"
     back: one sentence, at most two; what it is and why it matters for the data
     hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
-    group: a concept theme, ordered from foundations to advanced
+    group: the id of one of the topics declared under flashcards.topics
     code: a short annotation, formula or pipeline sketch where seeing it is faster than reading about it
     analogy: the data-architecture counterpart, and where it stops holding
 
@@ -59,6 +59,45 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: finance-data-model
+      title: Finance data model
+      description: "The Universal Journal, business partners and released CDS views in S/4HANA."
+      guides: [sap-s4hana-finance-and-migration, sap-commercial-data-migration-and-tpm]
+    - id: migration-approaches
+      title: Migration approaches
+      description: "Greenfield, brownfield, selective transition and Central Finance."
+      guides: [sap-s4hana-finance-and-migration]
+    - id: migration-design-reconciliation
+      title: "Migration design & reconciliation"
+      description: "Mapping specs, tolerance policy, the Migration Cockpit and cutover."
+      guides: [sap-commercial-data-migration-and-tpm, sap-s4hana-finance-and-migration]
+    - id: commercial-data-trade-promotion
+      title: "Commercial data & trade promotion"
+      description: "Trade promotion, baseline vs uplift, and who is master for what."
+      guides: [sap-commercial-data-migration-and-tpm]
+    - id: regulatory-reporting-regimes
+      title: Regulatory reporting regimes
+      description: "DAC7, ViDA, SAF-T and e-invoicing as data products."
+      guides: [tax-regulatory-finance-data-flows]
+    - id: compliance-by-design
+      title: Compliance by design
+      description: "Segregation of duties, SOX evidence, erasure vs retention, data residency."
+      guides: [tax-regulatory-finance-data-flows]
+    - id: contrail-physics
+      title: Contrail physics
+      description: "When contrails form and persist: the Schmidt–Appleman criterion and ISSRs."
+      guides: [aviation-climate-contrails]
+    - id: climate-forcing-co2e
+      title: "Climate forcing & CO2e"
+      description: "How contrails warm, and what CO2e and GWP horizons choose for you."
+      guides: [aviation-climate-contrails]
+    - id: avoidance-verification
+      title: "Avoidance & verification"
+      description: "Avoidance manoeuvres, their fuel penalty, and verifying the benefit."
+      guides: [aviation-climate-contrails]
 
 presentation:
   palette: blue

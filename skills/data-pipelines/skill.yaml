@@ -51,7 +51,7 @@ method:
     front: the term as practitioners write it — `QUALIFY`, "sort-merge join", `none_failed_min_one_success`
     back: one sentence, at most two; what it does and when it is the wrong choice
     hint: a cue, not the answer — the runtime masks the term out of it in the reverse direction anyway
-    group: a concept theme within the category, numbered from foundations to advanced
+    group: the id of one of the topics declared under flashcards.topics
     code: a short SQL, PySpark, Polars, dbt or Airflow snippet where seeing it is faster than reading about it
     analogy: the warehouse or relational counterpart, and where it stops holding
 
@@ -60,6 +60,45 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: query-patterns-grain
+      title: "Query patterns & grain"
+      description: "Window functions, dedupe, recursive CTEs and gaps-and-islands."
+      guides: [sql-patterns]
+    - id: correctness-reconciliation
+      title: "Correctness & reconciliation"
+      description: "Fan-out joins, anti-joins, money types and reconciling two sources."
+      guides: [sql-patterns, database-migration-to-aws]
+    - id: change-over-time
+      title: "Change over time: SCD, CDC, streaming"
+      description: "SCD2, point-in-time joins, MERGE, CDC, watermarks and exactly-once."
+      guides: [sql-patterns, database-migration-to-aws, spark-performance]
+    - id: distributed-execution-spark
+      title: Distributed execution (Spark)
+      description: "Stages and shuffles, join strategies, skew, AQE and OOMs."
+      guides: [spark-performance]
+    - id: data-layout-files
+      title: "Data layout & files"
+      description: "Partitioning, pruning, clustering, bucketing and small files."
+      guides: [spark-performance, sql-patterns]
+    - id: single-node-dataframes
+      title: Single-node DataFrames
+      description: "Polars' lazy engine, pushdown, vectorisation and Arrow."
+      guides: [polars-and-pandas]
+    - id: transformation-warehouse-dbt
+      title: Transformation in the warehouse (dbt)
+      description: "dbt layers, materializations, incremental models, tests and macros."
+      guides: [dbt]
+    - id: orchestration
+      title: Orchestration
+      description: "Idempotent tasks, data intervals, Airflow's knobs and MWAA."
+      guides: [airflow-and-mwaa]
+    - id: migrating-databases-aws
+      title: Migrating databases to AWS
+      description: "The 7 R's, wave planning, SCT and DMS, dual-run and reverse CDC."
+      guides: [database-migration-to-aws]
 
 presentation:
   palette: blue

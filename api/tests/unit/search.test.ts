@@ -164,6 +164,12 @@ describe('cardDocument', () => {
     expect(document?.extra).toBe('about lateness — a closing time');
   });
 
+  it('shows a declared topic by its title, not the id the card carries (ADR-0032)', () => {
+    const declared = [{ id: 'streaming', title: 'Streaming & time' }];
+    expect(cardDocument(card({}, { group: 'streaming' }), undefined, declared)?.context).toBe('Streaming & time');
+    expect(cardDocument(card({}, { group: 'Mine' }), undefined, declared)?.context).toBe('Mine');
+  });
+
   it('is nothing for an exercise — finding one by its answer would be finding the answer', () => {
     const puzzle = card({}, { kind: 'word-order', sentence: 'x', parts: ['x'] });
     expect(cardDocument(puzzle)).toBeNull();

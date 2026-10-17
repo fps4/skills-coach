@@ -42,7 +42,7 @@ import {
   type FlashcardPhase,
   type KeyContext,
 } from '@/lib/flashcards';
-import { topicHref, topicTitle } from '@/lib/topics';
+import { cardTopicTitle, topicHref, topicTitle } from '@/lib/topics';
 import { cn } from '@/lib/utils';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type {
@@ -628,7 +628,9 @@ export function Flashcards({
 
                 <div className="mt-4">
                   {prompt.group ? (
-                    <p className="text-xs font-medium uppercase tracking-wide text-primary">{prompt.group}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-primary">
+                      {cardTopicTitle(prompt.group, topics)}
+                    </p>
                   ) : null}
                   <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{promptLabel}</p>
                   <p className="mt-1 text-3xl font-semibold tracking-tight" lang={promptLanguage}>

@@ -141,6 +141,8 @@ export const dictionary = {
     subtitle: 'The reference guides the flashcards were written from.',
     empty: 'This skill has no guides.',
     back: 'All guides',
+    practise: 'Practise what this guide teaches',
+    practiseHint: 'The flashcard topics written from this guide.',
   },
   reading: {
     title: 'Reading',

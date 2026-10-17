@@ -15,12 +15,13 @@
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { BarChart3, ListChecks, Newspaper, Puzzle, Sparkles } from 'lucide-react';
+import { BarChart3, FileText, ListChecks, Newspaper, Puzzle, Sparkles } from 'lucide-react';
 
 import { Meter, PageShell, Pill, Stat } from '@/components/atoms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { guideList, type GuideMeta } from '@/lib/guides';
 import { formatDate, statusLabel, statusTone } from '@/lib/text';
 import { topicHref, topicTitle, type TopicSummary } from '@/lib/topics';
 import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
@@ -53,8 +54,23 @@ function DeckRow({ label, summary, dictionary }: { label: string; summary: DeckS
 /**
  * One topic of the deck (ADR-0031): its name opens practice on just that topic, and *Learn* opens it
  * with the answers showing. How much of it is mastered is the bar; nothing here ranks topics.
+ *
+ * A declared topic (ADR-0032) also says what it covers, and links the guides it is practised from —
+ * read the guide, practise the topic, and go back to the guide when a card trips you up.
  */
-function TopicTile({ blockId, topic, dictionary }: { blockId: string; topic: TopicSummary; dictionary: Dictionary }) {
+function TopicTile({
+  packId,
+  blockId,
+  topic,
+  guides,
+  dictionary,
+}: {
+  packId: string;
+  blockId: string;
+  topic: TopicSummary;
+  guides: GuideMeta[];
+  dictionary: Dictionary;
+}) {
   const { summary } = topic;
   const done = summary.total > 0 && summary.mastered === summary.total;
   const title = topicTitle(topic, dictionary.flashcards.noTopic);
@@ -64,6 +80,7 @@ function TopicTile({ blockId, topic, dictionary }: { blockId: string; topic: Top
       <Link href={topicHref(blockId, topic.id)} className="min-w-0 break-words text-sm font-medium hover:text-primary">
         {title}
       </Link>
+      {topic.description ? <p className="text-xs text-muted-foreground">{topic.description}</p> : null}
       <Meter value={summary.mastered} total={summary.total} tone={done ? 'success' : 'primary'} />
       <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
         <span className="tabular-nums">
@@ -77,6 +94,21 @@ function TopicTile({ blockId, topic, dictionary }: { blockId: string; topic: Top
           {dictionary.flashcards.learn}
         </Link>
       </div>
+      {guides.length > 0 ? (
+        <ul className="space-y-0.5 border-t border-border/60 pt-2 text-xs" aria-label={dictionary.guides.title}>
+          {guides.map((guide) => (
+            <li key={guide.slug}>
+              <Link
+                href={`/guides/${encodeURIComponent(packId)}/${encodeURIComponent(guide.slug)}`}
+                className="inline-flex items-start gap-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <FileText className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                <span>{guide.title}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </li>
   );
 }
@@ -92,6 +124,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   const recurring = entry.errorLog.entries.filter((row) => row.status === 'recurring').length;
   const tracksErrors = entry.pack.errorCategories.length > 0;
   const hasDecks = entry.decks.terms.total + entry.decks.wordOrder.total + entry.decks.quiz.total > 0;
+  const guides = entry.decks.topics.some((topic) => topic.guides?.length) ? guideList(packId) : [];
 
   return (
     // The skill's name is already in the header above (ADR-0021); this page is its overview.
@@ -173,7 +206,15 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
           <CardContent>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {entry.decks.topics.map((topic) => (
-                <TopicTile key={topic.id} blockId={entry.currentBlock!.blockId} topic={topic} dictionary={dictionary} />
+                <TopicTile
+                  key={topic.id}
+                  packId={packId}
+                  blockId={entry.currentBlock!.blockId}
+                  topic={topic}
+                  // Only guides that exist: a slug the manifest names but the tree lacks links nowhere.
+                  guides={(topic.guides ?? []).flatMap((slug) => guides.find((guide) => guide.slug === slug) ?? [])}
+                  dictionary={dictionary}
+                />
               ))}
             </ul>
           </CardContent>

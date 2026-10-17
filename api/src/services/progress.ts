@@ -83,7 +83,9 @@ export async function packProgress(ctx: ServiceContext, learnerId: string, packI
       terms: await deckSummary(ctx, learnerId, { packId, kind: 'term' }),
       wordOrder: await deckSummary(ctx, learnerId, { packId, kind: 'word-order' }),
       quiz: await deckSummary(ctx, learnerId, { packId, kind: 'mcq' }),
-      topics: current ? await topicSummaries(ctx, learnerId, { blockId: current.block.blockId }) : [],
+      topics: current
+        ? await topicSummaries(ctx, learnerId, { blockId: current.block.blockId }, pack.flashcards?.topics)
+        : [],
     },
     reading: await readingCountsFor(ctx, learnerId, packId),
     wordRequests: await countRequests(ctx, learnerId, packId),

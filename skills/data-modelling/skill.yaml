@@ -52,7 +52,7 @@ method:
     front: the term as practitioners write it, at most eight words
     back: one sentence, at most two; what it does and when it is the wrong choice
     hint: a cue, not the answer, and never repeating the front's words
-    group: a concept theme, numbered from foundations to advanced
+    group: the id of one of the topics declared under flashcards.topics
     code: a short SQL, Turtle, SPARQL, XSD or XSLT snippet where seeing it is faster than reading
     analogy: the relational or dimensional counterpart, and where it stops holding
 
@@ -61,6 +61,49 @@ method:
 # Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
 flashcards:
   grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: modelling-levels-grain
+      title: "Modelling levels & grain"
+      description: "Conceptual, logical, physical — and declaring the grain first."
+      guides: [data-modeling]
+    - id: choosing-methodology
+      title: Choosing a methodology
+      description: "Inmon, Kimball, Data Vault, one big table and when each is wrong."
+      guides: [data-modeling]
+    - id: data-vault-mechanics
+      title: Data Vault mechanics
+      description: "Hubs, links, satellites, hash keys, PIT and bridge tables."
+      guides: [data-vault-2-dbt]
+    - id: layers-history
+      title: "Layers & history"
+      description: "Raw and business vault, marts, medallion layers and SCD2."
+      guides: [data-modeling, data-vault-2-dbt]
+    - id: schemas-contracts-evolution
+      title: "Schemas, contracts & evolution"
+      description: "Schema-on-read vs on-write, compatibility and data contracts."
+      guides: [data-modeling]
+    - id: rdf-ontologies
+      title: "RDF & ontologies"
+      description: "Triples, IRIs, RDFS, OWL and SKOS, and how they layer."
+      guides: [knowledge-graphs]
+    - id: graph-validation-query
+      title: "Graph validation & query"
+      description: "SHACL against OWL, and SPARQL patterns, paths and CONSTRUCT."
+      guides: [knowledge-graphs]
+    - id: xml-schemas-rule-validation
+      title: "XML schemas & rule validation"
+      description: "XSD design and keys, and Schematron for the rules XSD cannot say."
+      guides: [xml-xsd-xslt-xpath-schematron]
+    - id: xpath-xslt
+      title: "XPath & XSLT"
+      description: "XPath traps, push vs pull XSLT, modes, grouping and streaming."
+      guides: [xml-xsd-xslt-xpath-schematron]
+    - id: knowledge-graphs-practice
+      title: Knowledge graphs in practice
+      description: "RDF vs property graphs, entity resolution, GraphRAG and grounding."
+      guides: [knowledge-graphs]
 
 presentation:
   palette: blue
