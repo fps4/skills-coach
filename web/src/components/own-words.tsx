@@ -9,6 +9,9 @@
  *
  * Collapsed by default: the trainer's job is the word in front of you, and a form competing with it
  * would be the wrong thing on the screen. It opens when asked and closes itself once the word is in.
+ *
+ * A word can go in a topic (ADR-0031): one of the skill's declared topics, by title, or a label of the
+ * learner's own. The list below the form is where words already in the deck are moved between topics.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -17,6 +20,7 @@ import { Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { clientApi, isSessionExpired } from '@/lib/api-client';
+import { cardTopicTitle, topicChoices, topicIdFor, type DeclaredTopic } from '@/lib/topics';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { LearnerTerm } from '@/lib/types';
 
@@ -28,10 +32,64 @@ interface Props {
   /** Refresh the deck, so a new word joins the rotation without a reload. */
   onChanged: () => void;
   onSessionExpired: () => void;
+  /** The skill's declared topics (ADR-0032), offered first in the topic box. */
+  topics?: DeclaredTopic[];
 }
 
-export function OwnWords({ blockId, contentLanguage, translationLanguage, dictionary, onChanged, onSessionExpired }: Props) {
+/**
+ * A word's topic, edited in place: saved when the box loses focus or on Enter, and only if it changed.
+ * Shown by title; what is stored is the declared id or the learner's own label (`topicIdFor`).
+ */
+function TopicBox({
+  entry,
+  declared,
+  listId,
+  label,
+  onSave,
+}: {
+  entry: LearnerTerm;
+  declared: DeclaredTopic[];
+  listId: string;
+  label: string;
+  onSave: (group: string | null) => Promise<void>;
+}) {
+  const shown = entry.payload.group ? cardTopicTitle(entry.payload.group, declared) : '';
+  const [value, setValue] = useState(shown);
+  useEffect(() => setValue(shown), [shown]);
+
+  const commit = (): void => {
+    const next = topicIdFor(value, declared) ?? null;
+    if (next !== (entry.payload.group ?? null)) void onSave(next);
+  };
+
+  return (
+    <Input
+      list={listId}
+      value={value}
+      placeholder={label}
+      aria-label={`${label}: ${entry.payload.term}`}
+      onChange={(event) => setValue(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur();
+      }}
+      className="h-8 w-36 shrink-0 text-xs"
+    />
+  );
+}
+
+export function OwnWords({
+  blockId,
+  contentLanguage,
+  translationLanguage,
+  dictionary,
+  onChanged,
+  onSessionExpired,
+  topics: declared = [],
+}: Props) {
   const t = dictionary.drills;
+  const [topic, setTopic] = useState('');
+  const listId = `own-word-topics-${blockId}`;
 
   const [open, setOpen] = useState(false);
   const [mine, setMine] = useState<LearnerTerm[]>([]);
@@ -73,11 +131,17 @@ export function OwnWords({ blockId, contentLanguage, translationLanguage, dictio
     try {
       await clientApi(`/v1/blocks/${blockId}/terms`, {
         method: 'POST',
-        body: { term: term.trim(), translation: translation.trim(), example: example.trim() || undefined },
+        body: {
+          term: term.trim(),
+          translation: translation.trim(),
+          example: example.trim() || undefined,
+          group: topicIdFor(topic, declared),
+        },
       });
       setTerm('');
       setTranslation('');
       setExample('');
+      // The topic stays: words are usually added a few at a time, about the same thing.
       setAdded(true);
       await load();
       onChanged();
@@ -85,6 +149,16 @@ export function OwnWords({ blockId, contentLanguage, translationLanguage, dictio
       fail(cause);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const moveTo = async (drillItemId: string, group: string | null): Promise<void> => {
+    try {
+      await clientApi(`/v1/terms/${drillItemId}`, { method: 'PATCH', body: { group } });
+      await load();
+      onChanged();
+    } catch (cause) {
+      fail(cause);
     }
   };
 
@@ -160,6 +234,22 @@ export function OwnWords({ blockId, contentLanguage, translationLanguage, dictio
           value={example}
           onChange={(event) => setExample(event.target.value)}
         />
+        <Input
+          list={listId}
+          autoComplete="off"
+          placeholder={t.addWordTopic}
+          aria-label={t.addWordTopic}
+          value={topic}
+          onChange={(event) => setTopic(event.target.value)}
+        />
+        <datalist id={listId}>
+          {topicChoices(
+            declared,
+            mine.map((entry) => entry.payload.group),
+          ).map((choice) => (
+            <option key={choice} value={choice} />
+          ))}
+        </datalist>
         <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" size="sm" disabled={saving || !term.trim() || !translation.trim()}>
             {t.addWordSubmit}
@@ -179,13 +269,20 @@ export function OwnWords({ blockId, contentLanguage, translationLanguage, dictio
           <ul className="mt-2 space-y-1">
             {mine.map((entry) => (
               <li key={entry.drillItemId} className="flex items-center justify-between gap-2 text-sm">
-                <span className="min-w-0 truncate">
+                <span className="min-w-0 flex-1 truncate">
                   <span lang={contentLanguage}>{entry.payload.term}</span>
                   <span className="text-muted-foreground"> · </span>
                   <span lang={translationLanguage} className="text-muted-foreground">
                     {entry.payload.translation}
                   </span>
                 </span>
+                <TopicBox
+                  entry={entry}
+                  declared={declared}
+                  listId={listId}
+                  label={t.addWordTopic}
+                  onSave={(group) => moveTo(entry.drillItemId, group)}
+                />
                 <Button
                   variant="ghost"
                   size="sm"

@@ -78,4 +78,50 @@ describe('WordAssist', () => {
 
     expect(await screen.findByText(dictionary.assist.nothingYet)).toBeTruthy();
   });
+
+  describe('topics (ADR-0031, ADR-0032)', () => {
+    const TOPICS = [
+      { id: 'work', title: 'Work & meetings' },
+      { id: 'home', title: 'Home & housing' },
+    ];
+    const placed: TermRequest = { ...SUGGESTED, suggestion: { ...SUGGESTED.suggestion!, group: 'work' } };
+    const mount = () =>
+      render(
+        <WordAssist blockId="words.b1" contentLanguage="nl" translationLanguage="en" dictionary={dictionary} topics={TOPICS} />,
+      );
+    const accepted = () =>
+      clientApi.mock.calls.find(([path]) => path === '/v1/term-requests/req-1/accept')?.[1]?.body as Record<string, unknown>;
+
+    it('shows the coach’s topic by its title, and sends its id', async () => {
+      respond([placed]);
+      mount();
+      expect(await screen.findByDisplayValue('Work & meetings')).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: dictionary.assist.addToDeck }));
+      await waitFor(() => expect(accepted()).toMatchObject({ group: 'work', omit: [] }));
+    });
+
+    it('sends the topic the learner moved it to, declared or their own', async () => {
+      respond([placed]);
+      mount();
+      fireEvent.change(await screen.findByDisplayValue('Work & meetings'), { target: { value: 'home & housing' } });
+      fireEvent.click(screen.getByRole('button', { name: dictionary.assist.addToDeck }));
+      await waitFor(() => expect(accepted()).toMatchObject({ group: 'home' }));
+    });
+
+    it('leaves the coach’s topic off when the learner clears it', async () => {
+      respond([placed]);
+      mount();
+      fireEvent.change(await screen.findByDisplayValue('Work & meetings'), { target: { value: '' } });
+      fireEvent.click(screen.getByRole('button', { name: dictionary.assist.addToDeck }));
+      await waitFor(() => expect(accepted()).toMatchObject({ omit: ['group'] }));
+      expect(accepted()).not.toHaveProperty('group');
+    });
+
+    it('offers a topic box even when the coach placed the word nowhere, on a skill with topics', async () => {
+      respond([SUGGESTED]);
+      mount();
+      await screen.findByDisplayValue('to disappear');
+      expect(screen.getByRole('checkbox', { name: `${dictionary.assist.include}: ${dictionary.assist.topic}` })).toBeTruthy();
+    });
+  });
 });

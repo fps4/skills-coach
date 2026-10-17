@@ -12,6 +12,10 @@
  * deck, nothing else from their account. That is the narrowest possible exception to ADR-0012's rule
  * that a learner's own words never reach the coach surface: a word reaches it only because its learner
  * sent it there, and only that word.
+ *
+ * Beside the word goes the skill's **declared** topics (ADR-0032) — the manifest's, public and the same
+ * for everyone — so a suggestion can say which one the word belongs in. The topics a learner made up
+ * for their own words are theirs, and stay out of the queue like everything else of theirs.
  */
 
 import { randomUUID } from 'node:crypto';
@@ -32,7 +36,7 @@ import {
   type TermRequestStatus,
   type TermSuggestion,
 } from '../domain/term-request.js';
-import type { DrillItem } from '../domain/types.js';
+import type { DrillItem, PackManifest } from '../domain/types.js';
 import type { TermRequestDoc } from '../db/collections.js';
 import { getBlockFor, getPack } from './content.js';
 import { addTerm } from './learner-terms.js';
@@ -62,6 +66,8 @@ export interface QueuedTermRequest {
   translationLanguage: string;
   status: TermRequestStatus;
   requestedAt: Date;
+  /** The skill's declared topics, for the suggestion's `group`. Empty when it declares none. */
+  topics: { id: string; title: string }[];
 }
 
 const toRequest = ({ _id, learnerId: _learner, ...rest }: TermRequestDoc): TermRequest => ({ ...rest, requestId: _id });
@@ -246,14 +252,21 @@ export async function listQueue(
     .limit(Math.min(Math.max(limit, 1), 200))
     .toArray();
 
-  const languages = new Map<string, { contentLanguage: string; translationLanguage: string }>();
+  const languages = new Map<
+    string,
+    { contentLanguage: string; translationLanguage: string; topics: QueuedTermRequest['topics'] }
+  >();
   const queued: QueuedTermRequest[] = [];
   for (const doc of docs) {
     let pair = languages.get(doc.packId);
     if (!pair) {
       const pack = await getPack(ctx, doc.packId).catch(() => null);
       if (!pack) continue; // the skill is gone; nothing to fill in for
-      pair = { contentLanguage: pack.contentLanguage, translationLanguage: pack.translationLanguage };
+      pair = {
+        contentLanguage: pack.contentLanguage,
+        translationLanguage: pack.translationLanguage,
+        topics: declaredTopics(pack),
+      };
       languages.set(doc.packId, pair);
     }
     queued.push({ requestId: doc._id, term: doc.term, ...pair, status: doc.status, requestedAt: doc.requestedAt });
@@ -290,5 +303,11 @@ export async function suggest(
     translationLanguage: pack.translationLanguage,
     status: updated.status,
     requestedAt: updated.requestedAt,
+    topics: declaredTopics(pack),
   };
+}
+
+/** A skill's declared topics as a coach names them: the id to put in `group`, and what it means. */
+function declaredTopics(pack: PackManifest): QueuedTermRequest['topics'] {
+  return (pack.flashcards?.topics ?? []).map(({ id, title }) => ({ id, title }));
 }

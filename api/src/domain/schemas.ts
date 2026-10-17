@@ -534,6 +534,19 @@ export const createLearnerTermSchema = z.object({
   example: z.string().trim().max(500).optional(),
 });
 
+/**
+ * Moving one of the learner's own cards to another topic, or out of any (ADR-0031). A blank topic
+ * means none: the box was cleared.
+ */
+export const setTermTopicSchema = z.object({
+  group: z
+    .string()
+    .trim()
+    .max(120)
+    .nullable()
+    .transform((group) => group || null),
+});
+
 // ---------------------------------------------------------------------------
 // Word requests (ADR-0023)
 // ---------------------------------------------------------------------------
@@ -548,6 +561,7 @@ export const termSuggestionSchema = z.object({
   translation: nonEmpty.max(200),
   example: z.string().trim().max(500).optional(),
   hint: termCardFields.hint,
+  group: termCardFields.group,
   details: termDetailsSchema.optional(),
 });
 
@@ -556,12 +570,14 @@ export const acceptTermRequestSchema = z.object({
   translation: z.string().trim().max(200).optional(),
   example: z.string().trim().max(500).optional(),
   hint: termCardFields.hint,
+  group: termCardFields.group,
   details: termDetailsSchema.optional(),
   omit: z
     .array(
       z.enum([
         'example',
         'hint',
+        'group',
         'exampleTranslation',
         'partOfSpeech',
         'forms',
@@ -868,3 +884,4 @@ export type AcceptTermRequestInput = z.infer<typeof acceptTermRequestSchema>;
 export type StartQuizInput = z.infer<typeof startQuizSchema>;
 export type AnswerQuizInput = z.infer<typeof answerQuizSchema>;
 export type LearnerProfileInput = z.infer<typeof learnerProfileSchema>;
+export type SetTermTopicInput = z.input<typeof setTermTopicSchema>;

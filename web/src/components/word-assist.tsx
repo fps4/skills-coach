@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, Clock, RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
 
+import { cardTopicTitle, topicChoices, topicIdFor, type DeclaredTopic } from '@/lib/topics';
 import { OwnWords } from './own-words';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,12 +31,14 @@ interface Props {
   contentLanguage: string;
   translationLanguage: string;
   dictionary: Dictionary;
+  /** The skill's declared topics (ADR-0032): what a suggestion's topic is shown by and chosen from. */
+  topics?: DeclaredTopic[];
 }
 
 /** How often to look again while a word is with the coach. Slow on purpose: nobody is watching it. */
 const POLL_MS = 10_000;
 
-export function WordAssist({ blockId, contentLanguage, translationLanguage, dictionary }: Props) {
+export function WordAssist({ blockId, contentLanguage, translationLanguage, dictionary, topics = [] }: Props) {
   const t = dictionary.assist;
   const [requests, setRequests] = useState<TermRequest[] | null>(null);
   const [term, setTerm] = useState('');
@@ -189,6 +192,7 @@ export function WordAssist({ blockId, contentLanguage, translationLanguage, dict
               contentLanguage={contentLanguage}
               translationLanguage={translationLanguage}
               dictionary={dictionary}
+              topics={topics}
               onAccept={(body) => act(`/v1/term-requests/${request.requestId}/accept`, 'POST', body)}
               onRetry={() => act(`/v1/term-requests/${request.requestId}/retry`, 'POST')}
               onDiscard={() => act(`/v1/term-requests/${request.requestId}`, 'DELETE')}
@@ -249,6 +253,7 @@ export function WordAssist({ blockId, contentLanguage, translationLanguage, dict
         dictionary={dictionary}
         onChanged={() => undefined}
         onSessionExpired={() => setExpired(true)}
+        topics={topics}
       />
     </div>
   );
@@ -262,6 +267,8 @@ interface AcceptBody {
   translation: string;
   example: string;
   hint: string;
+  /** Absent for no topic: the declared id, or the learner's own label (`topicIdFor`). */
+  group?: string;
   details: {
     partOfSpeech: string;
     forms: { label: string; value: string }[];
@@ -298,6 +305,7 @@ function ReviewCard({
   contentLanguage,
   translationLanguage,
   dictionary,
+  topics,
   onAccept,
   onRetry,
   onDiscard,
@@ -306,6 +314,7 @@ function ReviewCard({
   contentLanguage: string;
   translationLanguage: string;
   dictionary: Dictionary;
+  topics: DeclaredTopic[];
   onAccept: (body: AcceptBody) => Promise<void>;
   onRetry: () => Promise<void>;
   onDiscard: () => Promise<void>;
@@ -324,6 +333,7 @@ function ReviewCard({
     antonyms: (details.antonyms ?? []).join(', '),
     note: details.note ?? '',
     hint: suggestion.hint ?? '',
+    group: suggestion.group ? cardTopicTitle(suggestion.group, topics) : '',
     analogy: details.analogy ?? '',
     code: details.code ?? '',
     source: details.source ?? '',
@@ -355,6 +365,7 @@ function ReviewCard({
         translation: values.translation,
         example: values.example,
         hint: values.hint,
+        ...(topicIdFor(values.group, topics) ? { group: topicIdFor(values.group, topics) } : {}),
         details: {
           partOfSpeech: values.partOfSpeech,
           forms: parseForms(values.forms),
@@ -366,7 +377,8 @@ function ReviewCard({
           ...(values.code.trim() ? { code: values.code } : {}),
           source: values.source,
         },
-        omit: [...omit],
+        // A cleared topic box means no topic — not "keep what the coach suggested".
+        omit: suggestion.group && !topicIdFor(values.group, topics) ? [...omit, 'group'] : [...omit],
       }),
     );
 
@@ -376,12 +388,19 @@ function ReviewCard({
     label: string,
     value: string,
     lang: string,
-    options: { multiline?: boolean; hint?: string } = {},
+    options: { multiline?: boolean; hint?: string; always?: boolean; list?: string } = {},
   ) => {
-    // The two lines that sit beside the pair rather than among the details are checked on the
+    // The lines that sit beside the pair rather than among the details are checked on the
     // suggestion itself.
-    const suggested = field === 'example' ? suggestion.example : field === 'hint' ? suggestion.hint : field in details;
-    if (!value && !suggested) return null;
+    const suggested =
+      field === 'example'
+        ? suggestion.example
+        : field === 'hint'
+          ? suggestion.hint
+          : field === 'group'
+            ? suggestion.group
+            : field in details;
+    if (!value && !suggested && !options.always) return null;
     const off = omit.has(field);
     const id = `${request.requestId}-${field}`;
     const Control = options.multiline ? Textarea : Input;
@@ -411,6 +430,7 @@ function ReviewCard({
               set(field as keyof typeof values)(event.target.value)
             }
             {...(options.multiline ? { rows: Math.max(2, value.split('\n').length) } : {})}
+            {...(options.list ? { list: options.list } : {})}
             className="min-h-0"
           />
           {options.hint ? <p className="mt-1 text-xs text-muted-foreground">{options.hint}</p> : null}
@@ -460,6 +480,20 @@ function ReviewCard({
       {row('analogy', t.analogy, values.analogy, translationLanguage, { multiline: true })}
       {row('code', t.code, values.code, contentLanguage, { multiline: true })}
       {row('source', t.source, values.source, translationLanguage)}
+      {/*
+        The topic (ADR-0031): always on offer where the skill declares topics, so a word the coach did
+        not place can still be put somewhere; otherwise only when the coach suggested one.
+      */}
+      {row('group', t.topic, values.group, translationLanguage, {
+        always: topics.length > 0,
+        hint: t.topicHint,
+        list: `${request.requestId}-topics`,
+      })}
+      <datalist id={`${request.requestId}-topics`}>
+        {topicChoices(topics, []).map((choice) => (
+          <option key={choice} value={choice} />
+        ))}
+      </datalist>
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">
         <Button disabled={busy || !values.translation.trim()} onClick={() => void accept()}>

@@ -68,6 +68,7 @@ reach another's work.
 | POST | `/quiz/sessions/:id/finish` | `drill:practice` | Close the sitting. Idempotent |
 | POST | `/blocks/:blockId/terms` | `drill:curate` | Add a word of your own to this block's deck → `201` |
 | GET | `/blocks/:blockId/terms` | `drill:curate` | The words you added to this block |
+| PATCH | `/terms/:drillItemId` | `drill:curate` | `{ group }` — move one of your words to a topic, or out of any with blank. Streak kept |
 | DELETE | `/terms/:drillItemId` | `drill:curate` | Remove one of your words, and its progress → `204` |
 | POST | `/blocks/:blockId/term-requests` | `drill:curate` | `{ terms }` — ask a coach to fill words in → `201` |
 | GET | `/blocks/:blockId/term-requests` | `drill:curate` | Your requests for this deck: open ones, and what was resolved in the last week |
@@ -330,7 +331,8 @@ A learner names words; a coach fills them in; the learner decides
 
 // GET /coach/v1/term-requests — what a coach sees. No learner, no deck.
 { "requests": [{ "requestId": "…", "term": "verdwijnen", "contentLanguage": "nl",
-                 "translationLanguage": "en", "status": "requested", "requestedAt": "…" }] }
+                 "translationLanguage": "en", "status": "requested", "requestedAt": "…",
+                 "topics": [{ "id": "work", "title": "Work & meetings" }, …] }] }   // the skill's declared topics
 
 // PUT /coach/v1/term-requests/:requestId/suggestion
 {
@@ -352,6 +354,11 @@ A learner names words; a coach fills them in; the learner decides
 A suggestion may also carry `hint`, and `details.analogy`, `details.code` and `details.source` — the
 lines of a concept card ([ADR-0027](../architecture/decisions/0027-flashcards-are-one-engine-with-two-ways-of-answering.md));
 `omit` takes each of them too.
+
+A suggestion may carry `group`: the topic the word belongs in, ideally one of the request's `topics` by
+id ([ADR-0033](../architecture/decisions/0033-a-learner-files-their-own-words-by-topic.md)). `topics` is
+the skill's **declared** list only — never the labels a learner made up for their own words. Accepting
+takes `group` like any field — an edit moves the word, `omit: ["group"]` leaves it in no topic.
 
 `requested → suggested → added`, or `discarded`; `retry` sends a suggested or discarded request back
 to `requested`. Accepting what was never suggested, or touching an added one, is a `409`. Asking for a

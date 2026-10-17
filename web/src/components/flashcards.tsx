@@ -42,7 +42,7 @@ import {
   type FlashcardPhase,
   type KeyContext,
 } from '@/lib/flashcards';
-import { cardTopicTitle, topicHref, topicTitle } from '@/lib/topics';
+import { cardTopicTitle, topicHref, topicTitle, type DeclaredTopic } from '@/lib/topics';
 import { cn } from '@/lib/utils';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type {
@@ -69,6 +69,8 @@ interface Props {
   initialMode?: DeckMode;
   /** Only this topic's cards — a card's `group`, or `NO_TOPIC` (ADR-0031). The whole deck without one. */
   topic?: string;
+  /** The skill's declared topics (ADR-0032) — offered when a learner files their own word. */
+  declaredTopics?: DeclaredTopic[];
 }
 
 /** A key badge on a button. Coloured by the button it sits on, so it never needs a colour of its own. */
@@ -230,6 +232,7 @@ export function Flashcards({
   addHref,
   initialMode = 'practice',
   topic,
+  declaredTopics = [],
 }: Props) {
   const t = dictionary.flashcards;
   const router = useRouter();
@@ -842,6 +845,7 @@ export function Flashcards({
                 dictionary={dictionary}
                 onChanged={() => void load()}
                 onSessionExpired={() => setExpired(true)}
+                topics={declaredTopics}
               />
             ) : null}
           </CardContent>

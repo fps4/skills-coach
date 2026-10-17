@@ -140,7 +140,7 @@ web/src/
     flashcards.tsx   the flashcard surface: practise (typed or self-graded) and learn, one card at a
                      time, every action on a key (ADR-0027). The keyboard map and the status line are
                      pure, in lib/flashcards.ts
-    own-words.tsx    the entry form for your own words, under a typed deck
+    own-words.tsx    the entry form for your own words, under a typed deck — and each word's topic (ADR-0033)
     word-assist.tsx  "Add cards": ask a coach to fill cards in, then review each one before it lands
     term-card.tsx    a word's example, forms, synonyms and note — shown once it has been answered
     read-toggle.tsx  marking an article read, and putting it back. Never inferred from scrolling

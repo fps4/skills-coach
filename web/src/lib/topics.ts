@@ -39,15 +39,46 @@ export function topicTitle(topic: Pick<TopicSummary, 'title'>, untitled: string)
   return topic.title ?? untitled;
 }
 
+/** A topic as a skill's manifest declares it (ADR-0032). */
+export interface DeclaredTopic {
+  id: string;
+  title: string;
+  description?: string;
+  guides?: string[];
+}
+
 /**
- * What a card's `group` is called on its front: the deck's title for it when the deck knows it — a
- * declared topic's id reads as its title — or the label as written.
+ * What a card's `group` is called: the title the deck or the manifest gives it — a declared topic's
+ * id reads as its title — or the label as written.
  */
-export function cardTopicTitle(group: string, topics: readonly TopicSummary[]): string {
+export function cardTopicTitle(group: string, topics: readonly { id: string; title?: string }[]): string {
   return topics.find((topic) => topic.id === group)?.title ?? group;
 }
 
 /** The topics a guide is practised in, in the deck's order — what the foot of a guide links to. */
 export function topicsOfGuide(topics: readonly TopicSummary[], slug: string): TopicSummary[] {
   return topics.filter((topic) => topic.guides?.includes(slug));
+}
+
+/**
+ * The topic to store for what a learner typed into a topic box: a declared topic's id when they typed
+ * its id or its title (in any case), or their own label as typed. Blank is no topic.
+ */
+export function topicIdFor(typed: string, declared: readonly DeclaredTopic[]): string | undefined {
+  const label = typed.trim();
+  if (!label) return undefined;
+  const key = label.toLocaleLowerCase('en');
+  return declared.find((topic) => topic.id === label || topic.title.toLocaleLowerCase('en') === key)?.id ?? label;
+}
+
+/**
+ * What a topic box offers: the skill's declared topics by title, in its order, then the learner's own
+ * labels already in use, alphabetically — each once.
+ */
+export function topicChoices(declared: readonly DeclaredTopic[], inUse: readonly (string | undefined)[]): string[] {
+  const declaredIds = new Set(declared.map((topic) => topic.id));
+  const own = [...new Set(inUse.filter((group): group is string => Boolean(group) && !declaredIds.has(group!)))].sort((a, b) =>
+    a.localeCompare(b, 'en'),
+  );
+  return [...declared.map((topic) => topic.title), ...own];
 }

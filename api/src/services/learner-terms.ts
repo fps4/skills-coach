@@ -12,7 +12,12 @@
  */
 
 import { notFound } from '../http/errors.js';
-import { createLearnerTermSchema, type CreateLearnerTermInput } from '../domain/schemas.js';
+import {
+  createLearnerTermSchema,
+  setTermTopicSchema,
+  type CreateLearnerTermInput,
+  type SetTermTopicInput,
+} from '../domain/schemas.js';
 import { termPayload } from '../domain/flashcards.js';
 import type { DrillItem } from '../domain/types.js';
 import { FROM_LEARNER, getBlockFor } from './content.js';
@@ -80,4 +85,29 @@ export async function removeTerm(ctx: ServiceContext, learnerId: string, drillIt
   if (!removed) throw notFound(`word ${drillItemId}`);
   await ctx.store.collections.drillState.deleteOne({ _id: drillStateIdFor(learnerId, drillItemId) });
   await ctx.search?.blockChanged(removed.blockId);
+}
+
+/**
+ * Move one of the learner's own cards to another topic, or out of any (ADR-0031).
+ *
+ * Only the topic changes — the card keeps its id, its streak and everything on it. Scoped like
+ * `removeTerm`, so the pack's own cards, and anybody else's, are not found. A label the skill does not
+ * declare is fine: the deck is theirs, and their topics are theirs too (ADR-0032).
+ */
+export async function setTermTopic(
+  ctx: ServiceContext,
+  learnerId: string,
+  drillItemId: string,
+  input: SetTermTopicInput,
+): Promise<DrillItem> {
+  const { group } = setTermTopicSchema.parse(input);
+  const updated = await ctx.store.collections.drillItems.findOneAndUpdate(
+    { _id: drillItemId, learnerId, 'payload.kind': 'term', ...FROM_LEARNER },
+    group ? { $set: { 'payload.group': group } } : { $unset: { 'payload.group': '' } },
+    { returnDocument: 'after' },
+  );
+  if (!updated) throw notFound(`word ${drillItemId}`);
+  await ctx.search?.blockChanged(updated.blockId);
+  const { _id, ...rest } = updated;
+  return { ...rest, drillItemId: _id };
 }

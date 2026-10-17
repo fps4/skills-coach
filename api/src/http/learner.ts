@@ -14,6 +14,7 @@ import {
   answerQuizSchema,
   acceptTermRequestSchema,
   createLearnerTermSchema,
+  type SetTermTopicInput,
   requestTermsSchema,
   createSubmissionSchema,
   addSkillSchema,
@@ -417,6 +418,15 @@ export function registerLearnerRoutes(app: FastifyInstance, ctx: ServiceContext)
     const learner = await caller(request, 'drill:curate');
     const { blockId } = request.params as { blockId: string };
     return { terms: await learnerTerms.listTerms(ctx, learner.learnerId, blockId) };
+  });
+
+  // Moving an own card to another topic, or out of any (ADR-0031). Nothing else about it changes.
+  app.patch('/api/v1/terms/:drillItemId', async (request) => {
+    const learner = await caller(request, 'drill:curate');
+    const { drillItemId } = request.params as { drillItemId: string };
+    return {
+      term: await learnerTerms.setTermTopic(ctx, learner.learnerId, drillItemId, request.body as SetTermTopicInput),
+    };
   });
 
   app.delete('/api/v1/terms/:drillItemId', async (request, reply) => {

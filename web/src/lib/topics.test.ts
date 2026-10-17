@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { cardTopicTitle, NO_TOPIC, topicHref, topicsOfGuide, topicTitle, type TopicSummary } from './topics';
+import {
+  cardTopicTitle,
+  NO_TOPIC,
+  topicChoices,
+  topicHref,
+  topicIdFor,
+  topicsOfGuide,
+  topicTitle,
+  type TopicSummary,
+} from './topics';
 
 describe('topicHref', () => {
   it('opens the whole deck without a topic', () => {
@@ -42,5 +51,33 @@ describe('topicsOfGuide', () => {
   it('finds the topics practised from a guide, in the deck’s order', () => {
     expect(topicsOfGuide(TOPICS, 'data-vault').map((topic) => topic.id)).toEqual(['vault', 'layers']);
     expect(topicsOfGuide(TOPICS, 'nothing')).toEqual([]);
+  });
+});
+
+const DECLARED = [
+  { id: 'work', title: 'Work & meetings' },
+  { id: 'home', title: 'Home & housing' },
+];
+
+describe('topicIdFor', () => {
+  it('stores a declared topic by its id, whether its id or its title was typed', () => {
+    expect(topicIdFor('work', DECLARED)).toBe('work');
+    expect(topicIdFor('  home & HOUSING ', DECLARED)).toBe('home');
+  });
+
+  it('keeps a learner’s own label as typed, and blank as no topic', () => {
+    expect(topicIdFor(' My street ', DECLARED)).toBe('My street');
+    expect(topicIdFor('   ', DECLARED)).toBeUndefined();
+  });
+});
+
+describe('topicChoices', () => {
+  it('offers the declared topics in order, then the learner’s own labels, each once', () => {
+    expect(topicChoices(DECLARED, ['work', 'Verbs', undefined, 'Café', 'Verbs'])).toEqual([
+      'Work & meetings',
+      'Home & housing',
+      'Café',
+      'Verbs',
+    ]);
   });
 });

@@ -58,7 +58,9 @@ deck can be practised, studied and tracked one topic at a time — the overview 
 the topic `_none`, listed last; a deck where no card has one has no topics. A skill may **declare** its
 topics in its manifest — id, title, a line on what is in it, and the guides it is practised from — and
 then every published card names one by id
-([ADR-0032](docs/architecture/decisions/0032-a-skill-declares-its-topics.md)).
+([ADR-0032](docs/architecture/decisions/0032-a-skill-declares-its-topics.md)). A learner files their own
+words under any topic, declared or their own
+([ADR-0033](docs/architecture/decisions/0033-a-learner-files-their-own-words-by-topic.md)).
 
 **Grading mode** — how a pack's cards are answered, declared in its manifest
 (`flashcards.grading`). **Typed**: the learner types the back and the server matches it tolerantly,

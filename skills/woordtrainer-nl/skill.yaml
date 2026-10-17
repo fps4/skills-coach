@@ -30,6 +30,40 @@ framework:
 # No `errorCategories`: a word drill writes nothing to the error log, and nothing a coach corrects
 # arrives here (ADR-0022).
 
+# Starter topics (ADR-0031, ADR-0032). The words are the learner's own, so these are a suggestion,
+# not a fence: a word can go in any of them, under a topic the learner names themselves, or in none.
+# Typed, as before — a word has a spelling. The titles are English because the interface is.
+flashcards:
+  grading: typed
+  topics:
+    - id: work
+      title: Work & meetings
+      description: Colleagues, planning, meetings and the words of your own field.
+    - id: home
+      title: Home & housing
+      description: The house, the neighbourhood, renting, repairs and chores.
+    - id: admin
+      title: Money & paperwork
+      description: The bank, taxes, the municipality, insurance and letters.
+    - id: health
+      title: Health & care
+      description: The body, the doctor, the pharmacy and how you feel.
+    - id: food
+      title: Food & shopping
+      description: Groceries, cooking, eating out and the shops.
+    - id: getting-around
+      title: Getting around
+      description: Transport, directions, travel and the weather on the way.
+    - id: people
+      title: People & feelings
+      description: Family, friends, character, moods and opinions.
+    - id: time
+      title: Time & numbers
+      description: Days, dates, how often, how long, how much.
+    - id: linking-words
+      title: Linking words
+      description: Conjunctions and adverbs that hold a sentence together — nadat, hoewel, toch.
+
 # "vergadering" is accepted for "de vergadering" and the other way round.
 matchArticles:
   nl: [de, het, een, "'t"]

@@ -405,9 +405,10 @@ export const TOOLS: ToolDef[] = [
       'separated by "," or "/"), one natural example sentence in the word’s language, and details: part of speech, ' +
       'the forms a learner needs (article and plural for a noun; past tense and participle, with the auxiliary, for ' +
       'a verb) as labelled forms, the example’s translation, synonyms, antonyms and a short usage note. Write the ' +
-      'labels, glosses and note in the translation language. Leave out anything you are not sure of — the learner ' +
-      'can add it, but should never have to find and remove a wrong form. Replaces an earlier suggestion that has ' +
-      'not been acted on.',
+      'labels, glosses and note in the translation language. When the request lists `topics`, put the id of the one ' +
+      'the word belongs in under `group` (leave it out when none fits). Leave out anything you are not sure of — ' +
+      'the learner can add it, but should never have to find and remove a wrong form. Replaces an earlier ' +
+      'suggestion that has not been acted on.',
     capability: 'term:suggest',
     input: z.object({ requestId: z.string().min(1), suggestion: termSuggestionSchema }),
     readOnly: false,

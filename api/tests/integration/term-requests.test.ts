@@ -51,7 +51,7 @@ describeIfMongo('word requests', () => {
   });
 
   const call = (
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     url: string,
     token: string,
     payload?: Record<string, unknown>,
@@ -88,9 +88,93 @@ describeIfMongo('word requests', () => {
     const [entry] = await queue();
 
     expect(Object.keys(entry).sort()).toEqual(
-      ['contentLanguage', 'requestId', 'requestedAt', 'status', 'term', 'translationLanguage'].sort(),
+      ['contentLanguage', 'requestId', 'requestedAt', 'status', 'term', 'topics', 'translationLanguage'].sort(),
     );
-    expect(entry).toMatchObject({ term: 'verdwijnen', contentLanguage: 'nl', translationLanguage: 'en' });
+    expect(entry).toMatchObject({ term: 'verdwijnen', contentLanguage: 'nl', translationLanguage: 'en', topics: [] });
+  });
+
+  describe('topics (ADR-0031, ADR-0032)', () => {
+    const declare = () =>
+      call('POST', '/coach/v1/packs', 'coach-token', {
+        ...WORDS,
+        flashcards: {
+          grading: 'typed',
+          topics: [{ id: 'work', title: 'Work & meetings', description: 'Colleagues.' }],
+        },
+      });
+
+    it('shows the coach the skill’s declared topics — and never the labels a learner made up', async () => {
+      await declare();
+      await call('POST', `/api/v1/blocks/${DECK_ID}/terms`, 'learner-token', {
+        term: 'de buurman',
+        translation: 'the neighbour',
+        group: 'My street',
+      });
+      await ask(['verdwijnen']);
+
+      const [entry] = await queue();
+      expect(entry.topics).toEqual([{ id: 'work', title: 'Work & meetings' }]);
+      expect(JSON.stringify(await queue())).not.toContain('My street');
+    });
+
+    it('carries the topic a coach suggests onto the card, unless the learner changes or drops it', async () => {
+      await declare();
+      await ask(['de vergadering', 'de deadline', 'het overleg']);
+      const entries: { requestId: string; term: string }[] = await queue();
+      for (const entry of entries) await suggest(entry.requestId, { translation: 'x', group: 'work' });
+      const id = (term: string) => entries.find((entry) => entry.term === term)!.requestId;
+
+      const kept = await call('POST', `/api/v1/term-requests/${id('de vergadering')}/accept`, 'learner-token', {});
+      expect(kept.json().item.payload.group).toBe('work');
+
+      const moved = await call('POST', `/api/v1/term-requests/${id('de deadline')}/accept`, 'learner-token', {
+        group: 'Projects',
+      });
+      expect(moved.json().item.payload.group).toBe('Projects');
+
+      const dropped = await call('POST', `/api/v1/term-requests/${id('het overleg')}/accept`, 'learner-token', {
+        omit: ['group'],
+      });
+      expect(dropped.json().item.payload).not.toHaveProperty('group');
+    });
+
+    it('lets a learner move their own word to a topic, and out of it, keeping its streak', async () => {
+      const added = await call('POST', `/api/v1/blocks/${DECK_ID}/terms`, 'learner-token', {
+        term: 'de buurman',
+        translation: 'the neighbour',
+      });
+      const { drillItemId } = added.json().term;
+      await call('POST', `/api/v1/drills/${drillItemId}/attempts`, 'learner-token', {
+        stage: 1,
+        given: 'the neighbour',
+      });
+
+      const moved = await call('PATCH', `/api/v1/terms/${drillItemId}`, 'learner-token', { group: '  home ' });
+      expect(moved.statusCode).toBe(200);
+      expect(moved.json().term).toMatchObject({
+        drillItemId,
+        payload: { group: 'home', translation: 'the neighbour' },
+      });
+
+      const deck = await call('GET', `/api/v1/drills?blockId=${DECK_ID}&kind=term&topic=home`, 'learner-token');
+      expect(deck.json().items).toEqual([
+        expect.objectContaining({ drillItemId, progress: expect.objectContaining({ streak: 1 }) }),
+      ]);
+
+      const cleared = await call('PATCH', `/api/v1/terms/${drillItemId}`, 'learner-token', { group: '' });
+      expect(cleared.json().term.payload).not.toHaveProperty('group');
+    });
+
+    it('does not let a learner move a word that is not theirs', async () => {
+      const added = await call('POST', `/api/v1/blocks/${DECK_ID}/terms`, 'learner-token', {
+        term: 'de buurman',
+        translation: 'the neighbour',
+      });
+      const response = await call('PATCH', `/api/v1/terms/${added.json().term.drillItemId}`, 'other-token', {
+        group: 'home',
+      });
+      expect(response.statusCode).toBe(404);
+    });
   });
 
   it('puts nothing in the deck until the learner accepts', async () => {
