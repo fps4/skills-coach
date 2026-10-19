@@ -1,0 +1,109 @@
+# AI product design — a skill that is only a deck of flashcards (ADR-0022, ADR-0027).
+#
+# COMMITTED, deliberately (ADR-0008): this is the whole definition of the skill and it names no
+# person, employer or client. The cards are content, written from the reference guides and published
+# into a deck block through `/coach/v1`; none of them is committed (ADR-0006).
+
+packId: ai-product-design
+
+# One string each, in the skill's one language (ADR-0026).
+title: AI product design
+
+description: >-
+  Deciding what AI to build and designing it for people — framing a decision as a prediction, value
+  against feasibility, enough machine learning and deep learning to choose an approach, data and
+  evaluation requirements, interfaces for systems that are sometimes wrong, risk and regulation, and
+  the process and proposal that take an idea to a decision.
+
+contentLanguage: en
+translationLanguage: en
+skill: ai-product # free label, descriptive only — nothing branches on it
+
+goal: >-
+  Say whether a problem is an AI problem, what it would take to build, how people should work with it
+  and what could go wrong, without notes, in both directions — from the term to the idea and from the
+  idea to the term.
+
+# Required by the contract and read by no ramp here: a deck has no lessons. Kept as the ladder a coach
+# writes cards against.
+framework:
+  id: ai-product-depth
+  levels: [vocabulary, mechanism, judgement, defence]
+
+method:
+  principles:
+    - >-
+      Decision before model. A card about a technique says which product decision it serves — the
+      threshold that sets the cost of errors, the level of automation that sets who is accountable —
+      not only how it works.
+    - >-
+      Name the confusion, then separate it. Precision and recall, data and concept drift, augment and
+      automate, misuse and disuse, demographic parity and equalised odds: a pair that gets confused
+      becomes one card whose back says how the two differ.
+    - >-
+      Numbers where the judgement lives. Thresholds, value cases and payback are learned from a small
+      worked example, not from a definition.
+    - >-
+      One idea per card. A back that needs more than two sentences is two cards.
+
+  rules:
+    sources: >-
+      every card is written from the reference guides, and says which guide and section in
+      `details.source`
+    front: the term as practitioners say it — "operating point", "Wizard of Oz", "target leakage"
+    back: one sentence, at most two; what it does and when it is the wrong choice
+    hint: a cue, not the answer, and never the front's own words
+    group: the id of one of the topics declared under flashcards.topics
+    code: a short formula, calculation or Python snippet where seeing it is faster than reading
+    analogy: the counterpart the learner already knows, and where it stops holding
+
+# A deck writes nothing to the error log and no coach corrects it (ADR-0022).
+
+# Cards are self-graded: turn it over, then say whether you had it (ADR-0027).
+flashcards:
+  grading: self
+  # The deck's topics, in the order the skill is learned (ADR-0032). Each card carries one id in
+  # `group`; `guides` are the guides beside this manifest the topic is practised from.
+  topics:
+    - id: framing-ai-problems
+      title: Framing AI problems
+      description: "Prediction as the unit, is it an AI problem, the ladder of approaches."
+      guides: [ai-opportunity-framing]
+    - id: value-feasibility-build-buy
+      title: "Value, feasibility & build or buy"
+      description: "Augment vs automate, the cost of being wrong, sizing value, build, buy or API."
+      guides: [ai-opportunity-framing]
+    - id: ml-paradigms-algorithms
+      title: "ML paradigms & algorithms"
+      description: "Learning paradigms, task types, algorithm families, overfitting."
+      guides: [ml-and-deep-learning-for-product]
+    - id: deep-learning-foundation-models
+      title: "Deep learning & foundation models"
+      description: "Architectures, transfer learning, LLMs and how to adapt them."
+      guides: [ml-and-deep-learning-for-product]
+    - id: data-labels-evaluation
+      title: "Data, labels & evaluation"
+      description: "Data and label requirements, leakage, splits, metrics, thresholds and baselines."
+      guides: [data-and-model-requirements]
+    - id: operating-ai-products
+      title: Operating AI products
+      description: "Non-functional needs, prototype to production, drift, feedback loops and cost."
+      guides: [data-and-model-requirements]
+    - id: human-ai-interaction
+      title: Human–AI interaction
+      description: "Expectations, levels of automation, trust, uncertainty, explanations, recovery."
+      guides: [human-ai-interaction-design]
+    - id: risk-fairness-regulation
+      title: "Risk, fairness & regulation"
+      description: "Why projects fail, bias, privacy, security, the EU AI Act and governance."
+      guides: [ai-product-risks-and-governance]
+    - id: process-and-proposal
+      title: "Process & proposal"
+      description: "The four stages and their gates, success metrics, the executive summary."
+      guides: [ai-product-process-and-proposal]
+
+presentation:
+  palette: emerald
+  icon: graduation-cap
+  tagline: From a costly decision to an AI product people trust.
+  surfaces: [drills:terms]
