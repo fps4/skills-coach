@@ -26,6 +26,31 @@ Every `dod` job is blocking. `api-build` and `web-build` are not just "does it c
 stage of each Dockerfile *is* the gate — typecheck, lint, and for web the tests — and the runtime
 stage copies from it, so nothing that failed can be shipped.
 
+## Published images
+
+`publish-images` builds the same two images on GitHub-hosted runners after a green `dod` on `main`,
+and publishes them to GHCR. It deploys nothing.
+
+| Image | Tags |
+|---|---|
+| `ghcr.io/fps4/skills-coach-api` | `:<commit sha>`, `:main` |
+| `ghcr.io/fps4/skills-coach-web` | `:<commit sha>`, `:main` |
+
+Each image is scanned before the push (a fixable critical blocks it), carries a CycloneDX SBOM,
+and has build provenance attested against its digest. `:main` moves only after both images of a
+commit are published, so it never pairs an api and a web from different commits. To check an
+image:
+
+```sh
+gh attestation verify oci://ghcr.io/fps4/skills-coach-api:main --repo fps4/skills-coach
+```
+
+The web image's browser-facing values are build arguments from `infra/docker/web.production.env`.
+They are public by construction.
+
+These images are what a deploy that pulls by digest will run. Until that deploy takes over,
+`deploy-ds1` below is still what runs the site.
+
 ## Runner constraints that shape everything
 
 The `ds1` runner is itself containerized and talks to the **host** Docker socket. Two consequences

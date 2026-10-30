@@ -1,0 +1,180 @@
+name: publish-images
+
+# Builds the app images on GitHub-hosted runners and publishes them to GHCR. It deploys nothing:
+# a private repository pulls the published images by digest and deploys them. This repository is
+# public, so none of its workflows may run on a self-hosted runner (fps4/maestro ADR-0017).
+#
+# Which images: the services in infra/docker/compose.yml that this repository builds, `api` and
+# `web` (`mongo` is upstream's image). Each one is pushed to ghcr.io/fps4/skills-coach-<service>:
+#
+#   1. `image`, once per service: build, scan, write a CycloneDX SBOM, push as :<commit sha>, then
+#      attest build provenance and the SBOM against the pushed digest.
+#   2. `promote`, after every image of the commit is published: move :main to those digests. A
+#      reader of :main therefore always gets an api and a web built from the same commit.
+#
+# When: after a green `dod` run for a push to main. It runs only for the commit that is still
+# main's head. If main has moved on, the newer commit's `dod` run publishes it, and the provenance
+# names the commit that was actually built. A pull request that touches the build runs steps 1's
+# build, scan and SBOM only, so a broken publish shows up before the merge.
+#
+# The web image's browser-facing values are baked in at build time and come from
+# infra/docker/web.production.env. Nothing secret is in an image.
+
+on:
+  workflow_run:
+    workflows: [dod]
+    types: [completed]
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/publish-images.yml
+      - infra/docker/**
+      - .dockerignore
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-images-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  image:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       github.event.workflow_run.head_sha == github.sha)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - service: api
+            dockerfile: infra/docker/api.Dockerfile
+            build_args: ""
+          - service: web
+            dockerfile: infra/docker/web.Dockerfile
+            build_args: infra/docker/web.production.env
+    env:
+      IMAGE: ghcr.io/fps4/skills-coach-${{ matrix.service }}
+      LOCAL: skills-coach-${{ matrix.service }}:scan
+      PUBLISH: ${{ github.event_name == 'workflow_run' }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Build
+        env:
+          DOCKERFILE: ${{ matrix.dockerfile }}
+          BUILD_ARGS: ${{ matrix.build_args }}
+          REVISION: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          args=()
+          if [ -n "$BUILD_ARGS" ]; then
+            while IFS= read -r line; do
+              case "$line" in ''|\#*) continue ;; esac
+              args+=(--build-arg "$line")
+            done < "$BUILD_ARGS"
+          fi
+          docker build -f "$DOCKERFILE" "${args[@]}" \
+            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --label "org.opencontainers.image.revision=$REVISION" \
+            -t "$LOCAL" .
+
+      # Before the push, as fps4's build standard asks: a fixable critical blocks the image.
+      - name: Scan the image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ env.LOCAL }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      - name: SBOM (CycloneDX)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ env.LOCAL }}
+          format: cyclonedx
+          output: sbom.cdx.json
+
+      - name: Push :<commit sha>
+        id: push
+        if: env.PUBLISH == 'true'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "$TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag "$LOCAL" "$IMAGE:$SHA"
+          docker push "$IMAGE:$SHA"
+          digest=$(docker inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$IMAGE:$SHA" \
+            | sed -n "s|^$IMAGE@||p" | head -1)
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::no digest for $IMAGE:$SHA"; exit 1; }
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "$IMAGE:$SHA -> $IMAGE@$digest"
+          echo "\`$IMAGE@$digest\` (:${SHA::12})" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attest build provenance
+        if: env.PUBLISH == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest the SBOM
+        if: env.PUBLISH == 'true'
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          sbom-path: sbom.cdx.json
+          push-to-registry: true
+
+  promote:
+    # Moves :main only once every image of the commit is pushed and attested. The manifest is
+    # copied byte for byte through the registry API, so :main has exactly the digest that was
+    # attested; a pull and re-push could produce a different one.
+    needs: image
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Point :main at this commit's images
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          echo "### :main -> ${SHA::12}" >> "$GITHUB_STEP_SUMMARY"
+          for service in api web; do
+            repo="fps4/skills-coach-$service"
+            bearer=$(curl -fsS -u "$ACTOR:$TOKEN" \
+              "https://ghcr.io/token?service=ghcr.io&scope=repository:$repo:pull,push" | jq -r .token)
+            accept='application/vnd.oci.image.index.v1+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.docker.distribution.manifest.v2+json'
+            curl -fsS -D headers.txt -o manifest.json -H "Authorization: Bearer $bearer" -H "Accept: $accept" \
+              "https://ghcr.io/v2/$repo/manifests/$SHA"
+            type=$(tr -d '\r' < headers.txt | awk -F': ' 'tolower($1)=="content-type"{print $2}')
+            digest="sha256:$(sha256sum manifest.json | cut -d' ' -f1)"
+            curl -fsS -X PUT -H "Authorization: Bearer $bearer" -H "Content-Type: $type" \
+              --data-binary @manifest.json "https://ghcr.io/v2/$repo/manifests/main" -o /dev/null
+            echo "ghcr.io/$repo:main -> ghcr.io/$repo@$digest"
+            echo "- \`ghcr.io/$repo@$digest\`" >> "$GITHUB_STEP_SUMMARY"
+          done

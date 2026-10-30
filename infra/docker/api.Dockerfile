@@ -23,6 +23,14 @@ FROM node:20-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /api
 
+# The runtime runs `node` and nothing else, so it carries Debian's security fixes and no npm. The
+# base image lags Debian's point releases, and its bundled npm ships its own (vulnerable) copy of
+# `tar`; publish-images scans this stage and a fixable critical blocks the push.
+RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 # Run as the image's unprivileged user rather than root.
 COPY --from=build --chown=node:node /api/node_modules ./node_modules
 COPY --from=build --chown=node:node /api/dist ./dist
