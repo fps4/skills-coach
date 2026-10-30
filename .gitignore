@@ -6,10 +6,9 @@ dist/
 .next/
 *.tsbuildinfo
 
-# Environment / secrets — only config/ds1/.env.base is committed
+# Environment / secrets — none is committed
 .env
 .env.local
-config/ds1/.env
 
 # Learner content and artifacts are never committed (see ADR-0006).
 content/

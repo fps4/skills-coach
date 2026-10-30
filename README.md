@@ -73,8 +73,7 @@ make typecheck   # tsc --noEmit for api and web
 | `web/` | Next.js learner surface, UI in Dutch and English |
 | `skills/<id>/` | One folder per skill: `skill.yaml` (the manifest) and `guides/*.md` (the reference guides its cards are written from) |
 | `skills/demo-conversation-nl/` | A small synthetic skill so the app runs out of the box |
-| `infra/docker/` | Compose stack and images for local, CI and ds1 |
-| `config/ds1/` | Non-secret deploy configuration (secrets are injected at deploy time) |
+| `infra/docker/` | Compose stack for local development and CI, and the images `publish-images` publishes |
 | `docs/` | Product intent, architecture, decisions, API reference, guides |
 
 Real training content is **not** committed. It is imported into MongoDB from a local directory —

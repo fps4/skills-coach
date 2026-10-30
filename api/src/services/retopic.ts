@@ -4,7 +4,7 @@
  * A one-off, for decks published before their skill declared topics: the cards say
  * "3 · Data Vault mechanics", the manifest now says `{ id: data-vault, title: Data Vault mechanics }`,
  * and the filter, the tiles and a bookmark all want the id. Reachable only through
- * `retopic:cards` (the `maintain-skills` workflow), never through an API — it is a migration of how
+ * `retopic:cards` (an operator task on the deployment), never through an API — it is a migration of how
  * the field is written, not authoring.
  *
  * It changes `payload.group` and nothing else. A card's id is keyed on its front, never its group, so

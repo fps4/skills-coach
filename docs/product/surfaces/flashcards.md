@@ -270,8 +270,8 @@ Declared topics come first, in manifest order, and are shown by their title — 
 in search and on the tiles. A label the manifest does not declare is still a topic, after them,
 titled by itself and ordered with numbers compared as numbers ("10 · …" after "9 · …"); `_none` is
 last. Publishing a card under an undeclared topic, on a skill that declares some, is a `409`. Decks
-labelled before their skill declared topics are moved onto the ids once with the `maintain-skills`
-workflow's `retopic-cards` task, which changes `group` and nothing else — streaks stay.
+labelled before their skill declared topics are moved onto the ids once with the deployment's
+`retopic-cards` operator task, which changes `group` and nothing else — streaks stay.
 
 On screen the topic is a **select** beside the mode and direction switches — *All topics*, then each
 topic with `mastered/total` — present only when the deck has topics. Choosing one navigates to

@@ -5,15 +5,14 @@
 # MongoDB is the only copy of everything the product knows — packs, drill items, learner state,
 # error logs, audit (ADR-0003). Content authored through the coach API exists nowhere else, because
 # this repository is public and holds none of it (ADR-0006). So this dump is not a convenience; it
-# is the only path back from a lost volume, and `deploy-ds1` has a button that deletes that volume
-# on purpose.
+# is the only path back from a lost volume.
 #
 #   backup.sh backup            # dump + prune — the nightly action
 #   backup.sh verify            # non-zero if the newest snapshot is missing, stale or unreadable
 #   backup.sh restore <file>    # mongorestore a snapshot (confirms; DROPS what it restores over)
 #
-# Runs on the ds1 HOST, where `docker` reaches the daemon — not in the deploy pipeline, which is a
-# container holding only the Docker socket and cannot write host paths (ADR-0013). Schedule it from
+# Runs on the deployment HOST, where `docker` reaches the daemon — not in a pipeline, which cannot
+# write host paths and whose schedule is best-effort (ADR-0013). Schedule it from
 # the host crontab at 03:00, an hour clear of identity-service's 02:30:
 #
 #   0 3 * * *  /home/<user>/skills-coach/infra/docker/backup.sh backup >> ~/coach-backup.log 2>&1

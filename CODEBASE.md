@@ -88,7 +88,7 @@ api/src/
                       committed `skills/*/skill.yaml` — ADR-0008, ADR-0029)
                      `migrate-to-skills.ts` runs services/skill-migration.ts; `remove-pack.ts` deletes a
                       pack; `retopic-cards.ts` runs services/retopic.ts — all inside the api container,
-                      via the `maintain-skills` workflow
+                      as the deployment's operator tasks
                      `reading-source.ts` / `import-reading.ts` are the same idea for a
                       library: `<slug>.<lang>.md` files → articles → coach API
 ```

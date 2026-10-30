@@ -52,7 +52,7 @@ card            title = the front (term)        body = the back (translation)
   ellipsis where text was cut, and every matched word marked. It comes from the body when the body
   matched, else from the extra (so a card found by its analogy shows it), else the start of the body.
 - **Freshness.** A write through the api is searchable as soon as it succeeds. A write made outside
-  the api process (a `maintain-skills` script) is searchable after the next rebuild — every
+  the api process (an operator script such as `retopic-cards`) is searchable after the next rebuild — every
   `SEARCH_REBUILD_MINUTES`, default 15 — or after a restart. Guides change only with a deploy.
 
 ## API
