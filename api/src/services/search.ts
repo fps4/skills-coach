@@ -9,8 +9,8 @@
  * - **On write**, a service that changes a block's cards calls `blockChanged`, which re-reads that
  *   block. Only a write made in *this* process reaches it.
  * - **On a timer** (`SEARCH_REBUILD_MINUTES`) it is rebuilt into a fresh index and swapped in when
- *   complete — for the writes that are not made here: the `maintain-skills` scripts run as separate
- *   processes, and their hooks would fire in theirs.
+ *   complete — for the writes that are not made here: the operator scripts (remove-pack, retopic-cards)
+ *   run as separate processes, and their hooks would fire in theirs.
  *
  * A failed rebuild keeps the previous index. A failed hook logs and leaves the write alone: search
  * being stale for one interval is a lesser fault than a publish that errors after it has succeeded.

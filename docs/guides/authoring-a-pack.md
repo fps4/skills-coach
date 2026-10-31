@@ -155,8 +155,9 @@ a deployment at all:
 cd api && npm run import:pack -- --source ../skills/your-skill --manifest-only --dry-run
 ```
 
-On ds1 that is the `publish-pack` workflow rather than a local run, because the api binds to
-loopback there: `gh workflow run publish-pack.yml -f pack=your-pack -f dry_run=false`.
+On the deployment that is the operator's `publish-pack` task rather than a local run, because the
+api binds to loopback there. It publishes the manifest baked into the running api image, so merge
+the manifest and let it deploy first.
 
 The linter checks what the schema cannot: a duplicated error-category id, a ramp step naming a level
 the framework does not list, and ramp ranges that overlap or leave a gap. Each of those is resolved
@@ -181,11 +182,11 @@ A reading-list skill is the same idea with `surfaces: [reading]`.
   `woordenlijst`, order 1. The words are all learners' own (ADR-0012), so nothing is authored into it
   and no publish can touch them. `npm run migrate:to-skills` creates the deck block the first time it
   runs; publishing a block with `lessons: []` does the same.
-- **A library skill** needs no block at all. Articles arrive per learner through `load-reading.yml`,
-  exactly as before.
+- **A library skill** needs no block at all. Articles arrive per learner through the operator's
+  `load-reading` task, exactly as before.
 
 Forking a programme's words and reading into such skills, and removing the programme afterwards, is
-the `maintain-skills` workflow — see ADR-0022 for what each task copies and what it deletes.
+an operator task on the deployment — see ADR-0022 for what each task copies and what it deletes.
 
 ## A flashcards skill
 

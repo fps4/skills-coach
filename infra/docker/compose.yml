@@ -1,7 +1,9 @@
-# The Skills Coach stack — used for local development, for CI, and for the ds1 deploy.
+# The Skills Coach stack — used for local development and for CI.
 #
 #   local:  make up            (or: docker compose -f infra/docker/compose.yml -p skills-coach up -d)
-#   ds1:    the deploy-ds1 workflow, which adds an --env-file
+#
+# The deployment runs the images publish-images builds from this repository, pinned by digest, from
+# a compose file kept with the deployment (docs/guides/deployment.md).
 #
 # Every value comes from ${VAR} interpolation with a local-dev default inline, so the same file
 # serves both without a separate override for the common case.
