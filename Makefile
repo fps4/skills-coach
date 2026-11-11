@@ -16,9 +16,10 @@ help: ## List available targets
 
 ## --- dependencies -------------------------------------------------------------
 
-install: ## Install api + web dependencies
+install: ## Install api + web + worker dependencies
 	cd api && npm install
 	cd web && npm install
+	cd worker && npm install
 
 ## --- running ------------------------------------------------------------------
 
@@ -63,17 +64,20 @@ validate: ## Parse and lint every skills/*/skill.yaml in the tree
 
 ## --- checks -------------------------------------------------------------------
 
-typecheck: ## tsc --noEmit for both packages
+typecheck: ## tsc --noEmit for every package
 	cd api && npm run typecheck
 	cd web && npm run typecheck
+	cd worker && npm run typecheck
 
-lint: ## eslint + prettier check for both packages
+lint: ## eslint + prettier check for every package
 	cd api && npm run lint
 	cd web && npm run lint
+	cd worker && npm run lint
 
 format: ## Rewrite files with prettier
 	cd api && npm run format
 	cd web && npm run format
+	cd worker && npm run format
 
 test-unit: ## Unit tests only (no MongoDB needed)
 	cd api && npm run test:unit
@@ -81,9 +85,10 @@ test-unit: ## Unit tests only (no MongoDB needed)
 test: ## All tests (integration self-skips when MongoDB is unreachable)
 	cd api && npm test
 	cd web && npm test
+	cd worker && npm test
 
 check: typecheck lint test validate ## Everything CI checks
 
 clean: ## Remove build output and the MongoDB volume
 	$(COMPOSE) down -v --remove-orphans
-	rm -rf api/dist api/node_modules web/.next web/node_modules
+	rm -rf api/dist api/node_modules web/.next web/node_modules worker/dist worker/node_modules

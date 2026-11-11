@@ -47,6 +47,14 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker build -t sc-web:${{ github.run_id }}-${{ github.run_attempt }} -f infra/docker/web.Dockerfile .
 
+  worker-build:
+    # The word worker (ADR-0034): building its image runs typecheck, lint, its tests and the compile
+    # (see worker.Dockerfile). Its tests need no model and no key — CI never calls the Anthropic API.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t sc-worker:${{ github.run_id }}-${{ github.run_attempt }} -f infra/docker/worker.Dockerfile .
+
   test:
     # The full suite against a real MongoDB. Unit tests pin the domain rules; integration tests
     # drive the whole coaching loop through HTTP.
