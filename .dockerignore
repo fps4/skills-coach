@@ -9,6 +9,7 @@ node_modules
 .cache
 coverage
 config/ds1/.env
+infra/docker/word-worker-secrets
 .env
 .env.local
 *.md

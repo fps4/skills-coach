@@ -8,9 +8,9 @@ quiz's selection rule, the reading library's filters — see
 [`docs/product/surfaces/`](docs/product/surfaces/README.md). One file per function, each written to
 be enough to rebuild it.
 
-## Two packages, no workspace
+## Three packages, no workspace
 
-`api/` and `web/` each have their own `package.json` and lockfile and are built by their own
+`api/`, `web/` and `worker/` each have their own `package.json` and lockfile and are built by their own
 Dockerfile. There is deliberately no npm workspace: each image's build context is streamed to the
 Docker daemon on the CI runner, and independent lockfiles keep those contexts small and the two
 builds genuinely independent.
@@ -101,6 +101,23 @@ are the real specification of the product's behaviour.
 `services/` is where domain rules meet the database. Keeping it transport-agnostic is what made the
 MCP server additive: `mcp/tools.ts` is a second caller of the same service functions, behind the same
 capability gate and writing the same audit trail, not a fork.
+
+## `worker/` — the word worker
+
+```
+worker/src/
+  card.ts        what the model is asked and what may be sent back: the prompt, the answer's shape, and
+                 `toSuggestion`, which clips to the api's limits — pure, read by the tests (ADR-0034)
+  writer.ts      the one model call in the repository: a word in, a structured card out
+  coach-api.ts   `/coach/v1` with a client-credentials coach token — its only way in (ADR-0001)
+  worker.ts      one pass over the queue, oldest first, with a growing wait for a word that fails
+  index.ts       the loop; re-reads the Anthropic key file every cycle, so a new key needs no redeploy
+```
+
+The api's rule that it generates nothing (ADR-0001) is why this is a separate package and image: it
+reaches the system through `/coach/v1` exactly as a coach over MCP does. It runs on ds1 behind the
+`word-worker` compose profile; `make up` leaves it out. Its key is put on ds1 with
+`scripts/ds1/set-anthropic-key.sh`.
 
 ## `web/` — the learner surface
 

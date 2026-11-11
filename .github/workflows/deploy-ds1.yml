@@ -27,7 +27,8 @@ concurrency:
 env:
   # The ds1 runner predates Node 24; pin the checkout JS action to the node20 it has.
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
-  COMPOSE: docker compose -f infra/docker/compose.yml -p skills-coach --env-file config/ds1/.env
+  # `--profile word-worker` adds the word worker (ADR-0034), which `make up` leaves out.
+  COMPOSE: docker compose -f infra/docker/compose.yml -p skills-coach --env-file config/ds1/.env --profile word-worker
 
 jobs:
   deploy:
@@ -81,12 +82,20 @@ jobs:
           echo "::warning::The nightly snapshot in /mnt/backup/skills-coach is the way back (ADR-0013)."
           $COMPOSE down -v --remove-orphans
 
+      # COACH_CLIENT_SECRET is the coach automation client's (the one publish-pack mints tokens with);
+      # the word worker signs in with it. Same path as the MongoDB password: process environment,
+      # never the env file.
       - name: Build and deploy
         env:
           MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
+          COACH_CLIENT_SECRET: ${{ secrets.COACH_CLIENT_SECRET }}
         run: |
           if [ -z "$MONGO_PASSWORD" ]; then
             echo "::error::COACH_MONGO_PASSWORD is not set — refusing to deploy with the default password"
+            exit 1
+          fi
+          if [ -z "$COACH_CLIENT_SECRET" ]; then
+            echo "::error::COACH_CLIENT_SECRET is not set — the word worker could not sign in"
             exit 1
           fi
           $COMPOSE build
@@ -130,6 +139,21 @@ jobs:
           docker logs --tail 40 "$cid" 2>&1 | tail -40 || true
           [ "$ok" = 1 ] || { echo "::error::web did not become healthy"; exit 1; }
 
+      # The worker has no HTTP surface and so no healthcheck; "running and not restarting" is what
+      # healthy means for it. A missing Anthropic key is NOT a failure — it waits for one and says so.
+      - name: Check the word worker stays up
+        run: |
+          cid=$($COMPOSE ps -q word-worker)
+          [ -n "$cid" ] || { echo "::error::word-worker container not found"; exit 1; }
+          sleep 15
+          state=$(docker inspect --format '{{.State.Status}} restarts={{.RestartCount}}' "$cid")
+          echo "word-worker: $state"
+          docker logs --tail 20 "$cid" 2>&1 || true
+          case "$state" in
+            "running restarts=0") ;;
+            *) echo "::error::word-worker is not running steadily"; exit 1 ;;
+          esac
+
       # Whatever happened above, show what the containers said. Without this a failed boot is
       # undiagnosable from the run log, which is exactly when the log matters most.
       - name: Container logs (always)
@@ -137,7 +161,7 @@ jobs:
         env:
           MONGO_PASSWORD: ${{ secrets.COACH_MONGO_PASSWORD }}
         run: |
-          for service in mongo api web; do
+          for service in mongo api web word-worker; do
             echo "::group::$service"
             $COMPOSE logs --tail 60 "$service" 2>&1 || echo "(no container)"
             echo "::endgroup::"

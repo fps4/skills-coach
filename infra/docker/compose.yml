@@ -114,5 +114,34 @@ services:
       retries: 10
       start_period: 25s
 
+  # Fills in the words learners asked for, through /coach/v1 (ADR-0034). The only model client in the
+  # repository, and deliberately not in the api (ADR-0001). Opt-in through the `word-worker` profile:
+  # `make up` does not start it, the ds1 deploy does.
+  #
+  # The Anthropic key is a FILE in a host directory, mounted read-only and re-read every cycle, so a
+  # key put in place with scripts/ds1/set-anthropic-key.sh takes effect without a redeploy. The coach
+  # client secret reaches compose through the deploy job's environment, like the MongoDB password.
+  word-worker:
+    profiles: [word-worker]
+    build:
+      context: ../..
+      dockerfile: infra/docker/worker.Dockerfile
+    image: skills-coach-word-worker:${IMAGE_TAG:-dev}
+    container_name: skills-coach-word-worker
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      COACH_API_URL: ${WORD_WORKER_API_URL:-http://api:8000}
+      COACH_TOKEN_URL: ${COACH_TOKEN_URL:-}
+      COACH_CLIENT_ID: ${COACH_CLIENT_ID:-skills-coach-coach}
+      COACH_CLIENT_SECRET: ${COACH_CLIENT_SECRET:-}
+      ANTHROPIC_API_KEY_FILE: /run/secrets/word-worker/anthropic-api-key
+      WORD_WORKER_MODEL: ${WORD_WORKER_MODEL:-claude-opus-5-5}
+      WORD_WORKER_POLL_SECONDS: ${WORD_WORKER_POLL_SECONDS:-5}
+    volumes:
+      - ${WORD_WORKER_SECRETS_DIR:-./word-worker-secrets}:/run/secrets/word-worker:ro
+
 volumes:
   coach-mongodata:
