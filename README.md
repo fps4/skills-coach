@@ -9,7 +9,9 @@ Dutch). Nothing in the runtime is specific to Dutch, or to language learning.
 
 ## The boundary: a runtime, not an agent
 
-Skills Coach **does not generate or correct anything itself.** It ships no model client.
+Skills Coach **does not generate or correct anything itself.** The runtime ships no model client.
+The one model call in the repository is the word worker (`worker/`, ADR-0034), which sits outside
+the runtime and fills in requested words through the same coach API any coach uses.
 
 | Skills Coach owns | An external coach owns |
 |---|---|

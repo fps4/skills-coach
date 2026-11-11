@@ -65,4 +65,5 @@ revisit" applies; this API is what a synchronous caller would call, so the learn
 change.
 
 **What this does not decide.** Who runs the worker, and where. The queue and the MCP tools are enough
-for a person with Claude to work it by hand today.
+for a person with Claude to work it by hand today. *(Decided since:
+[ADR-0034](0034-a-worker-fills-in-requested-words.md) — a worker deployed beside the runtime.)*

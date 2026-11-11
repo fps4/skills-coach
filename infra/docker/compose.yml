@@ -116,5 +116,29 @@ services:
       retries: 10
       start_period: 25s
 
+  # Fills in the words learners asked for, through /coach/v1 (ADR-0034). The only model client in the
+  # repository, and deliberately not in the api (ADR-0001). Opt-in through the `worker` profile, so
+  # `make up` leaves it out: `docker compose --profile worker up` with ANTHROPIC_API_KEY,
+  # COACH_TOKEN_URL and COACH_CLIENT_SECRET set runs it locally. Without a key it idles and says so.
+  worker:
+    profiles: [worker]
+    build:
+      context: ../..
+      dockerfile: infra/docker/worker.Dockerfile
+    image: skills-coach-worker:${IMAGE_TAG:-dev}
+    container_name: skills-coach-worker
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      COACH_API_URL: ${WORKER_API_URL:-http://api:8000}
+      COACH_TOKEN_URL: ${COACH_TOKEN_URL:-}
+      COACH_CLIENT_ID: ${COACH_CLIENT_ID:-skills-coach-coach}
+      COACH_CLIENT_SECRET: ${COACH_CLIENT_SECRET:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      WORKER_MODEL: ${WORKER_MODEL:-claude-opus-5-5}
+      WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-5}
+
 volumes:
   coach-mongodata:

@@ -4,13 +4,13 @@ name: publish-images
 # a private repository pulls the published images by digest and deploys them. This repository is
 # public, so none of its workflows may run on a self-hosted runner (fps4/maestro ADR-0017).
 #
-# Which images: the services in infra/docker/compose.yml that this repository builds, `api` and
-# `web` (`mongo` is upstream's image). Each one is pushed to ghcr.io/fps4/skills-coach-<service>:
+# Which images: the services in infra/docker/compose.yml that this repository builds, `api`, `web`
+# and `worker` (`mongo` is upstream's image). Each one is pushed to ghcr.io/fps4/skills-coach-<service>:
 #
 #   1. `image`, once per service: build, scan, write a CycloneDX SBOM, push as :<commit sha>, then
 #      attest build provenance and the SBOM against the pushed digest.
 #   2. `promote`, after every image of the commit is published: move :main to those digests. A
-#      reader of :main therefore always gets an api and a web built from the same commit.
+#      reader of :main therefore always gets images built from the same commit.
 #
 # When: after a green `dod` run for a push to main. It runs only for the commit that is still
 # main's head. If main has moved on, the newer commit's `dod` run publishes it, and the provenance
@@ -64,6 +64,9 @@ jobs:
           - service: web
             dockerfile: infra/docker/web.Dockerfile
             build_args: infra/docker/web.production.env
+          - service: worker
+            dockerfile: infra/docker/worker.Dockerfile
+            build_args: ""
     env:
       IMAGE: ghcr.io/fps4/skills-coach-${{ matrix.service }}
       LOCAL: skills-coach-${{ matrix.service }}:scan
@@ -164,7 +167,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "### :main -> ${SHA::12}" >> "$GITHUB_STEP_SUMMARY"
-          for service in api web; do
+          for service in api web worker; do
             repo="fps4/skills-coach-$service"
             bearer=$(curl -fsS -u "$ACTOR:$TOKEN" \
               "https://ghcr.io/token?service=ghcr.io&scope=repository:$repo:pull,push" | jq -r .token)

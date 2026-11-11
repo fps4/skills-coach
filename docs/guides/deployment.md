@@ -15,13 +15,14 @@ nothing in it runs on that host, and it holds no deploy credential
 ## The pipeline
 
 ```
-push to main ──▶ dod ──(success)──▶ publish-images ──▶ ghcr.io/fps4/skills-coach-{api,web}
+push to main ──▶ dod ──(success)──▶ publish-images ──▶ ghcr.io/fps4/skills-coach-{api,web,worker}
                  │                    │                    :<sha>, then :main
                  ├ secret-scan        ├ build each image
                  ├ api-build          ├ scan it (a fixable critical blocks)
                  ├ web-build          ├ CycloneDX SBOM
-                 ├ test               ├ push :<sha>, attest provenance + SBOM
-                 ├ pack-import        └ move :main once both are published
+                 ├ worker-build       ├ push :<sha>, attest provenance + SBOM
+                 ├ test               └ move :main once all three are published
+                 ├ pack-import
                  └ dependency-scan
                                       ▼
                     operations repository: resolve :main → digest, verify provenance,
@@ -39,10 +40,11 @@ failed can be shipped.
 |---|---|
 | `ghcr.io/fps4/skills-coach-api` | `:<commit sha>`, `:main` |
 | `ghcr.io/fps4/skills-coach-web` | `:<commit sha>`, `:main` |
+| `ghcr.io/fps4/skills-coach-worker` | `:<commit sha>`, `:main` |
 
 Each image is scanned before the push, carries a CycloneDX SBOM, and has build provenance attested
-against its digest. `:main` moves only after both images of a commit are published, so it never
-pairs an api and a web from different commits. To check one:
+against its digest. `:main` moves only after every image of a commit is published, so it never
+pairs images from different commits. To check one:
 
 ```sh
 gh attestation verify oci://ghcr.io/fps4/skills-coach-api:main --repo fps4/skills-coach
@@ -61,8 +63,20 @@ construction.
 the operations repository, and the secrets in a file on the host only. The api needs
 `MONGO_PASSWORD`, and the deploy fails rather than falling back to the default if it is unset.
 
-There is no `ANTHROPIC_API_KEY` or equivalent, and there will not be: the runtime holds no model
-client (ADR-0001). The api only ever verifies tokens.
+The api has no `ANTHROPIC_API_KEY` or equivalent, and will not have one: the runtime holds no model
+client (ADR-0001), and only ever verifies tokens. The **word worker** (ADR-0034) is the one service
+with a model key. It needs:
+
+| Variable | Kind | What |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | secret | Without it the worker logs that it is waiting and does nothing. |
+| `COACH_CLIENT_SECRET` | secret | The coach automation client's; the worker mints its own coach token. |
+| `COACH_TOKEN_URL`, `COACH_CLIENT_ID` | config | The realm's token endpoint and `skills-coach-coach`. |
+| `COACH_API_URL` | config | The api in-network, `http://api:8000`. |
+| `WORKER_MODEL`, `WORKER_POLL_SECONDS` | config | Default `claude-opus-5-5`, 5 seconds. |
+
+Its log is `docker logs skills-coach-worker`: one line per word filled in, and a warning with a retry
+time for a word that was not.
 
 ## Networking
 
