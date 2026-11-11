@@ -41,8 +41,8 @@ worth a realm change.
 
 **The Anthropic key is a deployment secret like the others**: `ANTHROPIC_API_KEY` in the stack's
 host-only secrets file, handed to the worker's environment by the deploy. A worker started without
-one logs that it is waiting and does nothing else, so the service can be deployed before the key
-exists. Rotating the key means recreating the container.
+it — or without the coach secret — logs which is missing and does nothing else, so the service can
+be deployed before they exist. Rotating the key means recreating the container.
 
 **What the model sees is the word, its languages and the skill's declared topics** — the queue's own
 projection (ADR-0023), which names no learner. The prompt treats the word as data, never as an

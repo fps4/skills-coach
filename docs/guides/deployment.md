@@ -69,13 +69,14 @@ with a model key. It needs:
 
 | Variable | Kind | What |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | secret | Without it the worker logs that it is waiting and does nothing. |
+| `ANTHROPIC_API_KEY` | secret | The model key. |
 | `COACH_CLIENT_SECRET` | secret | The coach automation client's; the worker mints its own coach token. |
 | `COACH_TOKEN_URL`, `COACH_CLIENT_ID` | config | The realm's token endpoint and `skills-coach-coach`. |
 | `COACH_API_URL` | config | The api in-network, `http://api:8000`. |
 | `WORKER_MODEL`, `WORKER_POLL_SECONDS` | config | Default `claude-opus-5-5`, 5 seconds. |
 
-Its log is `docker logs skills-coach-worker`: one line per word filled in, and a warning with a retry
+Without either secret the worker logs which is missing and idles, so it can be deployed before they
+exist; set them and recreate the container. Its log is `docker logs skills-coach-worker`: one line per word filled in, and a warning with a retry
 time for a word that was not.
 
 ## Networking

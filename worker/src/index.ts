@@ -2,8 +2,9 @@
  * The word worker (ADR-0034): polls the word-request queue and fills each word in through
  * `/coach/v1`, as a coach would over MCP.
  *
- * A worker started without an Anthropic key does not crash-loop: it says once that it has none and
- * waits to be stopped, so a deploy can bring it up before the key is put in place.
+ * A worker started without its secrets (the Anthropic key, the coach client secret) does not
+ * crash-loop: it says once which are missing and waits to be stopped, so a deploy can bring it up
+ * before they are put in place.
  */
 import { CoachApi } from './coach-api.js';
 import { WordWorker, type Logger } from './worker.js';
@@ -49,18 +50,22 @@ const sleep = (ms: number) =>
   });
 
 async function main(): Promise<void> {
+  const missing = [
+    ...(API_KEY ? [] : ['ANTHROPIC_API_KEY']),
+    ...(process.env.COACH_CLIENT_SECRET?.trim() ? [] : ['COACH_CLIENT_SECRET']),
+  ];
+  if (missing.length > 0) {
+    log.warn('not configured; waiting idle — set these and recreate the container', { missing });
+    while (!stopping) await sleep(60 * 60_000);
+    return;
+  }
+
   const api = new CoachApi({
     apiUrl: env('COACH_API_URL', 'http://api:8000'),
     tokenUrl: env('COACH_TOKEN_URL'),
     clientId: env('COACH_CLIENT_ID', 'skills-coach-coach'),
     clientSecret: env('COACH_CLIENT_SECRET'),
   });
-  if (!API_KEY) {
-    log.warn('no ANTHROPIC_API_KEY; waiting idle — set it and recreate the container');
-    while (!stopping) await sleep(60 * 60_000);
-    return;
-  }
-
   const writer = new ClaudeCardWriter(API_KEY, MODEL);
   const worker = new WordWorker(api, log);
   log.info('word worker started', { model: MODEL, pollSeconds: POLL_MS / 1000 });
